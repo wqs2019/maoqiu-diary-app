@@ -1,3 +1,10 @@
+// TCB 配置
+export const TCB_CONFIG = {
+  env: 'YOUR_TCB_ENV_ID',
+  region: 'ap-guangzhou',
+};
+
+// 常量配置
 export const TOKEN_EXPIRE_DAYS = 30;
 
 export const ROUTES = {
