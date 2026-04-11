@@ -12,7 +12,6 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { useMutation } from '@tanstack/react-query';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { ScenarioType, MoodType, WeatherType, TagType } from '../../types';
@@ -22,7 +21,7 @@ import { MoodTabSelector } from '../../components/handDrawn/MoodTabSelector';
 import { WeatherTabSelector } from '../../components/handDrawn/WeatherTabSelector';
 import { TagTabSelector } from '../../components/handDrawn/TagTabSelector';
 import { ScenarioChip } from '../../components/handDrawn/ScenarioChip';
-import { createDiary } from '../../services/diaryService';
+import { useCreateDiary } from '../../hooks/useDiaryQuery';
 
 type EditDiaryRouteProp = RouteProp<{ params: { scenario?: ScenarioType; diaryId?: string } }, 'params'>;
 
@@ -42,21 +41,8 @@ const EditDiaryScreen: React.FC = () => {
 
     const template = SCENARIO_TEMPLATES[scenario];
 
-    // 使用 useMutation 处理日记保存
-    const createDiaryMutation = useMutation({
-        mutationFn: createDiary,
-        onSuccess: () => {
-            Alert.alert('✨ 太棒了！', '日记已保存到云端，继续记录美好时光吧～', [
-                { text: '好的', onPress: () => navigation.goBack() },
-            ]);
-        },
-        onError: (error) => {
-            console.error('Save diary error:', error);
-            Alert.alert('保存失败', '请检查网络连接后重试', [
-                { text: '确定' },
-            ]);
-        },
-    });
+    // 使用 useCreateDiary 处理日记保存（已封装好缓存更新）
+    const createDiaryMutation = useCreateDiary();
 
     const handleSave = () => {
         if (!title.trim() && !content.trim()) {
@@ -65,16 +51,31 @@ const EditDiaryScreen: React.FC = () => {
         }
 
         // 调用 mutation 保存日记
-        createDiaryMutation.mutate({
-            title: title.trim(),
-            content: content.trim(),
-            scenario,
-            mood: mood || 'normal',
-            weather: weather || 'sunny',
-            location: location.trim(),
-            tags,
-            images: [],
-        });
+        createDiaryMutation.mutate(
+            {
+                title: title.trim(),
+                content: content.trim(),
+                scenario,
+                mood: mood || 'normal',
+                weather: weather || 'sunny',
+                location: location.trim(),
+                tags,
+                images: [],
+            },
+            {
+                onSuccess: () => {
+                    Alert.alert('✨ 太棒了！', '日记已保存到云端，继续记录美好时光吧～', [
+                        { text: '好的', onPress: () => navigation.goBack() },
+                    ]);
+                },
+                onError: (error) => {
+                    console.error('Save diary error:', error);
+                    Alert.alert('保存失败', '请检查网络连接后重试', [
+                        { text: '确定' },
+                    ]);
+                },
+            }
+        );
     };
 
     const handleToggleTag = (tag: TagType) => {

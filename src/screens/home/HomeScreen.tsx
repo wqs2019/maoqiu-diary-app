@@ -5,18 +5,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { HEALING_COLORS, HAND_DRAWN_STYLES } from '../../config/handDrawnTheme';
 import { MAOQIU_MASCOTS, MASCOT_INTERACTIONS } from '../../config/mascot';
-import { ScenarioType, TimelineItem } from '../../types';
+import { ScenarioType, TimelineItem, Diary } from '../../types';
 import { HandDrawnCard } from '../../components/handDrawn/HandDrawnCard';
 import { HandDrawnButton } from '../../components/handDrawn/HandDrawnButton';
 import { MascotCharacter } from '../../components/handDrawn/MascotCharacter';
 import { ScenarioChip } from '../../components/handDrawn/ScenarioChip';
 import { TimelineView } from '../../components/handDrawn/TimelineView';
+import { useDiaryList } from '../../hooks/useDiaryQuery';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | 'all'>('all');
+
+  // 从云端获取日记列表
+  const { data: diaryList, isLoading, error, refetch } = useDiaryList({
+    page: 1,
+    pageSize: 20,
+    scenario: selectedScenario === 'all' ? undefined : selectedScenario,
+  });
 
   // 悬浮按钮拖动
   const pan = useRef({
@@ -67,10 +75,18 @@ const HomeScreen: React.FC = () => {
     return '你好呀～';
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    console.log('[HomeScreen] handleRefresh called');
     setRefreshing(true);
-    // TODO: 刷新数据
-    setTimeout(() => setRefreshing(false), 1000);
+    try {
+      console.log('[HomeScreen] Calling refetch...');
+      await refetch();
+      console.log('[HomeScreen] Refetch completed');
+    } catch (err) {
+      console.error('Refresh failed:', err);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleCreateDiary = (scenario?: ScenarioType) => {
@@ -82,28 +98,23 @@ const HomeScreen: React.FC = () => {
     console.log('Clicked item:', item);
   };
 
-  // 模拟时间轴数据
-  const timelineItems: TimelineItem[] = [
-    {
-      _id: '1',
+  // 将云端数据转换为 TimelineItem 格式
+  const convertDiaryToTimelineItem = (diary: Diary): TimelineItem => {
+    return {
+      _id: diary._id,
       type: 'diary',
-      title: '周末的咖啡馆时光',
-      description: '发现了一家超级温馨的咖啡馆，手冲咖啡的味道很棒...',
-      date: new Date().toISOString(),
-      scenario: 'daily',
-      mood: 'relaxed',
-      location: '街角咖啡馆',
-    },
-    {
-      _id: '2',
-      type: 'diary',
-      title: '《奥本海默》观影',
-      description: '诺兰导演的又一力作，基里安·墨菲的表演太震撼了！',
-      date: new Date(Date.now() - 86400000).toISOString(),
-      scenario: 'movie',
-      mood: 'touched',
-    },
-  ];
+      title: diary.title || '无标题',
+      description: diary.content || '',
+      date: diary.createdAt || new Date().toISOString(),
+      scenario: diary.scenario,
+      mood: diary.mood,
+      location: diary.location,
+      diaryId: diary._id,
+    };
+  };
+
+  // 从云端获取的时间轴数据
+  const timelineItems: TimelineItem[] = diaryList?.list?.map(convertDiaryToTimelineItem) || [];
 
   const handDrawnStyle = HAND_DRAWN_STYLES.soft;
 
@@ -175,7 +186,17 @@ const HomeScreen: React.FC = () => {
       </ScrollView>
 
       {/* 时间轴 */}
-      <View style={styles.timelineContainer}>
+      <ScrollView
+        style={styles.timelineScrollView}
+        contentContainerStyle={styles.timelineScrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={HEALING_COLORS.pink[400]}
+          />
+        }
+      >
         <View style={styles.timelineHeader}>
           <Text style={styles.timelineTitle}>时间轴</Text>
           <TouchableOpacity>
@@ -183,8 +204,23 @@ const HomeScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <TimelineView items={timelineItems} onItemPress={handleTimelineItemPress} />
-      </View>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>加载中...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>加载失败，请稍后重试</Text>
+          </View>
+        ) : timelineItems.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>还没有日记记录</Text>
+            <Text style={styles.emptySubText}>点击右下角"+"开始记录生活吧～</Text>
+          </View>
+        ) : (
+          <TimelineView items={timelineItems} onItemPress={handleTimelineItemPress} />
+        )}
+      </ScrollView>
 
       {/* 悬浮按钮 */}
       <Animated.View
@@ -270,6 +306,12 @@ const styles = StyleSheet.create({
   scrollerContent: {
     paddingHorizontal: 16,
   },
+  timelineScrollView: {
+    flex: 1,
+  },
+  timelineScrollContent: {
+    flexGrow: 1,
+  },
   timelineContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -298,6 +340,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: HEALING_COLORS.pink[400],
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#999',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  errorText: {
+    fontSize: 14,
+    color: HEALING_COLORS.pink[400],
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    marginBottom: 8,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#CCC',
   },
   fabContainer: {
     position: 'absolute',

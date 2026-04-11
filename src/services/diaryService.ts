@@ -15,10 +15,22 @@ export interface DiaryListParams {
 }
 
 /**
+ * 云函数响应格式
+ */
+interface CloudFunctionResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+}
+
+/**
  * 获取日记列表
  */
 export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListResponse> => {
-  const result = await CloudService.callFunction<DiaryListResponse>('diary', {
+  console.log('[diaryService] Calling getDiaryList with params:', params);
+
+  const result = await CloudService.callFunction<CloudFunctionResponse<DiaryListResponse>>('diary', {
     action: 'list',
     data: {
       page: params.page || 1,
@@ -30,7 +42,8 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
       tags: params.tags,
     },
   });
-  return result.data;
+  const cloudFunctionResult = result.data;
+  return cloudFunctionResult.data;
 };
 
 /**

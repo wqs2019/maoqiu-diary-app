@@ -25,12 +25,14 @@ export const useDiaryList = (params: DiaryListParams = {}) => {
         // 查询键：用于缓存和失效
         [queryKey],
         // 查询函数：实际的数据获取
-        () => diaryApi.getDiaryList(params),
+        async () => {
+            const result = await diaryApi.getDiaryList(params);
+            return result;
+        },
         {
             // 可选配置
-            staleTime: 1000 * 60 * 5, // 5 分钟内数据不失效
+            staleTime: 1000 * 60 * 1, // 1 分钟内数据不失效
             retry: 2, // 失败重试 2 次
-            // 可以添加更多配置...
         }
     );
 };
@@ -70,7 +72,7 @@ export const useCreateDiary = () => {
 
     return useAppMutation(
         ['diary', 'create'],
-        (data: Omit<diaryApi.Diary, 'id' | 'createdAt' | 'updatedAt'>) => diaryApi.createDiary(data),
+        (data: Omit<diaryApi.Diary, '_id' | 'createdAt' | 'updatedAt'>) => diaryApi.createDiary(data),
         {
             // 突变成功后执行
             onSuccess: () => {
