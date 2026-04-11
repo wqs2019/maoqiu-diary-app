@@ -20,8 +20,7 @@ export interface TokenInfo {
 
 export class AuthService {
   constructor() {
-    // 初始化TCB
-    tcbService.init();
+    // TCB 会在 callFunction 时自动初始化，不需要手动 init
   }
 
   async login(phone: string, code: string): Promise<{ token: string; user: UserInfo }> {

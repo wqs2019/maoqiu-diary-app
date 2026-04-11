@@ -1,7 +1,7 @@
 {
-  "name": "user",
+  "name": "validateToken",
   "version": "1.0.0",
-  "description": "User management",
+  "description": "Validate user token",
   "main": "index.js",
   "type": "commonjs",
   "dependencies": {

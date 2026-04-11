@@ -1,7 +1,7 @@
 // 日记相关的 React Query Hooks
 import { useAppQuery, useAppMutation, useQueryClient } from '../hooks/useQuery';
-import * as diaryApi from '../api/diaryApi';
-import type { DiaryListParams } from '../api/diaryApi';
+import * as diaryApi from '../services/diaryService';
+import type { DiaryListParams } from '../services/diaryService';
 
 /**
  * 获取日记列表 - 使用 React Query 管理服务端状态

@@ -1,5 +1,5 @@
-// 日记 API 接口定义
-import { callFunction } from '../services/tcb';
+// 日记服务层
+import CloudService from './tcb';
 import { Diary, DiaryListResponse, ScenarioType, MoodType, WeatherType, TagType } from '../types';
 
 export { Diary, DiaryListResponse };
@@ -18,12 +18,17 @@ export interface DiaryListParams {
  * 获取日记列表
  */
 export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListResponse> => {
-  const result = await callFunction<DiaryListResponse>('getDiaryList', {
-    page: params.page || 1,
-    pageSize: params.pageSize || 10,
-    mood: params.mood,
-    startDate: params.startDate,
-    endDate: params.endDate,
+  const result = await CloudService.callFunction<DiaryListResponse>('diary', {
+    action: 'list',
+    data: {
+      page: params.page || 1,
+      pageSize: params.pageSize || 10,
+      mood: params.mood,
+      scenario: params.scenario,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      tags: params.tags,
+    },
   });
   return result.data;
 };
@@ -32,7 +37,10 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
  * 获取日记详情
  */
 export const getDiaryDetail = async (_id: string): Promise<Diary> => {
-  const result = await callFunction<Diary>('getDiaryDetail', { _id });
+  const result = await CloudService.callFunction<Diary>('diary', {
+    action: 'get',
+    data: { _id },
+  });
   return result.data;
 };
 
@@ -40,7 +48,10 @@ export const getDiaryDetail = async (_id: string): Promise<Diary> => {
  * 创建日记
  */
 export const createDiary = async (data: Omit<Diary, '_id' | 'createdAt' | 'updatedAt'>): Promise<Diary> => {
-  const result = await callFunction<Diary>('createDiary', data);
+  const result = await CloudService.callFunction<Diary>('diary', {
+    action: 'create',
+    data,
+  });
   return result.data;
 };
 
@@ -48,7 +59,10 @@ export const createDiary = async (data: Omit<Diary, '_id' | 'createdAt' | 'updat
  * 更新日记
  */
 export const updateDiary = async (_id: string, data: Partial<Diary>): Promise<Diary> => {
-  const result = await callFunction<Diary>('updateDiary', { _id, ...data });
+  const result = await CloudService.callFunction<Diary>('diary', {
+    action: 'update',
+    data: { _id, ...data },
+  });
   return result.data;
 };
 
@@ -56,5 +70,9 @@ export const updateDiary = async (_id: string, data: Partial<Diary>): Promise<Di
  * 删除日记
  */
 export const deleteDiary = async (_id: string): Promise<void> => {
-  await callFunction('deleteDiary', { _id });
+  const result = await CloudService.callFunction('diary', {
+    action: 'delete',
+    data: { _id },
+  });
+  return result.data;
 };

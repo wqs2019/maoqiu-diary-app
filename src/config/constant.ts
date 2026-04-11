@@ -1,7 +1,7 @@
 // TCB 配置
 export const TCB_CONFIG = {
   env: 'maoqiu-diary-app-2fpzvwp2e01dbaf',
-  region: 'ap-guangzhou',
+  region: 'ap-shanghai',
 };
 
 // 常量配置

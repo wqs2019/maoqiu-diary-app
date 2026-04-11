@@ -3,7 +3,7 @@
 // User ID is based on database _id field
 // Author: Trae AI | Version: 1.0
 
-const cloud = require('wx-server-sdk');
+const cloud = require('@cloudbase/node-sdk');
 
 // 初始化云开发环境
 const app = cloud.init({

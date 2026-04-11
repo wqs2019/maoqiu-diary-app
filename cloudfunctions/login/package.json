@@ -1,7 +1,7 @@
 {
-  "name": "user",
+  "name": "login",
   "version": "1.0.0",
-  "description": "User management",
+  "description": "User login",
   "main": "index.js",
   "type": "commonjs",
   "dependencies": {

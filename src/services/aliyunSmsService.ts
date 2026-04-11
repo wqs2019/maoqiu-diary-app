@@ -14,17 +14,9 @@ class AliyunSmsService {
    */
   async sendSmsVerifyCode(phoneNumber: string): Promise<boolean> {
     try {
-      const functions = tcbService.getFunctions();
-      if (!functions) {
-        throw new Error('TCB functions not initialized');
-      }
-
       // 调用云函数发送验证码
-      const result = await functions.callFunction({
-        name: 'sendCode',
-        data: {
-          phone: phoneNumber,
-        },
+      const result = await tcbService.callFunction('sendCode', {
+        phone: phoneNumber,
       });
 
       if (result.code !== 0) {
@@ -66,18 +58,10 @@ class AliyunSmsService {
         return true;
       }
 
-      const functions = tcbService.getFunctions();
-      if (!functions) {
-        throw new Error('TCB functions not initialized');
-      }
-
       // 调用云函数验证验证码
-      const result = await functions.callFunction({
-        name: 'verifyCode',
-        data: {
-          phone: phoneNumber,
-          code: inputCode,
-        },
+      const result = await tcbService.callFunction('verifyCode', {
+        phone: phoneNumber,
+        code: inputCode,
       });
 
       return result.code === 0;

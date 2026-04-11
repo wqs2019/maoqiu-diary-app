@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     View,
     Text,
@@ -9,8 +9,10 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useMutation } from '@tanstack/react-query';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { ScenarioType, MoodType, WeatherType, TagType } from '../../types';
@@ -20,6 +22,7 @@ import { MoodTabSelector } from '../../components/handDrawn/MoodTabSelector';
 import { WeatherTabSelector } from '../../components/handDrawn/WeatherTabSelector';
 import { TagTabSelector } from '../../components/handDrawn/TagTabSelector';
 import { ScenarioChip } from '../../components/handDrawn/ScenarioChip';
+import { createDiary } from '../../services/diaryService';
 
 type EditDiaryRouteProp = RouteProp<{ params: { scenario?: ScenarioType; diaryId?: string } }, 'params'>;
 
@@ -28,16 +31,32 @@ const EditDiaryScreen: React.FC = () => {
     const route = useRoute<EditDiaryRouteProp>();
     const initialScenario = route.params?.scenario || 'daily';
 
-    const [scenario, setScenario] = useState<ScenarioType>(initialScenario);
-    const [date, setDate] = useState(new Date());
-    const [location, setLocation] = useState('');
-    const [mood, setMood] = useState<MoodType | undefined>();
-    const [weather, setWeather] = useState<WeatherType | undefined>();
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [tags, setTags] = useState<TagType[]>([]);
+    const [scenario, setScenario] = React.useState<ScenarioType>(initialScenario);
+    const [date, setDate] = React.useState(new Date());
+    const [location, setLocation] = React.useState('');
+    const [mood, setMood] = React.useState<MoodType | undefined>();
+    const [weather, setWeather] = React.useState<WeatherType | undefined>();
+    const [title, setTitle] = React.useState('');
+    const [content, setContent] = React.useState('');
+    const [tags, setTags] = React.useState<TagType[]>([]);
 
     const template = SCENARIO_TEMPLATES[scenario];
+
+    // 使用 useMutation 处理日记保存
+    const createDiaryMutation = useMutation({
+        mutationFn: createDiary,
+        onSuccess: () => {
+            Alert.alert('✨ 太棒了！', '日记已保存到云端，继续记录美好时光吧～', [
+                { text: '好的', onPress: () => navigation.goBack() },
+            ]);
+        },
+        onError: (error) => {
+            console.error('Save diary error:', error);
+            Alert.alert('保存失败', '请检查网络连接后重试', [
+                { text: '确定' },
+            ]);
+        },
+    });
 
     const handleSave = () => {
         if (!title.trim() && !content.trim()) {
@@ -45,10 +64,17 @@ const EditDiaryScreen: React.FC = () => {
             return;
         }
 
-        // TODO: 调用 API 保存日记
-        Alert.alert('✨ 太棒了！', '日记已保存，继续记录美好时光吧～', [
-            { text: '好的', onPress: () => navigation.goBack() },
-        ]);
+        // 调用 mutation 保存日记
+        createDiaryMutation.mutate({
+            title: title.trim(),
+            content: content.trim(),
+            scenario,
+            mood: mood || 'normal',
+            weather: weather || 'sunny',
+            location: location.trim(),
+            tags,
+            images: [],
+        });
     };
 
     const handleToggleTag = (tag: TagType) => {
@@ -69,11 +95,15 @@ const EditDiaryScreen: React.FC = () => {
                     <Text style={styles.backButtonText}>✕</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>记录{template1.name}</Text>
-                <HandDrawnButton
-                    title="保存"
-                    size="small"
-                    onPress={handleSave}
-                />
+                {createDiaryMutation.isPending ? (
+                    <ActivityIndicator size="small" color={HEALING_COLORS.pink[500]} />
+                ) : (
+                    <HandDrawnButton
+                        title="保存"
+                        size="small"
+                        onPress={handleSave}
+                    />
+                )}
             </View>
 
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>

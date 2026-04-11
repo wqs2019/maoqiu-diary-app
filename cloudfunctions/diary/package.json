@@ -1,0 +1,16 @@
+{
+  "name": "diary",
+  "version": "1.0.0",
+  "description": "Manage diary",
+  "main": "index.js",
+  "type": "commonjs",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest"
+  },
+  "author": "Trae",
+  "license": "ISC",
+  "scripts": {
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  }
+}

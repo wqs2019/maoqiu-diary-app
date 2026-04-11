@@ -4,7 +4,7 @@ import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicat
 import { Ionicons } from '@expo/vector-icons';
 import { useDiaryList, useCreateDiary, useDeleteDiary } from '../hooks/useDiaryQuery';
 import { COLORS, SPACING } from '../config/constant';
-import type { Diary } from '../api/diaryApi';
+import type { Diary } from '../services/diaryService';
 
 interface DiaryCardProps {
   diary: Diary;

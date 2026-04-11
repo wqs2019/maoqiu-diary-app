@@ -1,11 +1,11 @@
 // 登录云函数
-const cloud = require('wx-server-sdk');
+const cloud = require('@cloudbase/node-sdk');
 
-cloud.init({
-  env: cloud.DYNAMIC_CURRENT_ENV
+const app = cloud.init({
+  env: cloud.SYMBOL_CURRENT_ENV,
 });
 
-const db = cloud.database();
+const db = app.database();
 const usersCollection = db.collection('users');
 
 exports.main = async (event, context) => {

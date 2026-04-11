@@ -1,5 +1,5 @@
 // 验证码验证云函数
-const cloud = require('wx-server-sdk');
+const cloud = require('@cloudbase/node-sdk');
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV

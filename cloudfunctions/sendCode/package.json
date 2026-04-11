@@ -1,7 +1,7 @@
 {
-  "name": "user",
+  "name": "sendCode",
   "version": "1.0.0",
-  "description": "User management",
+  "description": "Send SMS verification code",
   "main": "index.js",
   "type": "commonjs",
   "dependencies": {

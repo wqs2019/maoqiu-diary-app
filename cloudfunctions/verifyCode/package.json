@@ -1,7 +1,7 @@
 {
-  "name": "user",
+  "name": "verifyCode",
   "version": "1.0.0",
-  "description": "User management",
+  "description": "Verify SMS code",
   "main": "index.js",
   "type": "commonjs",
   "dependencies": {
