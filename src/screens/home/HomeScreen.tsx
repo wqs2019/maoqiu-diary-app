@@ -19,26 +19,36 @@ const HomeScreen: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | 'all'>('all');
 
   // 悬浮按钮拖动
-  const panY = useRef(new Animated.Value(0)).current;
-  const [fabBottom, setFabBottom] = useState(20);
+  const pan = useRef({
+    x: new Animated.Value(0),
+    y: new Animated.Value(0),
+  }).current;
+  const lastPanY = useRef(0);
+  const minTranslateY = -580; // 向上最多拖动 580px
+  const maxTranslateY = 0;    // 向下最多拖动 0px
+  const addRef = useRef<View>(null);
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
-        panY.setOffset(0);
+        // 重置为 0，准备新的拖动
       },
-      onPanResponderMove: Animated.event(
-        [null, { dy: panY }],
-        { useNativeDriver: false }
-      ),
+      onPanResponderMove: (e, gestureState) => {
+        let newY = lastPanY.current + gestureState.dy;
+
+        // Clamp - 限制范围
+        if (newY < minTranslateY) newY = minTranslateY;
+        if (newY > maxTranslateY) newY = maxTranslateY;
+
+        pan.y.setValue(newY);
+      },
       onPanResponderRelease: (e, gestureState) => {
-        // 计算新位置
-        const newBottom = Math.max(20, Math.min(300, fabBottom - gestureState.dy));
-        setFabBottom(newBottom);
-        panY.setValue(0);
-        panY.setOffset(0);
+        let finalY = lastPanY.current + gestureState.dy;
+        // Clamp - 限制范围
+        if (finalY < minTranslateY) finalY = minTranslateY;
+        if (finalY > maxTranslateY) finalY = maxTranslateY;
+        lastPanY.current = finalY;
       },
     })
   ).current;
@@ -181,25 +191,27 @@ const HomeScreen: React.FC = () => {
         style={[
           styles.fabContainer,
           {
-            bottom: fabBottom,
-            transform: [{ translateY: panY }],
+            bottom: 20,
+            transform: [{ translateY: pan.y }],
           },
         ]}
         {...panResponder.panHandlers}
       >
-        <TouchableOpacity
-          style={[
-            styles.fab,
-            {
-              shadowColor: handDrawnStyle.shadowColor,
-              shadowOpacity: handDrawnStyle.shadowOpacity,
-              shadowRadius: handDrawnStyle.shadowRadius,
-            },
-          ]}
-          onPress={() => handleCreateDiary()}
-        >
-          <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
+        <View ref={addRef} collapsable={false}>
+          <TouchableOpacity
+            style={[
+              styles.fab,
+              {
+                shadowColor: handDrawnStyle.shadowColor,
+                shadowOpacity: handDrawnStyle.shadowOpacity,
+                shadowRadius: handDrawnStyle.shadowRadius,
+              },
+            ]}
+            onPress={() => handleCreateDiary()}
+          >
+            <Text style={styles.fabIcon}>+</Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     </View>
   );
