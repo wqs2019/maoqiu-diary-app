@@ -12,11 +12,13 @@ import HomeScreen from '@/screens/home/HomeScreen';
 import CategoryScreen from '@/screens/category/CategoryScreen';
 import AIScreen from '@/screens/ai/AIScreen';
 import MineScreen from '@/screens/mine/MineScreen';
+import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
 
 // Types
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
+  EditDiary: { scenario?: string; diaryId?: string };
 };
 
 export type AuthStackParamList = {
@@ -88,7 +90,17 @@ export const RootNavigator = () => {
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       {isLoggedIn ? (
-        <RootStack.Screen name="Main" component={MainNavigator} />
+        <>
+          <RootStack.Screen name="Main" component={MainNavigator} />
+          <RootStack.Screen
+            name="EditDiary"
+            component={EditDiaryScreen}
+            options={{
+              presentation: 'modal',
+              title: '写日记',
+            }}
+          />
+        </>
       ) : (
         <RootStack.Screen name="Auth" component={AuthNavigator} />
       )}

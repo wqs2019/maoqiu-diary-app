@@ -35,3 +35,124 @@ export interface ComponentProps {
   children?: React.ReactNode;
   style?: any;
 }
+
+// 场景类型
+export type ScenarioType = 'travel' | 'movie' | 'outing' | 'food' | 'daily' | 'special';
+
+// 心情类型
+export type MoodType = 'happy' | 'sad' | 'normal' | 'excited' | 'angry' | 'relaxed' | 'touched';
+
+// 天气类型
+export type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'windy' | 'foggy';
+
+// 标签类型
+export type TagType = 'daily' | 'work' | 'study' | 'travel' | 'sports' | 'food' | 'mood' | 'family' | 'friends' | 'shopping';
+
+// 日记接口
+export interface Diary {
+  _id: string;
+  title: string;
+  content: string;
+  scenario: ScenarioType;
+  mood: MoodType;
+  weather: WeatherType;
+  images?: string[];
+  location?: string;
+  companions?: string[];
+  rating?: number; // 1-5 星评分
+  tags?: TagType[];
+  createdAt: string;
+  updatedAt: string;
+  isFavorite?: boolean;
+  isPrivate?: boolean;
+}
+
+// 日记列表响应
+export interface DiaryListResponse {
+  list: Diary[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+// 场景模板
+export interface ScenarioTemplate {
+  id: string;
+  type: ScenarioType;
+  name: string;
+  icon: string;
+  color: string;
+  placeholder: string;
+  prompts: string[];
+  fields: TemplateField[];
+}
+
+// 模板字段
+export interface TemplateField {
+  id: string;
+  label: string;
+  type: 'text' | 'rating' | 'tags' | 'location' | 'people' | 'image';
+  required: boolean;
+  placeholder?: string;
+}
+
+// 时间轴项目
+export interface TimelineItem {
+  _id: string;
+  type: 'diary' | 'photo' | 'milestone';
+  title: string;
+  description: string;
+  date: string;
+  images?: string[];
+  scenario?: ScenarioType;
+  mood?: MoodType;
+  location?: string;
+  diaryId?: string;
+}
+
+// 分类接口
+export interface Category {
+  _id: string;
+  name: string;
+  icon: string;
+  color: string;
+  count: number;
+  scenario?: ScenarioType;
+}
+
+// 萌宠状态
+export interface MascotState {
+  currentMascot: string;
+  expression: string;
+  lastInteraction: string;
+  streak: number;
+  totalDiaries: number;
+  level: number;
+  experience: number;
+}
+
+// 萌宠接口
+export interface Mascot {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+  personalities: Personality[];
+  expressions: Expression[];
+}
+
+export interface Personality {
+  id: string;
+  name: string;
+  description: string;
+  triggerEvents: string[];
+  responses: string[];
+}
+
+export interface Expression {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+  animation: 'bounce' | 'shake' | 'pulse' | 'spin';
+}

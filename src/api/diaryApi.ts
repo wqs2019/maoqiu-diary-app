@@ -1,29 +1,17 @@
 // 日记 API 接口定义
 import { callFunction } from '../services/tcb';
+import { Diary, DiaryListResponse, ScenarioType, MoodType, WeatherType, TagType } from '../types';
 
-export interface Diary {
-  id: string;
-  title: string;
-  content: string;
-  mood: 'happy' | 'sad' | 'normal' | 'excited' | 'angry';
-  weather: 'sunny' | 'cloudy' | 'rainy' | 'snowy';
-  createdAt: string;
-  updatedAt: string;
-}
+export { Diary, DiaryListResponse };
 
 export interface DiaryListParams {
   page?: number;
   pageSize?: number;
-  mood?: string;
+  mood?: MoodType;
+  scenario?: ScenarioType;
   startDate?: string;
   endDate?: string;
-}
-
-export interface DiaryListResponse {
-  list: Diary[];
-  total: number;
-  page: number;
-  pageSize: number;
+  tags?: TagType[];
 }
 
 /**
@@ -43,15 +31,15 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
 /**
  * 获取日记详情
  */
-export const getDiaryDetail = async (id: string): Promise<Diary> => {
-  const result = await callFunction<Diary>('getDiaryDetail', { id });
+export const getDiaryDetail = async (_id: string): Promise<Diary> => {
+  const result = await callFunction<Diary>('getDiaryDetail', { _id });
   return result.data;
 };
 
 /**
  * 创建日记
  */
-export const createDiary = async (data: Omit<Diary, 'id' | 'createdAt' | 'updatedAt'>): Promise<Diary> => {
+export const createDiary = async (data: Omit<Diary, '_id' | 'createdAt' | 'updatedAt'>): Promise<Diary> => {
   const result = await callFunction<Diary>('createDiary', data);
   return result.data;
 };
@@ -59,14 +47,14 @@ export const createDiary = async (data: Omit<Diary, 'id' | 'createdAt' | 'update
 /**
  * 更新日记
  */
-export const updateDiary = async (id: string, data: Partial<Diary>): Promise<Diary> => {
-  const result = await callFunction<Diary>('updateDiary', { id, ...data });
+export const updateDiary = async (_id: string, data: Partial<Diary>): Promise<Diary> => {
+  const result = await callFunction<Diary>('updateDiary', { _id, ...data });
   return result.data;
 };
 
 /**
  * 删除日记
  */
-export const deleteDiary = async (id: string): Promise<void> => {
-  await callFunction('deleteDiary', { id });
+export const deleteDiary = async (_id: string): Promise<void> => {
+  await callFunction('deleteDiary', { _id });
 };

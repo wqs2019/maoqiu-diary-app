@@ -29,7 +29,7 @@ const DiaryCard: React.FC<DiaryCardProps> = ({ diary, onDelete }) => {
         <Text style={styles.cardDate}>
           {new Date(diary.createdAt).toLocaleDateString('zh-CN')}
         </Text>
-        <TouchableOpacity onPress={() => onDelete(diary.id)}>
+        <TouchableOpacity onPress={() => onDelete(diary._id)}>
           <Ionicons name="trash-outline" size={20} color={COLORS.error} />
         </TouchableOpacity>
       </View>
@@ -106,8 +106,10 @@ export const DiaryListScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.createButton}
           onPress={() => createMutation.mutate({
+            _id: '',
             title: '新日记',
             content: '这是第一条日记',
+            scenario: 'daily',
             mood: 'happy',
             weather: 'sunny',
           })}
@@ -122,7 +124,7 @@ export const DiaryListScreen: React.FC = () => {
     <View style={styles.container}>
       <FlatList
         data={data.list}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <DiaryCard diary={item} onDelete={handleDelete} />
         )}

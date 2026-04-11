@@ -1,0 +1,12 @@
+{
+  "name": "user",
+  "version": "1.0.0",
+  "description": "Manage user",
+  "main": "index.js",
+  "type": "commonjs",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest"
+  },
+  "author": "Trae",
+  "license": "ISC"
+}

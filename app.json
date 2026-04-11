@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.maoqiu-diary"
+      "bundleIdentifier": "com.maoqiu-diary",
+      "appleTeamId": "PK8H5TBMV6"
     },
     "android": {
       "adaptiveIcon": {
