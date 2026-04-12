@@ -10,7 +10,14 @@ const db = app.database();
 // 创建日记
 const createDiary = async (data) => {
   try {
-    const { title, content, date, scenario, mood, weather, location, tags, images } = data;
+    const { title, content, date, scenario, mood, weather, location, tags, images, userId } = data;
+
+    if (!userId) {
+      return {
+        success: false,
+        message: '用户ID不能为空',
+      };
+    }
 
     // 验证必填字段
     if (!title && !content) {
@@ -22,6 +29,7 @@ const createDiary = async (data) => {
 
     // 创建日记记录
     const result = await db.collection('diaries').add({
+      userId,
       title: title || '',
       content: content || '',
       date: date || new Date().toISOString(), // 保存用户选择的时间
@@ -142,11 +150,20 @@ const getDiaryDetail = async (data) => {
 // 获取日记列表
 const getDiaryList = async (data) => {
   try {
-    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword } = data;
+    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId } = data;
     const _ = db.command;
 
+    if (!userId) {
+      return {
+        success: false,
+        message: '用户ID不能为空',
+      };
+    }
+
     // 构建查询条件
-    let query = {};
+    let query = {
+      userId,
+    };
 
     if (scenario) {
       query.scenario = scenario;

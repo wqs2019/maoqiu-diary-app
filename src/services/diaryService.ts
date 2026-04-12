@@ -13,6 +13,7 @@ export interface DiaryListParams {
   endDate?: string;
   tags?: TagType[];
   keyword?: string;
+  userId?: string;
 }
 
 /**
@@ -44,11 +45,36 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
         endDate: params.endDate,
         tags: params.tags,
         keyword: params.keyword,
+        userId: params.userId,
       },
     }
   );
+
+  // CloudService.callFunction 会把 result.data 也就是 { success: true, data: { list, total, page, pageSize } }
+  // 或者 { code: 0, message: '', data: { success: true, data: ... } } 返回给我们
   const cloudFunctionResult = result.data;
-  return cloudFunctionResult.data;
+
+  // 检查 cloudFunctionResult 是否已经是期望的数据格式（或者包裹了一层 data）
+  if (
+    cloudFunctionResult &&
+    cloudFunctionResult.data &&
+    Array.isArray((cloudFunctionResult.data as any).list)
+  ) {
+    return cloudFunctionResult.data as unknown as DiaryListResponse;
+  }
+
+  // 处理可能嵌套一层的场景
+  if (cloudFunctionResult && Array.isArray((cloudFunctionResult as any).list)) {
+    return cloudFunctionResult as unknown as DiaryListResponse;
+  }
+
+  // 默认返回空结构以防 undefined
+  return {
+    list: [],
+    total: 0,
+    page: params.page || 1,
+    pageSize: params.pageSize || 10,
+  };
 };
 
 /**

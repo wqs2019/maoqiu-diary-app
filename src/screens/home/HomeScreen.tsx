@@ -54,6 +54,9 @@ const HomeScreen: React.FC = () => {
   };
 
   // 从云端获取日记列表
+  const user = useAuthStore((state) => state.user);
+  const userId = user?._id;
+
   const {
     data: diaryList,
     isLoading,
@@ -64,6 +67,7 @@ const HomeScreen: React.FC = () => {
     pageSize: 20,
     scenario: undefined,
     keyword: debouncedSearchQuery || undefined,
+    userId: userId,
   });
 
   // 在首页挂载时获取最新的用户信息

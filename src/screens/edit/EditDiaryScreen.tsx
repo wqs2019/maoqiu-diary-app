@@ -22,6 +22,7 @@ import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useCreateDiary, useUpdateDiary, useDiaryDetail } from '../../hooks/useDiaryQuery';
 import { useQueryClient } from '../../hooks/useQuery';
+import { useAuthStore } from '../../store/authStore';
 import { ScenarioType, MoodType, WeatherType, MediaResource } from '../../types';
 
 type EditDiaryRouteProp = RouteProp<
@@ -68,6 +69,7 @@ const EditDiaryScreen: React.FC = () => {
   // 使用 useCreateDiary/useUpdateDiary 处理日记保存
   const createDiaryMutation = useCreateDiary();
   const updateDiaryMutation = useUpdateDiary();
+  const user = useAuthStore((state) => state.user);
 
   const handleSave = () => {
     if (!title.trim() && !content.trim()) {
@@ -75,7 +77,13 @@ const EditDiaryScreen: React.FC = () => {
       return;
     }
 
+    if (!user?._id) {
+      Alert.alert('提示', '用户未登录，请重新登录');
+      return;
+    }
+
     const payload = {
+      userId: user._id,
       title: title.trim(),
       content: content.trim(),
       date: date.toISOString(), // 保存用户选择的日期

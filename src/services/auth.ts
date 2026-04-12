@@ -8,7 +8,7 @@ const TOKEN_KEY = 'user_token';
 const USER_INFO_KEY = 'user_info';
 
 export interface UserInfo {
-  id: string;
+  _id: string;
   phone: string;
   nickname?: string;
   avatar?: string;
