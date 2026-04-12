@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import React, { useRef } from 'react';
 import {
   View,
@@ -53,6 +54,23 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       // 上传到云端（传递 mimeType 用于智能压缩）
       const uploadResult = await imageService.uploadImage(item.uri, cloudPath, item.mimeType);
 
+      let thumbnailUrl = item.thumbnail;
+      if (item.type === 'video' && item.thumbnail && item.thumbnail.startsWith('file://')) {
+        try {
+          const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
+          const thumbUploadResult = await imageService.uploadImage(
+            item.thumbnail,
+            thumbPathResult.data.cloudPath,
+            'image/jpeg'
+          );
+          if (thumbUploadResult.success && thumbUploadResult.data) {
+            thumbnailUrl = thumbUploadResult.data.url;
+          }
+        } catch (e) {
+          console.warn('Failed to upload video thumbnail on retry:', e);
+        }
+      }
+
       if (uploadResult.success && uploadResult.data) {
         console.log(`[MediaUpload] Retry success: ${uploadResult.data.url}`);
         // 更新成功的媒体
@@ -60,6 +78,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         successMedia[index] = {
           ...item,
           uri: uploadResult.data.url,
+          thumbnail: thumbnailUrl,
           uploadStatus: 'success',
           uploadError: undefined,
         };
@@ -110,10 +129,29 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
 
         const uploadResult = await imageService.uploadImage(item.uri, cloudPath, item.mimeType);
 
+        let thumbnailUrl = item.thumbnail;
+        // 如果是视频且有本地封面图，也需要上传封面图
+        if (item.type === 'video' && item.thumbnail && item.thumbnail.startsWith('file://')) {
+          try {
+            const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
+            const thumbUploadResult = await imageService.uploadImage(
+              item.thumbnail,
+              thumbPathResult.data.cloudPath,
+              'image/jpeg'
+            );
+            if (thumbUploadResult.success && thumbUploadResult.data) {
+              thumbnailUrl = thumbUploadResult.data.url;
+            }
+          } catch (e) {
+            console.warn('Failed to upload video thumbnail:', e);
+          }
+        }
+
         if (uploadResult.success && uploadResult.data) {
           return {
             ...item,
             uri: uploadResult.data.url,
+            thumbnail: thumbnailUrl,
             uploadStatus: 'success',
             uploadError: undefined,
           };
@@ -234,12 +272,25 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
 
     if (!result.canceled && result.assets && result.assets[0]) {
       const asset = result.assets[0];
+
+      let thumbnailUri = undefined;
+      try {
+        const { uri } = await VideoThumbnails.getThumbnailAsync(asset.uri, {
+          time: 1000,
+        });
+        thumbnailUri = uri;
+      } catch (e) {
+        console.warn('Failed to generate video thumbnail:', e);
+      }
+
       const localMedia: MediaResource = {
         type: 'video',
         uri: asset.uri,
+        thumbnail: thumbnailUri,
         duration: asset.duration ?? undefined,
         size: asset.fileSize ?? undefined,
         mimeType: asset.mimeType ?? undefined,
+        uploadStatus: 'loading',
       };
 
       // 先添加本地媒体
@@ -295,7 +346,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         ) : item.type === 'video' ? (
           <View style={styles.videoThumbnail}>
             <Image
-              source={{ uri: item.uri }}
+              source={{ uri: item.thumbnail || item.uri }}
               style={[
                 styles.mediaThumbnail,
                 isFailed && styles.mediaThumbnailFailed,
@@ -353,10 +404,12 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     );
   };
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const formatDuration = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = Math.floor(totalSeconds % 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
