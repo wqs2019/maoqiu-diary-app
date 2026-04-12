@@ -8,9 +8,14 @@ import { TimelineItem } from '../../types';
 interface TimelineViewProps {
   items: TimelineItem[];
   onItemPress?: (item: TimelineItem) => void;
+  onYearLayouts?: (year: string, y: number) => void;
 }
 
-export const TimelineView: React.FC<TimelineViewProps> = ({ items, onItemPress }) => {
+export const TimelineView: React.FC<TimelineViewProps> = ({
+  items,
+  onItemPress,
+  onYearLayouts,
+}) => {
   const groupedItems = items.reduce(
     (acc, item) => {
       const date = new Date(item.date);
@@ -20,47 +25,68 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ items, onItemPress }
         acc[dateKey] = {
           date: dateKey,
           displayDate: formatDate(date),
+          year: date.getFullYear().toString(),
           items: [],
         };
       }
       acc[dateKey].items.push(item);
       return acc;
     },
-    {} as Record<string, { date: string; displayDate: string; items: TimelineItem[] }>
+    {} as Record<string, { date: string; displayDate: string; year: string; items: TimelineItem[] }>
   );
 
   const sortedDates = Object.keys(groupedItems).sort((a, b) => b.localeCompare(a));
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {sortedDates.map((dateKey, index) => (
-        <View key={dateKey} style={styles.dateGroup}>
-          <View style={styles.dateHeader}>
-            <Text style={styles.dateText}>{groupedItems[dateKey].displayDate}</Text>
-            <View style={styles.dateLine} />
-          </View>
+  // Track the first appearance of each year
+  const firstAppearanceOfYears = new Set<string>();
 
-          {groupedItems[dateKey].items.map((item) => (
-            <View key={item._id} style={styles.timelineItem}>
-              <View style={styles.timelineDot} />
-              <View style={styles.timelineContent}>
-                <HandDrawnCard style="soft" padding="medium" onPress={() => onItemPress?.(item)}>
-                  <View style={styles.itemHeader}>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                    {item.scenario && (
-                      <Text style={styles.scenarioIcon}>{getScenarioIcon(item.scenario)}</Text>
-                    )}
-                  </View>
-                  <Text style={styles.itemDescription} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                  {item.location && <Text style={styles.itemLocation}>📍 {item.location}</Text>}
-                </HandDrawnCard>
-              </View>
+  return (
+    <View style={styles.container}>
+      {sortedDates.map((dateKey, index) => {
+        const itemData = groupedItems[dateKey];
+        const isFirstOfYear = !firstAppearanceOfYears.has(itemData.year);
+        if (isFirstOfYear) {
+          firstAppearanceOfYears.add(itemData.year);
+        }
+
+        return (
+          <View
+            key={dateKey}
+            style={styles.dateGroup}
+            onLayout={(event) => {
+              if (isFirstOfYear && onYearLayouts) {
+                const layout = event.nativeEvent.layout;
+                onYearLayouts(itemData.year, layout.y);
+              }
+            }}
+          >
+            <View style={styles.dateHeader}>
+              <Text style={styles.dateText}>{groupedItems[dateKey].displayDate}</Text>
+              <View style={styles.dateLine} />
             </View>
-          ))}
-        </View>
-      ))}
+
+            {groupedItems[dateKey].items.map((item) => (
+              <View key={item._id} style={styles.timelineItem}>
+                <View style={styles.timelineDot} />
+                <View style={styles.timelineContent}>
+                  <HandDrawnCard style="soft" padding="medium" onPress={() => onItemPress?.(item)}>
+                    <View style={styles.itemHeader}>
+                      <Text style={styles.itemTitle}>{item.title}</Text>
+                      {item.scenario && (
+                        <Text style={styles.scenarioIcon}>{getScenarioIcon(item.scenario)}</Text>
+                      )}
+                    </View>
+                    <Text style={styles.itemDescription} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                    {item.location && <Text style={styles.itemLocation}>📍 {item.location}</Text>}
+                  </HandDrawnCard>
+                </View>
+              </View>
+            ))}
+          </View>
+        );
+      })}
 
       {items.length === 0 && (
         <View style={styles.emptyState}>
@@ -69,7 +95,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ items, onItemPress }
           <Text style={styles.emptySubText}>开始记录你的生活吧</Text>
         </View>
       )}
-    </ScrollView>
+    </View>
   );
 };
 
@@ -114,6 +140,7 @@ const styles = StyleSheet.create({
   dateGroup: {
     marginBottom: 24,
     paddingHorizontal: 16,
+    paddingRight: 40, // 留出右侧年份选择器的空间
   },
   dateHeader: {
     flexDirection: 'row',

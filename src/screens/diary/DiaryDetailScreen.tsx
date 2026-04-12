@@ -94,7 +94,7 @@ const DiaryDetailScreen: React.FC = () => {
   const scenario = SCENARIO_TEMPLATES[diary.scenario];
   const mood = MOOD_CONFIG[diary.mood];
   const weather = WEATHER_CONFIG[diary.weather];
-  const date = new Date(diary.createdAt);
+  const date = new Date(diary.date || diary.createdAt);
   const formattedDate = date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',

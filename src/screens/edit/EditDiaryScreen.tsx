@@ -60,6 +60,7 @@ const EditDiaryScreen: React.FC = () => {
       {
         title: title.trim(),
         content: content.trim(),
+        date: date.toISOString(), // 保存用户选择的日期
         scenario,
         mood: mood || 'normal',
         weather: weather || 'sunny',

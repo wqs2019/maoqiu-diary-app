@@ -30,6 +30,13 @@ const HomeScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [yearLayouts, setYearLayouts] = useState<Record<string, number>>({});
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [activeYear, setActiveYear] = useState<string | null>(null);
+
+  // 记录是否是代码触发的滚动，避免 onScroll 冲突
+  const isProgrammaticScroll = useRef(false);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // 简单的防抖处理，避免每次输入都触发网络请求
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -132,7 +139,7 @@ const HomeScreen: React.FC = () => {
       type: 'diary',
       title: diary.title || '无标题',
       description: diary.content || '',
-      date: diary.createdAt || new Date().toISOString(),
+      date: diary.date || diary.createdAt || new Date().toISOString(),
       scenario: diary.scenario,
       mood: diary.mood,
       location: diary.location,
@@ -141,6 +148,35 @@ const HomeScreen: React.FC = () => {
 
   // 从云端获取的时间轴数据
   const timelineItems: TimelineItem[] = diaryList?.list?.map(convertDiaryToTimelineItem) || [];
+
+  // 获取所有唯一且降序排列的年份
+  const availableYears = Array.from(
+    new Set(timelineItems.map((item) => new Date(item.date).getFullYear().toString()))
+  ).sort((a, b) => b.localeCompare(a));
+
+  // 如果没有 activeYear 且有数据，默认选中最新的年份
+  if (availableYears.length > 0 && activeYear === null) {
+    setActiveYear(availableYears[0]);
+  }
+
+  const handleYearLayout = (year: string, y: number) => {
+    setYearLayouts((prev) => ({ ...prev, [year]: y }));
+  };
+
+  const handleYearPress = (year: string) => {
+    setActiveYear(year);
+    const targetY = yearLayouts[year];
+    if (targetY !== undefined && scrollViewRef.current) {
+      isProgrammaticScroll.current = true;
+      scrollViewRef.current.scrollTo({ y: targetY, animated: true });
+
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+      // 动画大约需要 300-500ms，之后释放锁定
+      scrollTimeout.current = setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 500);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -189,6 +225,7 @@ const HomeScreen: React.FC = () => {
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -199,6 +236,31 @@ const HomeScreen: React.FC = () => {
           />
         }
         showsVerticalScrollIndicator={false}
+        onScroll={(e) => {
+          if (isProgrammaticScroll.current) return;
+
+          const offsetY = e.nativeEvent.contentOffset.y;
+          const layoutHeight = e.nativeEvent.layoutMeasurement.height;
+          const contentHeight = e.nativeEvent.contentSize.height;
+
+          let currentYear = availableYears[0];
+
+          // 如果滚动到了底部，直接选中最后一个年份
+          if (offsetY + layoutHeight >= contentHeight - 20) {
+            currentYear = availableYears[availableYears.length - 1];
+          } else {
+            for (const year of availableYears) {
+              if (yearLayouts[year] !== undefined && offsetY >= yearLayouts[year] - 50) {
+                currentYear = year;
+              }
+            }
+          }
+
+          if (currentYear !== activeYear) {
+            setActiveYear(currentYear);
+          }
+        }}
+        scrollEventThrottle={16}
       >
         {/* Content Area */}
         {isLoading ? (
@@ -216,10 +278,32 @@ const HomeScreen: React.FC = () => {
           </View>
         ) : (
           <View style={styles.timelineWrapper}>
-            <TimelineView items={timelineItems} onItemPress={handleTimelineItemPress} />
+            <TimelineView
+              items={timelineItems}
+              onItemPress={handleTimelineItemPress}
+              onYearLayouts={handleYearLayout}
+            />
           </View>
         )}
       </ScrollView>
+
+      {/* Year Selector / Timeline Scrubber on the Right */}
+      {availableYears.length > 0 && (
+        <View style={styles.yearSelectorContainer}>
+          {availableYears.map((year) => (
+            <TouchableOpacity
+              key={year}
+              style={styles.yearItem}
+              onPress={() => handleYearPress(year)}
+            >
+              <Text style={[styles.yearText, activeYear === year && styles.activeYearText]}>
+                {year}
+              </Text>
+              {activeYear === year && <View style={styles.yearDot} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* Floating Action Button */}
       <Animated.View
@@ -411,6 +495,36 @@ const styles = StyleSheet.create({
   timelineWrapper: {
     flex: 1,
     zIndex: 1,
+  },
+  yearSelectorContainer: {
+    position: 'absolute',
+    right: 8,
+    top: '30%', // 上移一些避免与按钮重叠
+    zIndex: 2,
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  yearItem: {
+    alignItems: 'center',
+    marginVertical: 12, // 增加垂直间距
+  },
+  yearText: {
+    fontSize: 12,
+    color: '#CCC', // 默认淡灰色
+    fontWeight: '500',
+  },
+  activeYearText: {
+    fontSize: 14,
+    color: HEALING_COLORS.pink[400], // 匹配粉色主题
+    fontWeight: 'bold',
+  },
+  yearDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: HEALING_COLORS.pink[500],
+    marginTop: 4,
   },
   fabContainer: {
     position: 'absolute',

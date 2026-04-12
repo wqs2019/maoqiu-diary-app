@@ -82,6 +82,7 @@ export interface Diary {
   _id: string;
   title: string;
   content: string;
+  date: string; // 用户选择的日记发生时间
   scenario: ScenarioType;
   mood: MoodType;
   weather: WeatherType;

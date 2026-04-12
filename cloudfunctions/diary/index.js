@@ -10,7 +10,7 @@ const db = app.database();
 // 创建日记
 const createDiary = async (data) => {
   try {
-    const { title, content, scenario, mood, weather, location, tags, images } = data;
+    const { title, content, date, scenario, mood, weather, location, tags, images } = data;
 
     // 验证必填字段
     if (!title && !content) {
@@ -24,6 +24,7 @@ const createDiary = async (data) => {
     const result = await db.collection('diaries').add({
       title: title || '',
       content: content || '',
+      date: date || new Date().toISOString(), // 保存用户选择的时间
       scenario: scenario || 'daily',
       mood: mood || 'normal',
       weather: weather || 'sunny',
@@ -43,6 +44,7 @@ const createDiary = async (data) => {
         _id: result._id,
         title,
         content,
+        date: date || new Date().toISOString(),
         scenario,
         mood,
         weather,
@@ -155,12 +157,12 @@ const getDiaryList = async (data) => {
     }
 
     if (startDate || endDate) {
-      query.createdAt = {};
+      query.date = {};
       if (startDate) {
-        query.createdAt.$gte = new Date(startDate);
+        query.date.$gte = startDate;
       }
       if (endDate) {
-        query.createdAt.$lte = new Date(endDate);
+        query.date.$lte = endDate;
       }
     }
 
@@ -181,7 +183,7 @@ const getDiaryList = async (data) => {
     const result = await db
       .collection('diaries')
       .where(finalQuery)
-      .orderBy('createdAt', 'desc')
+      .orderBy('date', 'desc')
       .skip(skip)
       .limit(pageSize)
       .get();
