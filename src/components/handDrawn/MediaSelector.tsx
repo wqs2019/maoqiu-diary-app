@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as VideoThumbnails from 'expo-video-thumbnails';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { imageService } from '../../services/imageService';
 import { MediaResource } from '../../types';
+import { MediaPreviewer } from './MediaPreviewer';
 
 interface MediaSelectorProps {
   media: MediaResource[];
@@ -28,6 +29,8 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   maxCount = 9,
 }) => {
   const isUploading = useRef(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   // 重试上传单个媒体
   const retryUpload = async (index: number) => {
@@ -326,7 +329,14 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     const isFailed = item.uploadStatus === 'fail';
 
     return (
-      <View
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => {
+          if (!isUploading && !isFailed) {
+            setPreviewIndex(index);
+            setPreviewVisible(true);
+          }
+        }}
         key={`${item.type}-${index}`}
         style={[
           styles.mediaItem,
@@ -400,7 +410,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
             <Text style={styles.errorText}>上传失败</Text>
           </View>
         )}
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -438,6 +448,18 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           </TouchableOpacity>
         )}
       </View>
+
+      <MediaPreviewer
+        visible={previewVisible}
+        media={media.filter((m) => m.uploadStatus !== 'loading' && m.uploadStatus !== 'fail')}
+        initialIndex={Math.max(
+          0,
+          media
+            .filter((m) => m.uploadStatus !== 'loading' && m.uploadStatus !== 'fail')
+            .findIndex((m) => m.uri === media[previewIndex]?.uri)
+        )}
+        onClose={() => setPreviewVisible(false)}
+      />
     </View>
   );
 };

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useDiaryDetail, useDeleteDiary } from '../../hooks/useDiaryQuery';
 import { MoodType, WeatherType } from '../../types';
+import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 
 type DiaryDetailRouteProp = RouteProp<{ params: { _id: string } }, 'params'>;
 
@@ -27,6 +28,9 @@ const DiaryDetailScreen: React.FC = () => {
 
   const { data: diary, isLoading, error } = useDiaryDetail(_id);
   const deleteMutation = useDeleteDiary();
+
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   const handleShare = async () => {
     if (!diary) return;
@@ -155,18 +159,47 @@ const DiaryDetailScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>📷 精彩瞬间</Text>
           <View style={styles.mediaGrid}>
             {diary.media.map((media, index) => (
-              <View
+              <TouchableOpacity
                 key={index}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setPreviewIndex(index);
+                  setPreviewVisible(true);
+                }}
                 style={[
                   styles.mediaItem,
                   { width: `${Math.floor(100 / Math.min(diary.media?.length || 0, 3)) - 4}%` },
                 ]}
               >
-                <Image source={{ uri: media.uri }} style={styles.mediaImage} resizeMode="cover" />
-              </View>
+                <Image
+                  source={{ uri: media.thumbnail || media.uri }}
+                  style={styles.mediaImage}
+                  resizeMode="cover"
+                />
+                {media.type === 'video' && (
+                  <View style={styles.mediaTypeOverlay}>
+                    <Ionicons name="play-circle" size={32} color="rgba(255,255,255,0.8)" />
+                  </View>
+                )}
+                {media.type === 'livePhoto' && (
+                  <View style={styles.livePhotoBadge}>
+                    <Text style={styles.livePhotoText}>LIVE</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             ))}
           </View>
         </View>
+      )}
+
+      {/* 媒体预览 */}
+      {diary.media && diary.media.length > 0 && (
+        <MediaPreviewer
+          visible={previewVisible}
+          media={diary.media}
+          initialIndex={previewIndex}
+          onClose={() => setPreviewVisible(false)}
+        />
       )}
 
       {/* 操作按钮 */}
@@ -319,6 +352,30 @@ const styles = StyleSheet.create({
   mediaImage: {
     width: '100%',
     height: '100%',
+  },
+  mediaTypeOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  livePhotoBadge: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  livePhotoText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   ratingSection: {
     paddingHorizontal: 20,
