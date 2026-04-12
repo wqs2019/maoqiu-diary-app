@@ -56,10 +56,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const token = await authService.getToken();
       if (token) {
-        const user = await authService.fetchUserInfoFromServer();
-        if (user) {
-          set({ isLoggedIn: true, user, loading: false });
+        // 先尝试获取本地缓存，让用户能快速进入首页
+        const localUser = await authService.getUserInfo();
+        if (localUser) {
+          set({ isLoggedIn: true, user: localUser, loading: false });
+          // 异步刷新云端信息
+          authService
+            .fetchUserInfoFromServer()
+            .then((user) => {
+              if (user) set({ user });
+            })
+            .catch((e) => {
+              console.error('Background fetch user info failed:', e);
+            });
           return true;
+        }
+
+        try {
+          const user = await authService.fetchUserInfoFromServer();
+          if (user) {
+            set({ isLoggedIn: true, user, loading: false });
+            return true;
+          }
+        } catch (fetchError) {
+          console.error('Fetch error during auth check:', fetchError);
+          // 网络错误时，如果前面没有本地 user，依然保持未登录态比较安全
+          // 或者可以根据产品需求放行
         }
       }
       set({ isLoggedIn: false, user: null, loading: false });
@@ -77,6 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error) {
       console.error('Failed to fetch user info', error);
+      // 网络错误等异常时不自动退出登录，以提升用户体验
     }
   },
 }));

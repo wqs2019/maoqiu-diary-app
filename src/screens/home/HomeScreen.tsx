@@ -14,11 +14,14 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TimelineView } from '../../components/handDrawn/TimelineView';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
+import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 import { ScenarioType, TimelineItem, Diary } from '../../types';
@@ -35,6 +38,10 @@ const HomeScreen: React.FC = () => {
   const [yearLayouts, setYearLayouts] = useState<Record<string, number>>({});
   const scrollViewRef = useRef<ScrollView>(null);
   const [activeYear, setActiveYear] = useState<string | null>(null);
+
+  // 场景筛选状态
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioType | undefined>(undefined);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
 
   // 记录是否是代码触发的滚动，避免 onScroll 冲突
   const isProgrammaticScroll = useRef(false);
@@ -65,7 +72,7 @@ const HomeScreen: React.FC = () => {
   } = useDiaryList({
     page: 1,
     pageSize: 20,
-    scenario: undefined,
+    scenario: selectedScenario,
     keyword: debouncedSearchQuery || undefined,
     userId: userId,
   });
@@ -230,11 +237,88 @@ const HomeScreen: React.FC = () => {
               clearButtonMode="while-editing"
             />
           </View>
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="funnel-outline" size={20} color="#333" />
+          <TouchableOpacity
+            style={[styles.filterButton, selectedScenario && styles.filterButtonActive]}
+            onPress={() => setIsFilterVisible(true)}
+          >
+            {selectedScenario ? (
+              <Text style={{ fontSize: 20 }}>{SCENARIO_TEMPLATES[selectedScenario].icon}</Text>
+            ) : (
+              <Ionicons name="funnel-outline" size={20} color="#333" />
+            )}
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* 场景筛选 Modal */}
+      <Modal
+        visible={isFilterVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsFilterVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setIsFilterVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>筛选场景</Text>
+                  <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
+                    <Ionicons name="close" size={24} color="#666" />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.filterGrid}>
+                  <TouchableOpacity
+                    style={[styles.filterChip, !selectedScenario && styles.filterChipActive]}
+                    onPress={() => {
+                      setSelectedScenario(undefined);
+                      setIsFilterVisible(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        !selectedScenario && styles.filterChipTextActive,
+                      ]}
+                    >
+                      全部
+                    </Text>
+                  </TouchableOpacity>
+
+                  {(Object.keys(SCENARIO_TEMPLATES) as ScenarioType[]).map((type) => {
+                    const template = SCENARIO_TEMPLATES[type];
+                    const isActive = selectedScenario === type;
+                    return (
+                      <TouchableOpacity
+                        key={type}
+                        style={[
+                          styles.filterChip,
+                          isActive && {
+                            backgroundColor: template.color,
+                            borderColor: template.color,
+                          },
+                        ]}
+                        onPress={() => {
+                          setSelectedScenario(isActive ? undefined : type);
+                          setIsFilterVisible(false);
+                        }}
+                      >
+                        <Text style={styles.filterChipEmoji}>{template.icon}</Text>
+                        <Text
+                          style={[styles.filterChipText, isActive && styles.filterChipTextActive]}
+                        >
+                          {template.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       <ScrollView
         ref={scrollViewRef}
@@ -453,11 +537,16 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: '#333',
+    borderColor: '#E5E5EA',
     backgroundColor: '#FFF',
     justifyContent: 'center',
     paddingHorizontal: 20,
     marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchInput: {
     fontSize: 16,
@@ -468,10 +557,75 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: '#333',
+    borderColor: '#E5E5EA',
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  filterButtonActive: {
+    backgroundColor: HEALING_COLORS.pink[400],
+    borderColor: HEALING_COLORS.pink[400],
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingTop: 20,
+    minHeight: 300,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  filterGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  filterChipActive: {
+    backgroundColor: HEALING_COLORS.pink[400],
+    borderColor: HEALING_COLORS.pink[400],
+  },
+  filterChipEmoji: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  filterChipText: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
   },
   centerContainer: {
     flex: 1,

@@ -126,10 +126,13 @@ export class AuthService {
         await this.saveUserInfo(user);
         return user;
       }
+      // 如果明确是 token 错误或过期，可抛出特定异常，这里简化为返回 null
       return null;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Fetch user info from server error:', error);
-      return null;
+      // 如果是网络错误，我们不应该返回 null 导致外部认为未登录而强制登出
+      // 这里可以抛出错误让外层处理，或者根据需要返回本地缓存的用户信息
+      throw error;
     }
   }
 
