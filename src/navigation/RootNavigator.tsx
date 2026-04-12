@@ -105,7 +105,7 @@ export const RootNavigator = () => {
                 backgroundColor: COLORS.surface,
               },
               headerTintColor: COLORS.text,
-              headerBackTitle: '', // 隐藏返回按钮的文字
+              headerBackTitle: '返回',
             }}
           />
           <RootStack.Screen
@@ -118,7 +118,7 @@ export const RootNavigator = () => {
                 backgroundColor: COLORS.surface,
               },
               headerTintColor: COLORS.text,
-              headerBackTitle: '', // 隐藏返回按钮的文字
+              headerBackTitle: '返回',
             }}
           />
         </>

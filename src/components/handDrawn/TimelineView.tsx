@@ -19,13 +19,15 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   const groupedItems = items.reduce(
     (acc, item) => {
       const date = new Date(item.date);
-      const dateKey = date.toISOString().split('T')[0];
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const dateKey = `${year}-${String(month).padStart(2, '0')}`; // YYYY-MM
 
       if (!acc[dateKey]) {
         acc[dateKey] = {
           date: dateKey,
-          displayDate: formatDate(date),
-          year: date.getFullYear().toString(),
+          displayDate: `${year}年${month}月`,
+          year: year.toString(),
           items: [],
         };
       }
@@ -71,7 +73,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                 <View style={styles.timelineContent}>
                   <HandDrawnCard style="soft" padding="medium" onPress={() => onItemPress?.(item)}>
                     <View style={styles.itemHeader}>
-                      <Text style={styles.itemTitle}>{item.title}</Text>
+                      <View style={styles.titleContainer}>
+                        <Text style={styles.itemDate}>{formatCardDate(item.date)}</Text>
+                        <Text style={styles.itemTitle} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                      </View>
                       {item.scenario && (
                         <Text style={styles.scenarioIcon}>{getScenarioIcon(item.scenario)}</Text>
                       )}
@@ -99,7 +106,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   );
 };
 
-const formatDate = (date: Date): string => {
+const formatCardDate = (dateString: string): string => {
+  const date = new Date(dateString);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -111,13 +119,12 @@ const formatDate = (date: Date): string => {
     return '昨天';
   }
 
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  };
-  return date.toLocaleDateString('zh-CN', options);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  const weekDay = days[date.getDay()];
+
+  return `${month}月${day}日 ${weekDay}`;
 };
 
 const getScenarioIcon = (scenario: string): string => {
@@ -182,6 +189,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
+  },
+  titleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: HEALING_COLORS.pink[400],
+    marginRight: 8,
   },
   itemTitle: {
     fontSize: 16,
