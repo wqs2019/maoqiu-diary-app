@@ -86,7 +86,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     <Text style={styles.itemDescription} numberOfLines={2}>
                       {item.description}
                     </Text>
-                    {item.location && <Text style={styles.itemLocation}>📍 {item.location}</Text>}
+                    <View style={styles.footerContainer}>
+                      {item.location && <Text style={styles.itemLocation}>📍 {item.location}</Text>}
+                      <View style={styles.iconContainer}>
+                        {item.mood && (
+                          <Text style={styles.statusIcon}>{getMoodIcon(item.mood)}</Text>
+                        )}
+                        {item.weather && (
+                          <Text style={styles.statusIcon}>{getWeatherIcon(item.weather)}</Text>
+                        )}
+                      </View>
+                    </View>
                   </HandDrawnCard>
                 </View>
               </View>
@@ -137,6 +147,31 @@ const getScenarioIcon = (scenario: string): string => {
     special: '🎉',
   };
   return icons[scenario] || '📝';
+};
+
+const getMoodIcon = (mood: string): string => {
+  const icons: Record<string, string> = {
+    happy: '😊',
+    sad: '😢',
+    normal: '😐',
+    excited: '🤩',
+    angry: '😠',
+    relaxed: '😌',
+    touched: '🥺',
+  };
+  return icons[mood] || '';
+};
+
+const getWeatherIcon = (weather: string): string => {
+  const icons: Record<string, string> = {
+    sunny: '☀️',
+    cloudy: '☁️',
+    rainy: '🌧️',
+    snowy: '❄️',
+    windy: '💨',
+    foggy: '🌫️',
+  };
+  return icons[weather] || '';
 };
 
 const styles = StyleSheet.create({
@@ -208,8 +243,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scenarioIcon: {
+    fontSize: 24,
+    marginLeft: 4,
+  },
+  statusIcon: {
     fontSize: 20,
-    marginLeft: 8,
+    marginLeft: 4,
+  },
+  iconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  footerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
   },
   itemDescription: {
     fontSize: 14,

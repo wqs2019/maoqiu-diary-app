@@ -136,6 +136,7 @@ export interface TimelineItem {
   images?: string[];
   scenario?: ScenarioType;
   mood?: MoodType;
+  weather?: WeatherType;
   location?: string;
 }
 

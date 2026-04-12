@@ -153,6 +153,7 @@ const HomeScreen: React.FC = () => {
       date: diary.date || diary.createdAt || new Date().toISOString(),
       scenario: diary.scenario,
       mood: diary.mood,
+      weather: diary.weather,
       location: diary.location,
     };
   };
