@@ -82,6 +82,9 @@ const EditDiaryScreen: React.FC = () => {
       return;
     }
 
+    // 过滤掉仅在本地使用的状态字段
+    const cleanMedia = media.map(({ uploadStatus, uploadError, ...rest }) => rest);
+
     const payload = {
       userId: user._id,
       title: title.trim(),
@@ -91,7 +94,7 @@ const EditDiaryScreen: React.FC = () => {
       mood: mood || 'normal',
       weather: weather || 'sunny',
       location: location.trim(),
-      media: media.length > 0 ? media : undefined,
+      media: cleanMedia.length > 0 ? cleanMedia : undefined,
     };
 
     if (isEditMode) {

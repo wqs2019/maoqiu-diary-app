@@ -1,40 +1,59 @@
-import adapter from '@cloudbase/adapter-rn';
-import cloudbase from '@cloudbase/js-sdk';
+// 修复 COS SDK 在 React Native 下由于 navigator.userAgent 缺失导致的报错
+if (typeof global !== 'undefined') {
+  if (!global.navigator) {
+    (global as any).navigator = {};
+  }
+  if (!global.navigator.userAgent) {
+    (global as any).navigator.userAgent = 'ReactNative';
+  }
+}
 
-// 注册 React Native 适配器，以支持在 RN 环境中使用云开发相关的 API（如上传文件时的 filePath 支持 uri）
-cloudbase.useAdapters(adapter);
+const COS = require('cos-js-sdk-v5');
+import { CloudService } from './tcb';
 
 class ImageService {
-  private readonly app: any;
-  private isAuth: boolean = false;
+  private cos: any = null;
 
-  constructor() {
-    // 初始化 cloudbase
-    this.app = cloudbase.init({
-      env: 'maoqiu-diary-app-2fpzvwp2e01dbaf',
-      region: 'ap-shanghai',
-    });
+  constructor() {}
+
+  // 获取临时密钥
+  private async getTempCredentials() {
+    try {
+      const response = await CloudService.callFunction('getCosTempKey', {});
+
+      if (response.code !== 0) {
+        throw new Error(response.message || '获取密钥失败');
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('获取 COS 密钥失败:', error);
+      throw error;
+    }
   }
 
-  private async ensureAuth() {
-    if (this.isAuth) return this.app.auth();
+  // 初始化 COS
+  private async initCOS() {
+    if (this.cos) return this.cos;
 
-    try {
-      const auth = this.app.auth({ persistence: 'local' });
-      // 关键：如果没登录，强制匿名登录
-      if (auth.signInAnonymously) {
-        await auth.signInAnonymously();
-        console.log('[CloudService] Anonymous login (signInAnonymously)');
-        this.isAuth = true;
-      } else {
-        console.warn('auth.anonymousAuthProvider and auth.signInAnonymously are missing.');
-        throw new Error('Cannot find anonymous login method on auth object');
-      }
-      return auth;
-    } catch (err) {
-      console.error('登录失败：', err);
-      return false;
-    }
+    this.cos = new COS({
+      getAuthorization: async (options: any, callback: any) => {
+        try {
+          const credentials = await this.getTempCredentials();
+          callback({
+            TmpSecretId: credentials.tmpSecretId,
+            TmpSecretKey: credentials.tmpSecretKey,
+            SecurityToken: credentials.sessionToken,
+            StartTime: credentials.startTime,
+            ExpiredTime: credentials.expiredTime,
+          });
+        } catch (error) {
+          console.error('获取签名失败:', error);
+        }
+      },
+    });
+
+    return this.cos;
   }
 
   public async generateCloudPath(extension: string, folder: string = 'diary') {
@@ -47,46 +66,52 @@ class ImageService {
   public async uploadImage(
     uri: string,
     cloudPath: string,
-    mimeType?: string
-  ): Promise<{ success: boolean; data?: { fileID: string; tempURL: string }; message?: string }> {
+    mimeType: string = 'image/jpeg'
+  ): Promise<{ success: boolean; data?: { url: string }; message?: string }> {
     try {
-      await this.ensureAuth();
+      const cos = await this.initCOS();
 
-      console.log('Uploading to TCB:', cloudPath, uri);
+      // 读取文件为 blob
+      const response = await fetch(uri);
+      const blob = await response.blob();
 
-      // 使用 RN 适配器后，直接将本地 uri 传给 filePath
-      const uploadResult = await this.app.uploadFile({
-        cloudPath,
-        filePath: uri,
+      return new Promise((resolve, reject) => {
+        // 使用真实的 Bucket 名称和 Region
+        cos.putObject(
+          {
+            Bucket: '6d61-maoqiu-diary-app-2fpzvwp2e01dbaf-1417164439',
+            Region: 'ap-shanghai',
+            Key: cloudPath,
+            Body: blob,
+            ContentType: mimeType,
+          },
+          (err: any, data: any) => {
+            if (err) {
+              console.error('COS 上传失败:', err);
+              resolve({
+                success: false,
+                message: err.message || '上传失败',
+              });
+            } else {
+              console.log('COS 上传成功:', data);
+              // 使用 TCB 的默认访问域名来展示图片
+              const tcbDomain = '6d61-maoqiu-diary-app-2fpzvwp2e01dbaf-1417164439.tcb.qcloud.la';
+              const tempURL = `https://${tcbDomain}/${cloudPath}`;
+              resolve({
+                success: true,
+                data: {
+                  url: tempURL,
+                },
+              });
+            }
+          }
+        );
       });
-
-      console.log('uploadResult：', uploadResult);
-
-      const fileID = uploadResult.fileID;
-
-      // 获取上传后的临时访问链接
-      const tempUrlResult = await this.app.getTempFileURL({
-        fileList: [fileID],
-      });
-
-      if (!tempUrlResult.fileList || tempUrlResult.fileList.length === 0) {
-        throw new Error('Failed to get temporary file URL');
-      }
-
-      const tempURL = tempUrlResult.fileList[0].tempFileURL;
-
-      return {
-        success: true,
-        data: {
-          fileID,
-          tempURL,
-        },
-      };
     } catch (error: any) {
       console.error('Upload failed:', error);
       return {
         success: false,
-        message: error.message || '上传失败',
+        message: error.message || '上传准备失败',
       };
     }
   }

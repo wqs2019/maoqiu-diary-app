@@ -70,8 +70,7 @@ export type UploadStatus = 'loading' | 'success' | 'fail';
 // 媒体资源
 export interface MediaResource {
   type: MediaType;
-  uri: string; // 本地 URI 或云端 URL
-  fileID?: string; // 云存储文件 ID
+  uri: string; // 云端 URL
   thumbnail?: string; // 缩略图 URI（视频用）
   duration?: number; // 时长（秒，视频用）
   size?: number; // 文件大小（字节）
@@ -136,7 +135,7 @@ export interface TimelineItem {
   title: string;
   description: string;
   date: string;
-  images?: string[];
+  media?: MediaResource[];
   scenario?: ScenarioType;
   mood?: MoodType;
   weather?: WeatherType;

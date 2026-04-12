@@ -4,7 +4,7 @@
   "description": "获取 COS 临时上传密钥",
   "main": "index.js",
   "dependencies": {
-    "wx-server-sdk": "latest",
-    "qcloud-cos-sts": "latest"
+    "qcloud-cos-sts": "^3.1.3",
+    "wx-server-sdk": "latest"
   }
 }

@@ -18,26 +18,39 @@ exports.main = async (event, context) => {
       };
     }
 
+    // 使用你提供的真实存储桶名称和区域
+    const bucket = '6d61-maoqiu-diary-app-2fpzvwp2e01dbaf-1417164439';
+    const region = 'ap-shanghai'; // 你的区域
+    const allowPrefix = '*'; // 允许上传任意路径前缀
+    const allowActions = [
+      // 简单上传
+      'name/cos:PutObject',
+      'name/cos:PostObject',
+      // 分片上传
+      'name/cos:InitiateMultipartUpload',
+      'name/cos:ListMultipartUploads',
+      'name/cos:ListParts',
+      'name/cos:UploadPart',
+      'name/cos:CompleteMultipartUpload',
+      'name/cos:AbortMultipartUpload',
+    ];
+
+    // 生成 policy
+    const policy = STS.getPolicy(
+      allowActions.map((action) => ({
+        action,
+        bucket,
+        region,
+        prefix: allowPrefix,
+      }))
+    );
+
     // STS 配置
     const config = {
       secretId: secretId,
       secretKey: secretKey,
       durationSeconds: 1800, // 临时密钥有效期 30 分钟
-      bucket: 'cloud1-2g4k8irc2cbc94c3-1250000000', // 你的存储桶
-      region: 'ap-shanghai', // 你的区域
-      allowPrefix: 'diary/*', // 允许上传的路径前缀
-      allowActions: [
-        // 简单上传
-        'name/cos:PutObject',
-        'name/cos:PostObject',
-        // 分片上传
-        'name/cos:InitiateMultipartUpload',
-        'name/cos:ListMultipartUploads',
-        'name/cos:ListParts',
-        'name/cos:UploadPart',
-        'name/cos:CompleteMultipartUpload',
-        'name/cos:AbortMultipartUpload',
-      ],
+      policy: policy,
     };
 
     // 获取临时密钥
@@ -52,8 +65,8 @@ exports.main = async (event, context) => {
         sessionToken: result.credentials.sessionToken,
         expiredTime: result.expiredTime,
         startTime: result.startTime,
-        bucket: config.bucket,
-        region: config.region,
+        bucket: bucket,
+        region: region,
       },
     };
   } catch (error) {

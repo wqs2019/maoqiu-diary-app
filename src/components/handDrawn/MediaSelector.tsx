@@ -54,13 +54,12 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       const uploadResult = await imageService.uploadImage(item.uri, cloudPath, item.mimeType);
 
       if (uploadResult.success && uploadResult.data) {
-        console.log(`[MediaUpload] Retry success: ${uploadResult.data.fileID}`);
+        console.log(`[MediaUpload] Retry success: ${uploadResult.data.url}`);
         // 更新成功的媒体
         const successMedia = [...media];
         successMedia[index] = {
           ...item,
-          fileID: uploadResult.data.fileID,
-          uri: uploadResult.data.tempURL,
+          uri: uploadResult.data.url,
           uploadStatus: 'success',
           uploadError: undefined,
         };
@@ -114,8 +113,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         if (uploadResult.success && uploadResult.data) {
           return {
             ...item,
-            fileID: uploadResult.data.fileID,
-            uri: uploadResult.data.tempURL,
+            uri: uploadResult.data.url,
             uploadStatus: 'success',
             uploadError: undefined,
           };

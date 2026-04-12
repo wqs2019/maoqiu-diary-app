@@ -10,7 +10,7 @@ const db = app.database();
 // 创建日记
 const createDiary = async (data) => {
   try {
-    const { title, content, date, scenario, mood, weather, location, tags, images, userId } = data;
+    const { title, content, date, scenario, mood, weather, location, tags, media, userId } = data;
 
     if (!userId) {
       return {
@@ -38,7 +38,7 @@ const createDiary = async (data) => {
       weather: weather || 'sunny',
       location: location || '',
       tags: tags || [],
-      images: images || [],
+      media: media || [], // 保存 media 字段
       // 扩展字段（预留，后续实现）
       isFavorite: false, // TODO: 收藏功能 - 用户可标记重要日记
       isPrivate: false, // TODO: 私密日记 - 需要密码查看
@@ -58,7 +58,7 @@ const createDiary = async (data) => {
         weather,
         location,
         tags,
-        images,
+        media,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isFavorite: false,
