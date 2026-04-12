@@ -1,17 +1,18 @@
-import tcb from '@cloudbase/js-sdk';
+import adapter from '@cloudbase/adapter-rn';
+import cloudbase from '@cloudbase/js-sdk';
+
+// 注册 React Native 适配器，以支持在 RN 环境中使用云开发相关的 API（如上传文件时的 filePath 支持 uri）
+cloudbase.useAdapters(adapter);
 
 class ImageService {
   private readonly app: any;
   private isAuth: boolean = false;
 
   constructor() {
-    // Register adapter for React Native
-    // tcb.useAdapters(adapter);
-
-    // Initialize cloudbase
-    this.app = tcb.init({
+    // 初始化 cloudbase
+    this.app = cloudbase.init({
       env: 'maoqiu-diary-app-2fpzvwp2e01dbaf',
-      // region: 'ap-shanghai',
+      region: 'ap-shanghai',
     });
   }
 
@@ -51,37 +52,19 @@ class ImageService {
     try {
       await this.ensureAuth();
 
-      // In React Native without @cloudbase/adapter-rn, we need to convert the local URI to a Blob
-      // because the pure Web SDK expects a File/Blob object for `filePath`
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      console.log('Uploading to TCB:', cloudPath, uri);
 
-      console.log('cloudPath：', cloudPath);
-      console.log('filePath：', blob);
-
-      if (blob) {
-        try {
-          // Safely attempt to set the name property for the SDK
-          Object.defineProperty(blob, 'name', {
-            value: cloudPath.split('/').pop() || 'image.png',
-            writable: true,
-            configurable: true,
-          });
-        } catch (e) {
-          console.warn('Failed to set blob name', e);
-        }
-      }
-
+      // 使用 RN 适配器后，直接将本地 uri 传给 filePath
       const uploadResult = await this.app.uploadFile({
         cloudPath,
-        filePath: blob, // Cast to any to bypass the File type definition
+        filePath: uri,
       });
 
       console.log('uploadResult：', uploadResult);
 
       const fileID = uploadResult.fileID;
 
-      // Get temporary URL for the uploaded file
+      // 获取上传后的临时访问链接
       const tempUrlResult = await this.app.getTempFileURL({
         fileList: [fileID],
       });

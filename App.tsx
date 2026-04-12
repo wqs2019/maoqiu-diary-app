@@ -29,9 +29,9 @@ export default function App() {
 
   // 设置 Sentry 用户上下文
   useEffect(() => {
-    if (user && user.id) {
+    if (user && user._id) {
       setUser({
-        id: user.id,
+        id: user._id,
         username: user.nickname || user.phone,
         email: undefined,
       });
