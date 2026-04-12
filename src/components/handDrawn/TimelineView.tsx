@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 
 import { HandDrawnCard } from './HandDrawnCard';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
+import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { TimelineItem } from '../../types';
 
 interface TimelineViewProps {
@@ -90,10 +91,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                       {item.location && <Text style={styles.itemLocation}>📍 {item.location}</Text>}
                       <View style={styles.iconContainer}>
                         {item.mood && (
-                          <Text style={styles.statusIcon}>{getMoodIcon(item.mood)}</Text>
+                          <Text style={styles.statusIcon}>{getMoodConfig(item.mood).emoji}</Text>
                         )}
                         {item.weather && (
-                          <Text style={styles.statusIcon}>{getWeatherIcon(item.weather)}</Text>
+                          <Text style={styles.statusIcon}>
+                            {getWeatherConfig(item.weather).emoji}
+                          </Text>
                         )}
                       </View>
                     </View>
@@ -147,31 +150,6 @@ const getScenarioIcon = (scenario: string): string => {
     special: '🎉',
   };
   return icons[scenario] || '📝';
-};
-
-const getMoodIcon = (mood: string): string => {
-  const icons: Record<string, string> = {
-    happy: '😊',
-    sad: '😢',
-    normal: '😐',
-    excited: '🤩',
-    angry: '😠',
-    relaxed: '😌',
-    touched: '🥺',
-  };
-  return icons[mood] || '';
-};
-
-const getWeatherIcon = (weather: string): string => {
-  const icons: Record<string, string> = {
-    sunny: '☀️',
-    cloudy: '☁️',
-    rainy: '🌧️',
-    snowy: '❄️',
-    windy: '💨',
-    foggy: '🌫️',
-  };
-  return icons[weather] || '';
 };
 
 const styles = StyleSheet.create({

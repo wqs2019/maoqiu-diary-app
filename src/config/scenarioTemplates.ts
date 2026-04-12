@@ -2,6 +2,33 @@
 import { ScenarioTemplate, ScenarioType } from '../types';
 
 export const SCENARIO_TEMPLATES: Record<ScenarioType, ScenarioTemplate> = {
+  daily: {
+    id: 'daily',
+    type: 'daily',
+    name: '日常记录',
+    icon: '📝',
+    color: '#FF85A2',
+    placeholder: '今天发生了什么？',
+    prompts: [
+      '今天过得怎么样？',
+      '有什么开心或烦恼的事？',
+      '遇到了什么人？',
+      '学到了什么？',
+      '想对自己说什么？',
+    ],
+    fields: [
+      {
+        id: 'content',
+        label: '今日记录',
+        type: 'text',
+        required: true,
+        placeholder: '记录今天的故事',
+      },
+      { id: 'mood', label: '心情', type: 'text', required: false, placeholder: '今天的心情' },
+      { id: 'photos', label: '照片', type: 'image', required: false },
+      { id: 'tags', label: '标签', type: 'tags', required: false },
+    ],
+  },
   travel: {
     id: 'travel',
     type: 'travel',
@@ -112,33 +139,6 @@ export const SCENARIO_TEMPLATES: Record<ScenarioType, ScenarioTemplate> = {
       { id: 'location', label: '地点', type: 'location', required: false, placeholder: '餐厅名称' },
       { id: 'taste', label: '口味描述', type: 'text', required: false, placeholder: '味道如何？' },
       { id: 'rating', label: '推荐度', type: 'rating', required: false },
-      { id: 'photos', label: '照片', type: 'image', required: false },
-      { id: 'tags', label: '标签', type: 'tags', required: false },
-    ],
-  },
-  daily: {
-    id: 'daily',
-    type: 'daily',
-    name: '日常记录',
-    icon: '📝',
-    color: '#FF85A2',
-    placeholder: '今天发生了什么？',
-    prompts: [
-      '今天过得怎么样？',
-      '有什么开心或烦恼的事？',
-      '遇到了什么人？',
-      '学到了什么？',
-      '想对自己说什么？',
-    ],
-    fields: [
-      {
-        id: 'content',
-        label: '今日记录',
-        type: 'text',
-        required: true,
-        placeholder: '记录今天的故事',
-      },
-      { id: 'mood', label: '心情', type: 'text', required: false, placeholder: '今天的心情' },
       { id: 'photos', label: '照片', type: 'image', required: false },
       { id: 'tags', label: '标签', type: 'tags', required: false },
     ],

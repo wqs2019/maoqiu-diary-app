@@ -14,29 +14,11 @@ import {
 
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
+import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useDiaryDetail, useDeleteDiary } from '../../hooks/useDiaryQuery';
 import { MoodType, WeatherType } from '../../types';
 
 type DiaryDetailRouteProp = RouteProp<{ params: { _id: string } }, 'params'>;
-
-const MOOD_CONFIG: Record<MoodType, { emoji: string; label: string; color: string }> = {
-  happy: { emoji: '😊', label: '开心', color: '#FFD60A' },
-  excited: { emoji: '🤩', label: '兴奋', color: '#FF6B9D' },
-  relaxed: { emoji: '😌', label: '轻松', color: '#34C759' },
-  touched: { emoji: '🥺', label: '感动', color: '#AF52DE' },
-  normal: { emoji: '😐', label: '平静', color: '#8E8E93' },
-  sad: { emoji: '😢', label: '难过', color: '#5AC8FA' },
-  angry: { emoji: '😠', label: '生气', color: '#FF3B30' },
-};
-
-const WEATHER_CONFIG: Record<WeatherType, { emoji: string; label: string; color: string }> = {
-  sunny: { emoji: '☀️', label: '晴', color: '#FFD60A' },
-  cloudy: { emoji: '☁️', label: '阴', color: '#8E8E93' },
-  rainy: { emoji: '🌧️', label: '雨', color: '#5AC8FA' },
-  snowy: { emoji: '❄️', label: '雪', color: '#B6E8FF' },
-  windy: { emoji: '💨', label: '风', color: '#A8E6A8' },
-  foggy: { emoji: '🌫️', label: '雾', color: '#D4EDD4' },
-};
 
 const DiaryDetailScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -92,8 +74,8 @@ const DiaryDetailScreen: React.FC = () => {
   }
 
   const scenario = SCENARIO_TEMPLATES[diary.scenario];
-  const mood = MOOD_CONFIG[diary.mood];
-  const weather = WEATHER_CONFIG[diary.weather];
+  const mood = getMoodConfig(diary.mood);
+  const weather = getWeatherConfig(diary.weather);
   const date = new Date(diary.date || diary.createdAt);
   const formattedDate = date.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -146,11 +128,11 @@ const DiaryDetailScreen: React.FC = () => {
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
             <Text style={styles.metaEmoji}>{mood.emoji}</Text>
-            <Text style={[styles.metaLabel, { color: mood.color }]}>{mood.label}</Text>
+            <Text style={[styles.metaLabel, { color: mood.primary }]}>{mood.label}</Text>
           </View>
           <View style={styles.metaItem}>
             <Text style={styles.metaEmoji}>{weather.emoji}</Text>
-            <Text style={[styles.metaLabel, { color: weather.color }]}>{weather.label}</Text>
+            <Text style={[styles.metaLabel, { color: weather.primary }]}>{weather.label}</Text>
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="calendar-outline" size={18} color="#999" />
