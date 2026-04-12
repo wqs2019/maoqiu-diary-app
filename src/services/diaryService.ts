@@ -54,8 +54,12 @@ export const getDiaryDetail = async (_id: string): Promise<Diary> => {
     action: 'get',
     data: { _id },
   });
-  // 返回数组中的第一个元素
-  return result.data.data[0];
+  // 云函数返回的是数组，取第一个元素
+  const diary = result.data.data[0];
+  if (!diary) {
+    throw new Error('日记不存在');
+  }
+  return diary;
 };
 
 /**

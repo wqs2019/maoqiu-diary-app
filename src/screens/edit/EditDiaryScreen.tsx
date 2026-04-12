@@ -64,8 +64,6 @@ const EditDiaryScreen: React.FC = () => {
             },
             {
                 onSuccess: () => {
-                    // 重置日记列表缓存，触发首页刷新
-                    queryClient.resetQueries({ queryKey: ['diaryList'] });
                     Alert.alert('✨ 太棒了！', '日记已保存到云端，继续记录美好时光吧～', [
                         { text: '好的', onPress: () => navigation.goBack() },
                     ]);
