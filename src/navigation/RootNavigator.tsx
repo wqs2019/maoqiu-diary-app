@@ -12,6 +12,7 @@ import CategoryScreen from '@/screens/category/CategoryScreen';
 import DiaryDetailScreen from '@/screens/diary/DiaryDetailScreen';
 import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
 import HomeScreen from '@/screens/home/HomeScreen';
+import EditProfileScreen from '@/screens/mine/EditProfileScreen';
 import MineScreen from '@/screens/mine/MineScreen';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
@@ -22,6 +23,7 @@ export type RootStackParamList = {
   Main: undefined;
   EditDiary: { scenario?: string; _id?: string };
   DiaryDetail: { _id: string };
+  EditProfile: undefined;
 };
 
 export type AuthStackParamList = {
@@ -119,6 +121,13 @@ export const RootNavigator = () => {
               },
               headerTintColor: COLORS.text,
               headerBackTitle: '返回',
+            }}
+          />
+          <RootStack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
+            options={{
+              headerShown: false,
             }}
           />
         </>

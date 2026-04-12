@@ -1,8 +1,11 @@
 export interface UserInfo {
-  id: string;
+  _id: string;
   phone: string;
   nickname?: string;
   avatar?: string;
+  gender?: 'male' | 'female' | 'secret';
+  age?: number;
+  birthday?: string;
 }
 
 export interface TokenInfo {

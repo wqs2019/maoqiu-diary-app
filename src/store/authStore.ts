@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import authService, { UserInfo } from '../services/auth';
+import userService from '../services/userService';
 
 export interface AuthState {
   isLoggedIn: boolean;
@@ -12,6 +13,7 @@ export interface AuthState {
   sendCode: (phone: string) => Promise<boolean>;
   checkAuth: () => Promise<boolean>;
   fetchUserInfo: () => Promise<void>;
+  updateProfile: (userId: string, data: Partial<UserInfo>) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -100,6 +102,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch user info', error);
       // 网络错误等异常时不自动退出登录，以提升用户体验
+    }
+  },
+  updateProfile: async (userId, data) => {
+    set({ loading: true, error: null });
+    try {
+      const updatedUser = await userService.updateUserInfo(userId, data);
+      // 数据持久化已在 userService 内部处理，Store 只需更新状态即可
+      set({ user: updatedUser, loading: false });
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      set({ error: error.message || '更新资料失败', loading: false });
+      throw error;
     }
   },
 }));

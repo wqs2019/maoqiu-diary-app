@@ -80,10 +80,8 @@ async function loginHandler(data) {
       data: {
         token,
         user: {
-          id: userId,
-          phone: user.data[0].phone,
-          nickname: user.data[0].nickname,
-          avatar: user.data[0].avatar,
+          ...user.data[0],
+          _id: userId,
         },
       },
     };
@@ -164,10 +162,8 @@ async function validateTokenHandler(data) {
       message: 'Token验证成功',
       data: {
         user: {
+          ...userData,
           _id: userData._id || userId,
-          phone: userData.phone,
-          nickname: userData.nickname,
-          avatar: userData.avatar,
         },
       },
     };

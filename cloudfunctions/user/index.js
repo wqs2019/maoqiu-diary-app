@@ -17,16 +17,14 @@ const addUser = async (data) => {
     const { phoneNumber, nickname, avatar, isVip } = data;
 
     // Create new user
-    const result = await db.collection("users").add(
-      {
-        phoneNumber,
-        nickname,
-        avatar,
-        isVip: isVip || false,
-        createdAt: db.serverDate(),
-        updatedAt: db.serverDate(),
-      }
-    );
+    const result = await db.collection('users').add({
+      phoneNumber,
+      nickname,
+      avatar,
+      isVip: isVip || false,
+      createdAt: db.serverDate(),
+      updatedAt: db.serverDate(),
+    });
 
     return {
       success: true,
@@ -39,10 +37,10 @@ const addUser = async (data) => {
       },
     };
   } catch (error) {
-    console.error("Add user error:", error);
+    console.error('Add user error:', error);
     return {
       success: false,
-      message: "Failed to add user",
+      message: 'Failed to add user',
       error: error.message,
     };
   }
@@ -56,19 +54,17 @@ const updateUser = async (data) => {
     if (!_id) {
       return {
         success: false,
-        message: "User ID is required",
+        message: 'User ID is required',
       };
     }
 
     // Update user data
     const result = await db
-      .collection("users")
+      .collection('users')
       .doc(_id)
       .update({
-        data: {
-          ...updateData,
-          updatedAt: db.serverDate(),
-        },
+        ...updateData,
+        updatedAt: db.serverDate(),
       });
 
     return {
@@ -76,10 +72,10 @@ const updateUser = async (data) => {
       data: result,
     };
   } catch (error) {
-    console.error("Update user error:", error);
+    console.error('Update user error:', error);
     return {
       success: false,
-      message: "Failed to update user",
+      message: 'Failed to update user',
       error: error.message,
     };
   }
@@ -93,21 +89,26 @@ const getUser = async (data) => {
     if (!_id) {
       return {
         success: false,
-        message: "User ID is required",
+        message: 'User ID is required',
       };
     }
 
-    const result = await db.collection("users").doc(_id).get();
+    const result = await db.collection('users').doc(_id).get();
+
+    let userData = {};
+    if (result && result.data) {
+      userData = Array.isArray(result.data) ? result.data[0] : result.data;
+    }
 
     return {
       success: true,
-      data: result.data || {},
+      data: userData,
     };
   } catch (error) {
-    console.error("Get user error:", error);
+    console.error('Get user error:', error);
     return {
       success: false,
-      message: "Failed to get user",
+      message: 'Failed to get user',
       error: error.message,
     };
   }
@@ -121,21 +122,21 @@ const deleteUser = async (data) => {
     if (!_id) {
       return {
         success: false,
-        message: "User ID is required",
+        message: 'User ID is required',
       };
     }
 
-    const result = await db.collection("users").doc(_id).remove();
+    const result = await db.collection('users').doc(_id).remove();
 
     return {
       success: true,
       data: result,
     };
   } catch (error) {
-    console.error("Delete user error:", error);
+    console.error('Delete user error:', error);
     return {
       success: false,
-      message: "Failed to delete user",
+      message: 'Failed to delete user',
       error: error.message,
     };
   }
@@ -150,10 +151,16 @@ const listUsers = async (data) => {
     const skip = (page - 1) * pageSize;
 
     // Get users with pagination
-    const result = await db.collection("users").where(filter).skip(skip).limit(pageSize).orderBy("createdAt", "desc").get();
+    const result = await db
+      .collection('users')
+      .where(filter)
+      .skip(skip)
+      .limit(pageSize)
+      .orderBy('createdAt', 'desc')
+      .get();
 
     // Get total count
-    const countResult = await db.collection("users").where(filter).count();
+    const countResult = await db.collection('users').where(filter).count();
 
     return {
       success: true,
@@ -165,10 +172,10 @@ const listUsers = async (data) => {
       },
     };
   } catch (error) {
-    console.error("List users error:", error);
+    console.error('List users error:', error);
     return {
       success: false,
-      message: "Failed to list users",
+      message: 'Failed to list users',
       error: error.message,
     };
   }
@@ -178,20 +185,20 @@ exports.main = async (event, context) => {
   const { action, data } = event;
 
   switch (action) {
-    case "add":
+    case 'add':
       return await addUser(data);
-    case "update":
+    case 'update':
       return await updateUser(data);
-    case "get":
+    case 'get':
       return await getUser(data);
-    case "delete":
+    case 'delete':
       return await deleteUser(data);
-    case "list":
+    case 'list':
       return await listUsers(data);
     default:
       return {
         success: false,
-        message: "无效的操作",
+        message: '无效的操作',
       };
   }
 };

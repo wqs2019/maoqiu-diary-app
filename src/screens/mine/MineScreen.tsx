@@ -1,15 +1,21 @@
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
-import { useAppStore } from '../../store/appStore';
+import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useAuthStore } from '../../store/authStore';
 
+type MineScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
+
 const MineScreen: React.FC = () => {
+  const navigation = useNavigation<MineScreenNavigationProp>();
   const { user, logout, fetchUserInfo } = useAuthStore();
-  const { theme } = useAppStore();
   const insets = useSafeAreaInsets();
+  const themeStyle = HAND_DRAWN_STYLES.soft; // 使用柔和手绘风格
 
   useEffect(() => {
     fetchUserInfo();
@@ -19,50 +25,131 @@ const MineScreen: React.FC = () => {
     await logout();
   };
 
+  const renderMenuItem = (
+    iconName: keyof typeof Feather.glyphMap,
+    title: string,
+    color: string,
+    isLast = false
+  ) => (
+    <TouchableOpacity style={[styles.menuItem, !isLast && styles.menuItemBorder]}>
+      <View style={[styles.menuIconContainer, { backgroundColor: color + '15' }]}>
+        <Feather name={iconName} size={20} color={color} />
+      </View>
+      <Text style={styles.menuItemText}>{title}</Text>
+      <Feather name="chevron-right" size={20} color={HEALING_COLORS.gray[400]} />
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={[styles.header, { paddingTop: SPACING.xlarge + insets.top }]}>
-          <View style={styles.userInfo}>
-            <Image
-              source={{ uri: user?.avatar || 'https://via.placeholder.com/80' }}
-              style={styles.avatar}
-            />
-            <View style={styles.userDetails}>
-              <Text style={styles.userName}>{user?.nickname || '未登录'}</Text>
-              <Text style={styles.userPhone}>{user?.phone || '点击登录'}</Text>
-            </View>
+      {/* 顶部背景装饰 */}
+      <View style={[styles.headerBackground, { height: 200 + insets.top }]} />
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* 用户信息卡片 */}
+        <View
+          style={[
+            styles.userCard,
+            { marginTop: insets.top + 20 },
+            {
+              borderRadius: themeStyle.borderRadius,
+              shadowColor: themeStyle.shadowColor,
+              shadowOpacity: themeStyle.shadowOpacity,
+              shadowRadius: themeStyle.shadowRadius,
+              shadowOffset: themeStyle.shadowOffset,
+              elevation: 8,
+            },
+          ]}
+        >
+          <Image
+            source={{
+              uri: user?.avatar || 'https://api.dicebear.com/7.x/notionists/png?seed=Maoqiu',
+            }}
+            style={styles.avatar}
+          />
+          <View style={styles.userDetails}>
+            <Text style={styles.userName}>{user?.nickname || '毛球日记'}</Text>
+            <Text style={styles.userPhone}>{user?.phone || '点击登录 / 注册 ✨'}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
+            <Feather name="edit-2" size={16} color={HEALING_COLORS.pink[500]} />
+          </TouchableOpacity>
+        </View>
+
+        {/* 统计数据区 */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>12</Text>
+            <Text style={styles.statLabel}>日记</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>5</Text>
+            <Text style={styles.statLabel}>连续打卡</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>3</Text>
+            <Text style={styles.statLabel}>收集徽章</Text>
           </View>
         </View>
 
-        <View style={styles.menuSection}>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>我的记录</Text>
-            <Text style={styles.menuItemArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>收藏</Text>
-            <Text style={styles.menuItemArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>设置</Text>
-            <Text style={styles.menuItemArrow}>›</Text>
-          </TouchableOpacity>
+        {/* 菜单区块 1 */}
+        <View
+          style={[
+            styles.menuSection,
+            {
+              borderRadius: themeStyle.borderRadius,
+              shadowColor: themeStyle.shadowColor,
+              shadowOpacity: themeStyle.shadowOpacity * 0.5,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 4,
+            },
+          ]}
+        >
+          {renderMenuItem('book-open', '我的日记本', HEALING_COLORS.blue[500])}
+          {renderMenuItem('star', '收藏夹', HEALING_COLORS.yellow[500])}
+          {renderMenuItem('calendar', '打卡日历', HEALING_COLORS.green[500], true)}
         </View>
 
-        <View style={styles.menuSection}>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>关于我们</Text>
-            <Text style={styles.menuItemArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>帮助与反馈</Text>
-            <Text style={styles.menuItemArrow}>›</Text>
-          </TouchableOpacity>
+        {/* 菜单区块 2 */}
+        <View
+          style={[
+            styles.menuSection,
+            {
+              borderRadius: themeStyle.borderRadius,
+              shadowColor: themeStyle.shadowColor,
+              shadowOpacity: themeStyle.shadowOpacity * 0.5,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 4,
+            },
+          ]}
+        >
+          {renderMenuItem('settings', '应用设置', HEALING_COLORS.gray[600])}
+          {renderMenuItem('info', '关于毛球', HEALING_COLORS.pink[400])}
+          {renderMenuItem('help-circle', '帮助与反馈', HEALING_COLORS.blue[400], true)}
         </View>
 
+        {/* 退出登录按钮 */}
         {user && (
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity
+            style={[
+              styles.logoutButton,
+              {
+                borderRadius: themeStyle.borderRadius,
+              },
+            ]}
+            onPress={handleLogout}
+          >
             <Text style={styles.logoutButtonText}>退出登录</Text>
           </TouchableOpacity>
         )}
@@ -74,77 +161,135 @@ const MineScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FAFAFA',
+  },
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: HEALING_COLORS.pink[100],
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
   },
   scrollView: {
     flex: 1,
   },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: SPACING.xlarge,
-    paddingBottom: SPACING.large,
-    paddingHorizontal: SPACING.large,
-  },
-  userInfo: {
+  userCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#FFF0F3',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: HEALING_COLORS.pink[50],
     borderWidth: 2,
-    borderColor: COLORS.surface,
+    borderColor: '#FFFFFF',
   },
   userDetails: {
-    marginLeft: SPACING.medium,
+    flex: 1,
+    marginLeft: 16,
   },
   userName: {
-    fontSize: FONT_SIZES.large,
-    fontWeight: '600',
-    color: COLORS.surface,
-    marginBottom: SPACING.small,
+    fontSize: 20,
+    fontWeight: '700',
+    color: HEALING_COLORS.gray[800],
+    marginBottom: 4,
   },
   userPhone: {
-    fontSize: FONT_SIZES.medium,
-    color: COLORS.surface + 'CC',
+    fontSize: 13,
+    color: HEALING_COLORS.gray[500],
+    fontWeight: '500',
+  },
+  editButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: HEALING_COLORS.pink[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginBottom: 24,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#FFF0F3',
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: HEALING_COLORS.gray[800],
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: HEALING_COLORS.gray[500],
+    fontWeight: '500',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: HEALING_COLORS.gray[100],
+    marginVertical: 4,
   },
   menuSection: {
-    marginTop: SPACING.medium,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    marginHorizontal: SPACING.large,
-    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: '#FFF0F3',
   },
   menuItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: SPACING.medium,
-    paddingHorizontal: SPACING.medium,
+    paddingVertical: 16,
+  },
+  menuItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: HEALING_COLORS.gray[100],
+  },
+  menuIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   menuItemText: {
-    fontSize: FONT_SIZES.medium,
-    color: COLORS.text,
-  },
-  menuItemArrow: {
-    fontSize: FONT_SIZES.xlarge,
-    color: COLORS.textSecondary,
+    flex: 1,
+    fontSize: 15,
+    color: HEALING_COLORS.gray[800],
+    fontWeight: '600',
   },
   logoutButton: {
-    marginTop: SPACING.large,
-    marginHorizontal: SPACING.large,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    paddingVertical: SPACING.medium,
+    marginHorizontal: 20,
+    marginTop: 10,
+    backgroundColor: '#FFF0F3',
+    paddingVertical: 16,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: HEALING_COLORS.pink[200],
   },
   logoutButtonText: {
-    fontSize: FONT_SIZES.medium,
-    color: COLORS.error,
-    fontWeight: '500',
+    fontSize: 16,
+    color: HEALING_COLORS.pink[600],
+    fontWeight: '700',
   },
 });
 

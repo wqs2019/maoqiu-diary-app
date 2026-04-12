@@ -1,0 +1,10 @@
+{
+  "name": "getCosTempKey",
+  "version": "1.0.0",
+  "description": "获取 COS 临时上传密钥",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest",
+    "qcloud-cos-sts": "latest"
+  }
+}

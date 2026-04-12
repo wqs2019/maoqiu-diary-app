@@ -12,6 +12,9 @@ export interface UserInfo {
   phone: string;
   nickname?: string;
   avatar?: string;
+  gender?: 'male' | 'female' | 'secret';
+  age?: number;
+  birthday?: string;
 }
 
 export interface TokenInfo {
