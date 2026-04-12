@@ -39,7 +39,7 @@ const WEATHER_CONFIG: Record<WeatherType, { emoji: string; label: string; color:
 };
 
 const DiaryDetailScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<DiaryDetailRouteProp>();
   const { _id } = route.params;
 
@@ -193,6 +193,13 @@ const DiaryDetailScreen: React.FC = () => {
           <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
             <Ionicons name="share-outline" size={24} color={HEALING_COLORS.pink[400]} />
             <Text style={styles.actionButtonText}>分享</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('EditDiary', { diaryId: _id })}
+          >
+            <Ionicons name="create-outline" size={24} color={HEALING_COLORS.pink[400]} />
+            <Text style={styles.actionButtonText}>编辑</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={handleDelete}>
             <Ionicons name="trash-outline" size={24} color="#FF3B30" />

@@ -20,7 +20,7 @@ import { ScenarioChip } from '../../components/handDrawn/ScenarioChip';
 import { WeatherTabSelector } from '../../components/handDrawn/WeatherTabSelector';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
-import { useCreateDiary } from '../../hooks/useDiaryQuery';
+import { useCreateDiary, useUpdateDiary, useDiaryDetail } from '../../hooks/useDiaryQuery';
 import { useQueryClient } from '../../hooks/useQuery';
 import { ScenarioType, MoodType, WeatherType, MediaResource } from '../../types';
 
@@ -34,6 +34,11 @@ const EditDiaryScreen: React.FC = () => {
   const route = useRoute<EditDiaryRouteProp>();
   const queryClient = useQueryClient();
   const initialScenario = route.params?.scenario || 'daily';
+  const diaryId = route.params?.diaryId;
+  const isEditMode = !!diaryId;
+
+  // 获取已有日记数据
+  const { data: existingDiary } = useDiaryDetail(diaryId || '');
 
   const [scenario, setScenario] = React.useState<ScenarioType>(initialScenario);
   const [date, setDate] = React.useState(new Date());
@@ -44,10 +49,25 @@ const EditDiaryScreen: React.FC = () => {
   const [content, setContent] = React.useState('');
   const [media, setMedia] = React.useState<MediaResource[]>([]);
 
+  // 填充已有日记数据
+  React.useEffect(() => {
+    if (isEditMode && existingDiary) {
+      setScenario(existingDiary.scenario);
+      setDate(new Date(existingDiary.date || existingDiary.createdAt));
+      setLocation(existingDiary.location || '');
+      setMood(existingDiary.mood);
+      setWeather(existingDiary.weather);
+      setTitle(existingDiary.title);
+      setContent(existingDiary.content);
+      setMedia(existingDiary.media || []);
+    }
+  }, [isEditMode, existingDiary]);
+
   const template = SCENARIO_TEMPLATES[scenario];
 
-  // 使用 useCreateDiary 处理日记保存（已封装好缓存更新）
+  // 使用 useCreateDiary/useUpdateDiary 处理日记保存
   const createDiaryMutation = useCreateDiary();
+  const updateDiaryMutation = useUpdateDiary();
 
   const handleSave = () => {
     if (!title.trim() && !content.trim()) {
@@ -55,19 +75,43 @@ const EditDiaryScreen: React.FC = () => {
       return;
     }
 
-    // 调用 mutation 保存日记
-    createDiaryMutation.mutate(
-      {
-        title: title.trim(),
-        content: content.trim(),
-        date: date.toISOString(), // 保存用户选择的日期
-        scenario,
-        mood: mood || 'normal',
-        weather: weather || 'sunny',
-        location: location.trim(),
-        media: media.length > 0 ? media : undefined,
-      },
-      {
+    const payload = {
+      title: title.trim(),
+      content: content.trim(),
+      date: date.toISOString(), // 保存用户选择的日期
+      scenario,
+      mood: mood || 'normal',
+      weather: weather || 'sunny',
+      location: location.trim(),
+      media: media.length > 0 ? media : undefined,
+    };
+
+    if (isEditMode) {
+      updateDiaryMutation.mutate(
+        {
+          id: diaryId,
+          ...payload,
+        },
+        {
+          onSuccess: () => {
+            Alert.alert('✨ 太棒了！', '日记更新成功～', [
+              {
+                text: '好的',
+                onPress: () => {
+                  navigation.goBack();
+                },
+              },
+            ]);
+          },
+          onError: (error) => {
+            console.error('Update diary error:', error);
+            Alert.alert('更新失败', '请检查网络连接后重试', [{ text: '确定' }]);
+          },
+        }
+      );
+    } else {
+      // 调用 mutation 保存日记
+      createDiaryMutation.mutate(payload, {
         onSuccess: () => {
           Alert.alert('✨ 太棒了！', '日记已保存到云端，继续记录美好时光吧～', [
             {
@@ -82,8 +126,8 @@ const EditDiaryScreen: React.FC = () => {
           console.error('Save diary error:', error);
           Alert.alert('保存失败', '请检查网络连接后重试', [{ text: '确定' }]);
         },
-      }
-    );
+      });
+    }
   };
 
   const template1 = SCENARIO_TEMPLATES[scenario];
@@ -169,11 +213,11 @@ const EditDiaryScreen: React.FC = () => {
 
         {/* 保存按钮 */}
         <View style={styles.saveButtonContainer}>
-          {createDiaryMutation.isPending ? (
+          {createDiaryMutation.isPending || updateDiaryMutation.isPending ? (
             <ActivityIndicator size="large" color={HEALING_COLORS.pink[500]} />
           ) : (
             <HandDrawnButton
-              title="保存日记"
+              title={isEditMode ? '更新日记' : '保存日记'}
               size="large"
               onPress={handleSave}
               color={HEALING_COLORS.pink[500]}

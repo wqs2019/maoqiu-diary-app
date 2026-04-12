@@ -58,19 +58,21 @@ async function loginHandler(data) {
         data: [
           {
             ...newUser,
-            id: result._id,
+            _id: result.id || result._id,
           },
         ],
       };
     } else {
       // 用户存在，更新最后登录时间
-      await usersCollection.doc(user.data[0]._id).update({
+      const userId = user.data[0]._id || user.data[0].id;
+      await usersCollection.doc(userId).update({
         updatedAt: new Date(),
       });
     }
 
+    const userId = user.data[0]._id || user.data[0].id;
     // 生成Token
-    const token = generateToken(user.data[0].id);
+    const token = generateToken(userId);
 
     return {
       code: 0,
@@ -78,7 +80,7 @@ async function loginHandler(data) {
       data: {
         token,
         user: {
-          id: user.data[0]._id,
+          id: userId,
           phone: user.data[0].phone,
           nickname: user.data[0].nickname,
           avatar: user.data[0].avatar,
@@ -127,12 +129,33 @@ async function validateTokenHandler(data) {
     }
 
     // 验证用户是否存在
-    const userResult = await usersCollection.doc(userId).get();
+    let userResult;
+    try {
+      userResult = await usersCollection.doc(userId).get();
+    } catch (e) {
+      console.log('Error fetching user directly by id, trying array result fallback:', e);
+      // 如果直接 doc().get() 抛错，可能是有些 SDK doc 返回的不是普通结果，尝试作为兜底
+      userResult = { data: null };
+    }
 
     // userResult.data 可能是数组，也可能是对象（取决于 SDK 实现），这里做下兼容
-    const userData = Array.isArray(userResult.data) ? userResult.data[0] : userResult.data;
+    let userData =
+      userResult && userResult.data
+        ? Array.isArray(userResult.data)
+          ? userResult.data[0]
+          : userResult.data
+        : null;
+
+    // 如果 SDK 限制了通过 doc().get() 获取数据，尝试使用 where({ _id: userId }) 兜底
+    if (!userData) {
+      console.log('User data not found by doc(), trying where().get() for userId:', userId);
+      const fallbackResult = await usersCollection.where({ _id: userId }).get();
+      userData =
+        fallbackResult.data && fallbackResult.data.length > 0 ? fallbackResult.data[0] : null;
+    }
 
     if (!userData) {
+      console.log('Final user data not found for userId:', userId);
       return { code: -1, message: '用户不存在' };
     }
 
@@ -141,7 +164,7 @@ async function validateTokenHandler(data) {
       message: 'Token验证成功',
       data: {
         user: {
-          id: userData._id || userId,
+          _id: userData._id || userId,
           phone: userData.phone,
           nickname: userData.nickname,
           avatar: userData.avatar,
