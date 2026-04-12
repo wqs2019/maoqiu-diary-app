@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+
 import { COLORS, FONT_SIZES } from '../../config/constant';
 
 interface LoadingScreenProps {

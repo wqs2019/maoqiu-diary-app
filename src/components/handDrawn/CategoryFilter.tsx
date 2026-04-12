@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+
 import { HEALING_COLORS, SCENARIO_COLORS } from '../../config/handDrawnTheme';
 import { ScenarioType } from '../../types';
 
@@ -54,7 +55,9 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
       {/* 筛选栏 */}
       <TouchableOpacity
         style={styles.filterBar}
-        onPress={() => setExpanded(!expanded)}
+        onPress={() => {
+          setExpanded(!expanded);
+        }}
         activeOpacity={0.7}
       >
         <View style={styles.filterLeft}>
@@ -63,11 +66,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
             {selectedScenarioData.icon} {selectedScenarioData.label}
           </Text>
         </View>
-        <Ionicons
-          name={expanded ? 'chevron-up' : 'chevron-down'}
-          size={20}
-          color="#999"
-        />
+        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color="#999" />
       </TouchableOpacity>
 
       {/* 展开的筛选选项 */}
@@ -86,7 +85,9 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                       backgroundColor: scenario.color,
                     },
                   ]}
-                  onPress={() => onScenarioChange(scenario.id as ScenarioType | 'all')}
+                  onPress={() => {
+                    onScenarioChange(scenario.id as ScenarioType | 'all');
+                  }}
                 >
                   <Text
                     style={[
@@ -140,14 +141,13 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                         backgroundColor: mood.color,
                       },
                     ]}
-                    onPress={() => onMoodChange(mood.id)}
+                    onPress={() => {
+                      onMoodChange(mood.id);
+                    }}
                   >
                     <Text style={styles.moodEmoji}>{mood.icon}</Text>
                     <Text
-                      style={[
-                        styles.moodText,
-                        selectedMood === mood.id && { color: '#FFFFFF' },
-                      ]}
+                      style={[styles.moodText, selectedMood === mood.id && { color: '#FFFFFF' }]}
                     >
                       {mood.label}
                     </Text>

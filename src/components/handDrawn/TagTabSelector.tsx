@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+
 import { TagType } from '../../types';
-import { HEALING_COLORS } from '../../config/handDrawnTheme';
 
 interface TagTabSelectorProps {
   selectedTags: TagType[];
@@ -45,16 +45,13 @@ export const TagTabSelector: React.FC<TagTabSelectorProps> = ({
                   borderColor: tag.color,
                 },
               ]}
-              onPress={() => onToggleTag(tag.type)}
+              onPress={() => {
+                onToggleTag(tag.type);
+              }}
               activeOpacity={0.7}
             >
               <Text style={styles.emoji}>{tag.emoji}</Text>
-              <Text
-                style={[
-                  styles.labelText,
-                  selected && { color: '#FFFFFF', fontWeight: '700' },
-                ]}
-              >
+              <Text style={[styles.labelText, selected && { color: '#FFFFFF', fontWeight: '700' }]}>
                 {tag.label}
               </Text>
             </TouchableOpacity>

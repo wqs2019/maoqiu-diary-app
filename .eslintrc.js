@@ -8,9 +8,14 @@ module.exports = {
         project: './tsconfig.json',
         tsconfigRootDir: __dirname,
     },
-    plugins: ['@typescript-eslint', 'react', 'react-native'],
+    plugins: ['@typescript-eslint', 'react', 'react-native', 'unused-imports'],
     rules: {
-        '@typescript-eslint/no-unused-vars': 'warn',
+        '@typescript-eslint/no-unused-vars': 'off',
+        'unused-imports/no-unused-imports': 'error',
+        'unused-imports/no-unused-vars': [
+            'warn',
+            { 'vars': 'all', 'varsIgnorePattern': '^_', 'args': 'after-used', 'argsIgnorePattern': '^_' }
+        ],
         '@typescript-eslint/no-explicit-any': 'warn',
         'react-hooks/exhaustive-deps': 'warn',
         'react-native/no-inline-styles': 'off',

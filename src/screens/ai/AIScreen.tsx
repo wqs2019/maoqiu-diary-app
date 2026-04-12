@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
 
 const AIScreen: React.FC = () => {

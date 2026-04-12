@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
-import { useAuthStore } from '../../store/authStore';
 import { useAppStore } from '../../store/appStore';
+import { useAuthStore } from '../../store/authStore';
 
 const MineScreen: React.FC = () => {
   const { user, logout } = useAuthStore();

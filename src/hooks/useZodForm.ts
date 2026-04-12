@@ -1,6 +1,6 @@
 // 表单处理 Hooks
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 /**
@@ -10,15 +10,15 @@ import { z } from 'zod';
  * @param options 其他配置
  */
 export function useZodForm<T extends z.ZodType<any>>(
-    schema: T,
-    defaultValues?: z.infer<T>,
-    options?: any,
+  schema: T,
+  defaultValues?: z.infer<T>,
+  options?: any
 ) {
-    return useForm<z.infer<T>>({
-        resolver: zodResolver(schema as any),
-        defaultValues,
-        ...options,
-    });
+  return useForm<z.infer<T>>({
+    resolver: zodResolver(schema as any),
+    defaultValues,
+    ...options,
+  });
 }
 
 export default useZodForm;

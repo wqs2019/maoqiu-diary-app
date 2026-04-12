@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useRef } from 'react';
 import {
   View,
@@ -8,11 +10,10 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
-import { MediaResource, UploadStatus } from '../../types';
+
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { imageService } from '../../services/imageService';
+import { MediaResource } from '../../types';
 
 interface MediaSelectorProps {
   media: MediaResource[];
@@ -321,7 +322,12 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         )}
 
         {/* 删除按钮 */}
-        <TouchableOpacity style={styles.removeButton} onPress={() => removeMedia(index)}>
+        <TouchableOpacity
+          style={styles.removeButton}
+          onPress={() => {
+            removeMedia(index);
+          }}
+        >
           <Ionicons name="close-circle" size={24} color="#FF4444" />
         </TouchableOpacity>
 

@@ -2,11 +2,12 @@
 // 安全提示：客户端不应直接调用短信 API，必须通过云函数中转
 
 import { Alert } from 'react-native';
+
 import tcbService from './tcb';
 
 class AliyunSmsService {
   // 测试模式：内存存储验证码（仅开发环境使用）
-  private sentCodes: Map<string, { code: string; expires: number }> = new Map();
+  private readonly sentCodes: Map<string, { code: string; expires: number }> = new Map();
 
   /**
    * 发送短信验证码 - 通过云函数调用
@@ -34,10 +35,7 @@ class AliyunSmsService {
           code: mockCode,
           expires: Date.now() + 5 * 60 * 1000,
         });
-        Alert.alert(
-          '测试模式',
-          `云函数未配置，使用模拟验证码：${mockCode}\n(有效期 5 分钟)`,
-        );
+        Alert.alert('测试模式', `云函数未配置，使用模拟验证码：${mockCode}\n(有效期 5 分钟)`);
         return true;
       }
 

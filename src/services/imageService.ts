@@ -1,8 +1,7 @@
 import tcb from '@cloudbase/js-sdk';
-import adapter from '@cloudbase/adapter-rn';
 
 class ImageService {
-  private app: any;
+  private readonly app: any;
   private isAuth: boolean = false;
 
   constructor() {

@@ -1,9 +1,18 @@
 // 日记列表页面示例 - 展示如何使用 React Query 管理服务端状态
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useDiaryList, useCreateDiary, useDeleteDiary } from '../hooks/useDiaryQuery';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
+
 import { COLORS, SPACING } from '../config/constant';
+import { useDiaryList, useCreateDiary, useDeleteDiary } from '../hooks/useDiaryQuery';
 import type { Diary } from '../services/diaryService';
 
 interface DiaryCardProps {
@@ -26,10 +35,12 @@ const DiaryCard: React.FC<DiaryCardProps> = ({ diary, onDelete }) => {
         {diary.content}
       </Text>
       <View style={styles.cardFooter}>
-        <Text style={styles.cardDate}>
-          {new Date(diary.createdAt).toLocaleDateString('zh-CN')}
-        </Text>
-        <TouchableOpacity onPress={() => onDelete(diary._id)}>
+        <Text style={styles.cardDate}>{new Date(diary.createdAt).toLocaleDateString('zh-CN')}</Text>
+        <TouchableOpacity
+          onPress={() => {
+            onDelete(diary._id);
+          }}
+        >
           <Ionicons name="trash-outline" size={20} color={COLORS.error} />
         </TouchableOpacity>
       </View>
@@ -42,13 +53,7 @@ export const DiaryListScreen: React.FC = () => {
   const pageSize = 10;
 
   // 使用 React Query 获取日记列表（简单分页示例）
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-    isFetching,
-  } = useDiaryList({ page, pageSize });
+  const { data, isLoading, error, refetch, isFetching } = useDiaryList({ page, pageSize });
 
   // 创建日记突变
   const createMutation = useCreateDiary();
@@ -65,7 +70,7 @@ export const DiaryListScreen: React.FC = () => {
   // 加载更多（简单分页）
   const handleLoadMore = () => {
     if (!isFetching && data && data.list.length < data.total) {
-      setPage(prev => prev + 1);
+      setPage((prev) => prev + 1);
     }
   };
 
@@ -105,13 +110,15 @@ export const DiaryListScreen: React.FC = () => {
         <Text style={styles.emptyText}>暂无日记</Text>
         <TouchableOpacity
           style={styles.createButton}
-          onPress={() => createMutation.mutate({
-            title: '新日记',
-            content: '这是第一条日记',
-            scenario: 'daily',
-            mood: 'happy',
-            weather: 'sunny',
-          })}
+          onPress={() => {
+            createMutation.mutate({
+              title: '新日记',
+              content: '这是第一条日记',
+              scenario: 'daily',
+              mood: 'happy',
+              weather: 'sunny',
+            });
+          }}
         >
           <Text style={styles.createButtonText}>创建第一条日记</Text>
         </TouchableOpacity>
@@ -124,9 +131,7 @@ export const DiaryListScreen: React.FC = () => {
       <FlatList
         data={data.list}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <DiaryCard diary={item} onDelete={handleDelete} />
-        )}
+        renderItem={({ item }) => <DiaryCard diary={item} onDelete={handleDelete} />}
         refreshControl={
           <RefreshControl
             refreshing={isFetching}
@@ -137,9 +142,7 @@ export const DiaryListScreen: React.FC = () => {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
-          isFetching && page > 1 ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
-          ) : null
+          isFetching && page > 1 ? <ActivityIndicator size="small" color={COLORS.primary} /> : null
         }
       />
     </View>

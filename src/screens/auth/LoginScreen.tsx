@@ -1,9 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '../../store/authStore';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
+import { useAuthStore } from '../../store/authStore';
 
 const LoginScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
@@ -15,13 +25,17 @@ const LoginScreen: React.FC = () => {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     if (countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
     }
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [countdown]);
 
   const handleSendCode = async () => {
-    if (!phone || phone.length !== 11) {
+    if (phone?.length !== 11) {
       Alert.alert('提示', '请输入正确的手机号');
       return;
     }
@@ -33,11 +47,11 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleLogin = async () => {
-    if (!phone || phone.length !== 11) {
+    if (phone?.length !== 11) {
       Alert.alert('提示', '请输入正确的手机号');
       return;
     }
-    if (!code || code.length !== 6) {
+    if (code?.length !== 6) {
       Alert.alert('提示', '请输入6位验证码');
       return;
     }
@@ -53,8 +67,18 @@ const LoginScreen: React.FC = () => {
         {/* 装饰元素 */}
         <View style={styles.decoration}>
           <Ionicons name="heart" size={24} color={COLORS.primary} style={styles.decorationIcon} />
-          <Ionicons name="star" size={16} color={COLORS.secondary} style={[styles.decorationIcon, { top: 10, right: 40 }]} />
-          <Ionicons name="flower" size={20} color={COLORS.primary} style={[styles.decorationIcon, { bottom: 20, left: 20 }]} />
+          <Ionicons
+            name="star"
+            size={16}
+            color={COLORS.secondary}
+            style={[styles.decorationIcon, { top: 10, right: 40 }]}
+          />
+          <Ionicons
+            name="flower"
+            size={20}
+            color={COLORS.primary}
+            style={[styles.decorationIcon, { bottom: 20, left: 20 }]}
+          />
         </View>
 
         {/* 标题部分 */}
@@ -82,7 +106,12 @@ const LoginScreen: React.FC = () => {
 
           <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed" size={20} color={COLORS.primary} style={styles.inputIcon} />
+              <Ionicons
+                name="lock-closed"
+                size={20}
+                color={COLORS.primary}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="请输入验证码"
@@ -97,7 +126,9 @@ const LoginScreen: React.FC = () => {
                 onPress={handleSendCode}
                 disabled={countdown > 0}
               >
-                <Text style={[styles.codeButtonText, countdown > 0 && styles.codeButtonTextDisabled]}>
+                <Text
+                  style={[styles.codeButtonText, countdown > 0 && styles.codeButtonTextDisabled]}
+                >
                   {countdown > 0 ? `${countdown}s` : '获取'}
                 </Text>
               </TouchableOpacity>

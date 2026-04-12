@@ -118,7 +118,7 @@ export const useDeleteDiary = () => {
 
       // 从列表中移除该日记（不触发网络查询，直接更新本地缓存刷新首页）
       queryClient.setQueriesData({ queryKey: ['diaryList'] }, (oldData: any) => {
-        if (!oldData || !oldData.list) return oldData;
+        if (!oldData?.list) return oldData;
         return {
           ...oldData,
           list: oldData.list.filter((item: any) => item._id !== deletedId),

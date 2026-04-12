@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import React from 'react';
 import {
   View,
@@ -9,13 +11,11 @@ import {
   Share,
   Alert,
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { HEALING_COLORS, HAND_DRAWN_STYLES } from '../../config/handDrawnTheme';
+
+import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
-import { Diary, MoodType, WeatherType } from '../../types';
-import { HandDrawnButton } from '../../components/handDrawn/HandDrawnButton';
 import { useDiaryDetail, useDeleteDiary } from '../../hooks/useDiaryQuery';
+import { MoodType, WeatherType } from '../../types';
 
 type DiaryDetailRouteProp = RouteProp<{ params: { _id: string } }, 'params'>;
 

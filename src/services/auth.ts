@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TOKEN_EXPIRE_DAYS } from '../config/constant';
-import tcbService, { CloudService } from './tcb';
+
 import aliyunSmsService from './aliyunSmsService';
+import { CloudService } from './tcb';
+import { TOKEN_EXPIRE_DAYS } from '../config/constant';
 
 const TOKEN_KEY = 'user_token';
 const USER_INFO_KEY = 'user_info';

@@ -1,19 +1,20 @@
-import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from 'react';
+
 import { COLORS } from '@/config/constant';
 
 // Screens
-import LoginScreen from '@/screens/auth/LoginScreen';
-import HomeScreen from '@/screens/home/HomeScreen';
-import CategoryScreen from '@/screens/category/CategoryScreen';
 import AIScreen from '@/screens/ai/AIScreen';
-import MineScreen from '@/screens/mine/MineScreen';
-import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
+import LoginScreen from '@/screens/auth/LoginScreen';
+import CategoryScreen from '@/screens/category/CategoryScreen';
 import DiaryDetailScreen from '@/screens/diary/DiaryDetailScreen';
+import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
+import HomeScreen from '@/screens/home/HomeScreen';
+import MineScreen from '@/screens/mine/MineScreen';
+import { useAppStore } from '@/store/appStore';
+import { useAuthStore } from '@/store/authStore';
 
 // Types
 export type RootStackParamList = {
@@ -55,11 +56,11 @@ const MainNavigator = () => {
           let iconName: keyof typeof Ionicons.glyphMap;
 
           if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
+            iconName = focused ? 'paw' : 'paw-outline';
           } else if (route.name === 'Category') {
             iconName = focused ? 'grid' : 'grid-outline';
           } else if (route.name === 'AI') {
-            iconName = focused ? 'sparkles' : 'sparkles-outline';
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'Mine') {
             iconName = focused ? 'person' : 'person-outline';
           } else {
@@ -78,9 +79,9 @@ const MainNavigator = () => {
         },
       })}
     >
-      <MainTab.Screen name="Home" component={HomeScreen} options={{ title: '首页' }} />
+      <MainTab.Screen name="Home" component={HomeScreen} options={{ title: '足迹' }} />
       <MainTab.Screen name="Category" component={CategoryScreen} options={{ title: '分类' }} />
-      <MainTab.Screen name="AI" component={AIScreen} options={{ title: 'AI' }} />
+      <MainTab.Screen name="AI" component={AIScreen} options={{ title: 'AI问答' }} />
       <MainTab.Screen name="Mine" component={MineScreen} options={{ title: '我的' }} />
     </MainTab.Navigator>
   );

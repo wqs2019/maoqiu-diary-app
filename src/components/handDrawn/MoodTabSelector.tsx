@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+
 import { MoodType } from '../../types';
 
 interface MoodTabSelectorProps {
@@ -16,14 +17,63 @@ const MOODS: {
   secondary: string;
   background: string;
 }[] = [
-    { type: 'happy', emoji: '😊', label: '开心', primary: '#FFD60A', secondary: '#FFE666', background: '#FFFBE6' },
-    { type: 'excited', emoji: '🤩', label: '兴奋', primary: '#FF6B9D', secondary: '#FFB6D1', background: '#FFF5F7' },
-    { type: 'relaxed', emoji: '😌', label: '轻松', primary: '#34C759', secondary: '#A8E6A8', background: '#F0FFF0' },
-    { type: 'touched', emoji: '🥺', label: '感动', primary: '#AF52DE', secondary: '#D9A8F0', background: '#F9F0FF' },
-    { type: 'normal', emoji: '😐', label: '平静', primary: '#8E8E93', secondary: '#C7C7CC', background: '#F5F5F5' },
-    { type: 'sad', emoji: '😢', label: '难过', primary: '#5AC8FA', secondary: '#B6E8FF', background: '#F0F9FF' },
-    { type: 'angry', emoji: '😠', label: '生气', primary: '#FF3B30', secondary: '#FF8A80', background: '#FFF5F5' },
-  ];
+  {
+    type: 'happy',
+    emoji: '😊',
+    label: '开心',
+    primary: '#FFD60A',
+    secondary: '#FFE666',
+    background: '#FFFBE6',
+  },
+  {
+    type: 'excited',
+    emoji: '🤩',
+    label: '兴奋',
+    primary: '#FF6B9D',
+    secondary: '#FFB6D1',
+    background: '#FFF5F7',
+  },
+  {
+    type: 'relaxed',
+    emoji: '😌',
+    label: '轻松',
+    primary: '#34C759',
+    secondary: '#A8E6A8',
+    background: '#F0FFF0',
+  },
+  {
+    type: 'touched',
+    emoji: '🥺',
+    label: '感动',
+    primary: '#AF52DE',
+    secondary: '#D9A8F0',
+    background: '#F9F0FF',
+  },
+  {
+    type: 'normal',
+    emoji: '😐',
+    label: '平静',
+    primary: '#8E8E93',
+    secondary: '#C7C7CC',
+    background: '#F5F5F5',
+  },
+  {
+    type: 'sad',
+    emoji: '😢',
+    label: '难过',
+    primary: '#5AC8FA',
+    secondary: '#B6E8FF',
+    background: '#F0F9FF',
+  },
+  {
+    type: 'angry',
+    emoji: '😠',
+    label: '生气',
+    primary: '#FF3B30',
+    secondary: '#FF8A80',
+    background: '#FFF5F5',
+  },
+];
 
 export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
   selectedMood,
@@ -49,15 +99,17 @@ export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
               styles.tab,
               selectedMood === mood.type
                 ? {
-                  backgroundColor: mood.primary,
-                  borderColor: mood.primary,
-                }
+                    backgroundColor: mood.primary,
+                    borderColor: mood.primary,
+                  }
                 : {
-                  backgroundColor: mood.background,
-                  borderColor: mood.secondary,
-                },
+                    backgroundColor: mood.background,
+                    borderColor: mood.secondary,
+                  },
             ]}
-            onPress={() => handlePress(mood.type)}
+            onPress={() => {
+              handlePress(mood.type);
+            }}
             activeOpacity={0.7}
           >
             <Text style={styles.emoji}>{mood.emoji}</Text>

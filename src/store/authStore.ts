@@ -1,5 +1,6 @@
-import { create } from "zustand";
-import authService, { UserInfo } from "../services/auth";
+import { create } from 'zustand';
+
+import authService, { UserInfo } from '../services/auth';
 
 export interface AuthState {
   isLoggedIn: boolean;
@@ -25,7 +26,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authService.saveUserInfo(user);
       set({ isLoggedIn: true, user, loading: false });
     } catch (error) {
-      set({ error: "登录失败", loading: false });
+      set({ error: '登录失败', loading: false });
     }
   },
   logout: async () => {
@@ -34,7 +35,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authService.logout();
       set({ isLoggedIn: false, user: null, loading: false });
     } catch (error) {
-      set({ error: "登出失败", loading: false });
+      set({ error: '登出失败', loading: false });
     }
   },
   sendCode: async (phone) => {
@@ -44,7 +45,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loading: false });
       return success;
     } catch (error) {
-      set({ error: "发送验证码失败", loading: false });
+      set({ error: '发送验证码失败', loading: false });
       return false;
     }
   },

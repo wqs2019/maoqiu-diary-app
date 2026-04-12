@@ -167,10 +167,6 @@ export const MASCOT_INTERACTIONS = {
   },
   night: {
     timeRange: [22, 6] as [number, number],
-    messages: [
-      '夜深啦，早点休息哦～🌙',
-      '晚安，做个好梦！💤',
-      '今天辛苦了，明天见～🌟',
-    ],
+    messages: ['夜深啦，早点休息哦～🌙', '晚安，做个好梦！💤', '今天辛苦了，明天见～🌟'],
   },
 };

@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
-import LoadingScreen from '@/screens/common/LoadingScreen';
-import { Navigation } from '@/navigation';
+
 import { initSentry, setUser, clearUser } from '@/config/sentry';
+import { Navigation } from '@/navigation';
 import { AppQueryProvider } from '@/providers/AppQueryProvider';
+import LoadingScreen from '@/screens/common/LoadingScreen';
+import { useAppStore } from '@/store/appStore';
+import { useAuthStore } from '@/store/authStore';
 
 // 初始化 Sentry（仅生产环境）
 if (!__DEV__) {

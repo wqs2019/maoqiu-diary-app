@@ -1,6 +1,7 @@
 // TCB 服务 - 完整的云函数调用实现
-import cloudbase from '@cloudbase/js-sdk';
 import adapter from '@cloudbase/adapter-rn';
+import cloudbase from '@cloudbase/js-sdk';
+
 import tcbConfig from '../config/tcb';
 
 // 使用适配器
@@ -40,7 +41,7 @@ const ensureAuth = async (appInstance: any) => {
   const auth = appInstance.auth({ persistence: 'local' });
 
   // 检查是否已登录
-  if (auth.hasLoginState && auth.hasLoginState()) {
+  if (auth.hasLoginState?.()) {
     console.log('[TCB] Already logged in');
     return auth;
   }
@@ -80,7 +81,7 @@ export const CloudService = {
         throw new Error('TCB init failed');
       }
     }
-    return ensureAuth(appInstance);
+    return await ensureAuth(appInstance);
   },
 
   /**

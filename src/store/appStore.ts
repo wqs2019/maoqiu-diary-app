@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { ThemeType, THEMES } from '../config/theme';
+
+import { ThemeType } from '../config/theme';
 
 export type I18nLangType = 'zh-CN' | 'en-US';
 export type { ThemeType };
@@ -17,7 +18,13 @@ export const useAppStore = create<AppState>((set) => ({
   theme: 'light',
   language: 'zh-CN',
   isLoading: false,
-  setTheme: (theme) => set({ theme }),
-  setLanguage: (language) => set({ language }),
-  setLoading: (loading) => set({ isLoading: loading }),
+  setTheme: (theme) => {
+    set({ theme });
+  },
+  setLanguage: (language) => {
+    set({ language });
+  },
+  setLoading: (loading) => {
+    set({ isLoading: loading });
+  },
 }));

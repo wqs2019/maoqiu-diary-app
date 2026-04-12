@@ -1,5 +1,8 @@
 export class CommonUtil {
-  static debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+  static debounce<T extends (...args: any[]) => any>(
+    func: T,
+    wait: number
+  ): (...args: Parameters<T>) => void {
     let timeout: ReturnType<typeof setTimeout> | null = null;
     return (...args: Parameters<T>) => {
       if (timeout) clearTimeout(timeout);
@@ -7,23 +10,36 @@ export class CommonUtil {
     };
   }
 
-  static throttle<T extends (...args: any[]) => any>(func: T, limit: number): (...args: Parameters<T>) => void {
+  static throttle<T extends (...args: any[]) => any>(
+    func: T,
+    limit: number
+  ): (...args: Parameters<T>) => void {
     let inThrottle = false;
     return (...args: Parameters<T>) => {
       if (!inThrottle) {
         func(...args);
         inThrottle = true;
-        setTimeout(() => inThrottle = false, limit);
+        setTimeout(() => (inThrottle = false), limit);
       }
     };
   }
 
   static isIos(): boolean {
-    return !!(typeof window !== 'undefined' && window.navigator && window.navigator.platform && /iPad|iPhone|iPod/.test(window.navigator.platform));
+    return !!(
+      typeof window !== 'undefined' &&
+      window.navigator &&
+      window.navigator.platform &&
+      /iPad|iPhone|iPod/.test(window.navigator.platform)
+    );
   }
 
   static isAndroid(): boolean {
-    return !!(typeof window !== 'undefined' && window.navigator && window.navigator.userAgent && /Android/.test(window.navigator.userAgent));
+    return !!(
+      typeof window !== 'undefined' &&
+      window.navigator &&
+      window.navigator.userAgent &&
+      window.navigator.userAgent.includes('Android')
+    );
   }
 
   static getDeviceType(): 'ios' | 'android' | 'web' {
@@ -42,7 +58,7 @@ export class CommonUtil {
   }
 
   static sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

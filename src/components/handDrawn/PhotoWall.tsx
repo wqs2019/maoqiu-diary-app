@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
-import { HEALING_COLORS, HAND_DRAWN_STYLES } from '../../config/handDrawnTheme';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+
 import { HandDrawnCard } from '../../components/handDrawn/HandDrawnCard';
+import { HEALING_COLORS, HAND_DRAWN_STYLES } from '../../config/handDrawnTheme';
 
 interface MemoryCard {
   id: string;
@@ -37,10 +38,7 @@ export const PhotoWall: React.FC<PhotoWallProps> = ({ memories = [] }) => {
       id: '2',
       title: '京都之旅',
       date: '2024-02-20',
-      images: [
-        'https://picsum.photos/300/300?random=4',
-        'https://picsum.photos/300/300?random=5',
-      ],
+      images: ['https://picsum.photos/300/300?random=4', 'https://picsum.photos/300/300?random=5'],
       scenario: 'travel',
       mood: 'excited',
     },
@@ -95,12 +93,7 @@ export const PhotoWall: React.FC<PhotoWallProps> = ({ memories = [] }) => {
 
       <View style={styles.grid}>
         {displayMemories.map((memory) => (
-          <HandDrawnCard
-            key={memory.id}
-            style="warm"
-            variant="default"
-            padding="small"
-          >
+          <HandDrawnCard key={memory.id} style="warm" variant="default" padding="small">
             <View style={styles.memoryCard}>
               {/* 照片拼贴 */}
               <View style={styles.photoGrid}>

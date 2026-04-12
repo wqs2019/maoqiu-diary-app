@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
-import { useAppStore, ThemeType, I18nLangType } from '../../store/appStore';
+import { useAppStore, I18nLangType } from '../../store/appStore';
 
 const SettingScreen: React.FC = () => {
   const { theme, language, setTheme, setLanguage } = useAppStore();
@@ -35,15 +36,33 @@ const SettingScreen: React.FC = () => {
           <View style={styles.languageOptions}>
             <TouchableOpacity
               style={[styles.languageOption, language === 'zh-CN' && styles.languageOptionActive]}
-              onPress={() => handleLanguageChange('zh-CN')}
+              onPress={() => {
+                handleLanguageChange('zh-CN');
+              }}
             >
-              <Text style={[styles.languageOptionText, language === 'zh-CN' && styles.languageOptionTextActive]}>简体中文</Text>
+              <Text
+                style={[
+                  styles.languageOptionText,
+                  language === 'zh-CN' && styles.languageOptionTextActive,
+                ]}
+              >
+                简体中文
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.languageOption, language === 'en-US' && styles.languageOptionActive]}
-              onPress={() => handleLanguageChange('en-US')}
+              onPress={() => {
+                handleLanguageChange('en-US');
+              }}
             >
-              <Text style={[styles.languageOptionText, language === 'en-US' && styles.languageOptionTextActive]}>English</Text>
+              <Text
+                style={[
+                  styles.languageOptionText,
+                  language === 'en-US' && styles.languageOptionTextActive,
+                ]}
+              >
+                English
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

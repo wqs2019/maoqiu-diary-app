@@ -1,6 +1,7 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Modal } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 
 interface DatePickerProps {
@@ -61,19 +62,16 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       <Text style={styles.label}>{label}</Text>
       <TouchableOpacity
         style={styles.dateButton}
-        onPress={() => setShowPicker(true)}
+        onPress={() => {
+          setShowPicker(true);
+        }}
         activeOpacity={0.7}
       >
         <Text style={styles.calendarIcon}>📅</Text>
         <Text style={styles.dateButtonText}>{formatDate(date)}</Text>
       </TouchableOpacity>
 
-      <Modal
-        visible={showPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={handleDismiss}
-      >
+      <Modal visible={showPicker} transparent animationType="fade" onRequestClose={handleDismiss}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
