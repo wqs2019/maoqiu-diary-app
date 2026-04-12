@@ -32,7 +32,7 @@ const createDiary = async (data) => {
       images: images || [],
       // 扩展字段（预留，后续实现）
       isFavorite: false, // TODO: 收藏功能 - 用户可标记重要日记
-      isPrivate: false,  // TODO: 私密日记 - 需要密码查看
+      isPrivate: false, // TODO: 私密日记 - 需要密码查看
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),
     });
@@ -78,12 +78,15 @@ const updateDiary = async (data) => {
     }
 
     // 更新日记
-    await db.collection('diaries').doc(_id).update({
-      data: {
-        ...updateData,
-        updatedAt: db.serverDate(),
-      },
-    });
+    await db
+      .collection('diaries')
+      .doc(_id)
+      .update({
+        data: {
+          ...updateData,
+          updatedAt: db.serverDate(),
+        },
+      });
 
     return {
       success: true,
@@ -137,7 +140,8 @@ const getDiaryDetail = async (data) => {
 // 获取日记列表
 const getDiaryList = async (data) => {
   try {
-    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate } = data;
+    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword } = data;
+    const _ = db.command;
 
     // 构建查询条件
     let query = {};
@@ -160,19 +164,30 @@ const getDiaryList = async (data) => {
       }
     }
 
+    let finalQuery = query;
+
+    if (keyword) {
+      const keywordRegex = db.RegExp({
+        regexp: keyword,
+        options: 'i',
+      });
+      finalQuery = _.and([query, _.or([{ title: keywordRegex }, { content: keywordRegex }])]);
+    }
+
     // 计算分页
     const skip = (page - 1) * pageSize;
 
     // 获取数据
-    const result = await db.collection('diaries')
-      .where(query)
+    const result = await db
+      .collection('diaries')
+      .where(finalQuery)
       .orderBy('createdAt', 'desc')
       .skip(skip)
       .limit(pageSize)
       .get();
 
     // 获取总数
-    const countResult = await db.collection('diaries').where(query).count();
+    const countResult = await db.collection('diaries').where(finalQuery).count();
 
     return {
       success: true,

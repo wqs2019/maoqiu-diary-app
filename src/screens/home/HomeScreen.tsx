@@ -29,6 +29,20 @@ const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  // 简单的防抖处理，避免每次输入都触发网络请求
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(text);
+    }, 500); // 500ms 延迟
+  };
 
   // 从云端获取日记列表
   const {
@@ -40,6 +54,7 @@ const HomeScreen: React.FC = () => {
     page: 1,
     pageSize: 20,
     scenario: undefined,
+    keyword: debouncedSearchQuery || undefined,
   });
 
   // 悬浮按钮拖动
@@ -162,7 +177,9 @@ const HomeScreen: React.FC = () => {
               placeholder="搜索你的回忆..."
               placeholderTextColor="#999"
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={handleSearchChange}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
             />
           </View>
           <TouchableOpacity style={styles.filterButton}>

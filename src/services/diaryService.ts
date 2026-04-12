@@ -12,6 +12,7 @@ export interface DiaryListParams {
   startDate?: string;
   endDate?: string;
   tags?: TagType[];
+  keyword?: string;
 }
 
 /**
@@ -42,6 +43,7 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
         startDate: params.startDate,
         endDate: params.endDate,
         tags: params.tags,
+        keyword: params.keyword,
       },
     }
   );
