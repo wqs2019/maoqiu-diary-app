@@ -14,13 +14,14 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
-import { ScenarioType, MoodType, WeatherType, TagType } from '../../types';
+import { ScenarioType, MoodType, WeatherType, TagType, MediaResource } from '../../types';
 import { HandDrawnButton } from '../../components/handDrawn/HandDrawnButton';
 import { DatePicker } from '../../components/handDrawn/DatePicker';
 import { MoodTabSelector } from '../../components/handDrawn/MoodTabSelector';
 import { WeatherTabSelector } from '../../components/handDrawn/WeatherTabSelector';
 import { TagTabSelector } from '../../components/handDrawn/TagTabSelector';
 import { ScenarioChip } from '../../components/handDrawn/ScenarioChip';
+import { MediaSelector } from '../../components/handDrawn/MediaSelector';
 import { useCreateDiary } from '../../hooks/useDiaryQuery';
 
 type EditDiaryRouteProp = RouteProp<{ params: { scenario?: ScenarioType; diaryId?: string } }, 'params'>;
@@ -38,6 +39,7 @@ const EditDiaryScreen: React.FC = () => {
     const [title, setTitle] = React.useState('');
     const [content, setContent] = React.useState('');
     const [tags, setTags] = React.useState<TagType[]>([]);
+    const [media, setMedia] = React.useState<MediaResource[]>([]);
 
     const template = SCENARIO_TEMPLATES[scenario];
 
@@ -60,7 +62,7 @@ const EditDiaryScreen: React.FC = () => {
                 weather: weather || 'sunny',
                 location: location.trim(),
                 tags,
-                images: [],
+                media: media.length > 0 ? media : undefined,
             },
             {
                 onSuccess: () => {
@@ -193,6 +195,13 @@ const EditDiaryScreen: React.FC = () => {
                         onToggleTag={handleToggleTag}
                     />
                 </View>
+
+                {/* 媒体附件选择 */}
+                <MediaSelector
+                    media={media}
+                    onMediaChange={setMedia}
+                    maxCount={9}
+                />
 
                 <View style={{ height: 40 }} />
             </ScrollView>

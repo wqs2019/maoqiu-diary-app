@@ -106,7 +106,6 @@ export const DiaryListScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.createButton}
           onPress={() => createMutation.mutate({
-            _id: '',
             title: '新日记',
             content: '这是第一条日记',
             scenario: 'daily',

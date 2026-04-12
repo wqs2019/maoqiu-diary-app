@@ -1,0 +1,12 @@
+{
+  "name": "image",
+  "version": "1.0.0",
+  "description": "User image upload",
+  "main": "index.js",
+  "type": "commonjs",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest"
+  },
+  "author": "Trae",
+  "license": "ISC"
+}

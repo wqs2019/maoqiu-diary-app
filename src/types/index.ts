@@ -48,6 +48,25 @@ export type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'windy' | 'fo
 // 标签类型
 export type TagType = 'daily' | 'work' | 'study' | 'travel' | 'sports' | 'food' | 'mood' | 'family' | 'friends' | 'shopping';
 
+// 媒体资源类型
+export type MediaType = 'image' | 'livePhoto' | 'video';
+
+// 上传状态
+export type UploadStatus = 'loading' | 'success' | 'fail';
+
+// 媒体资源
+export interface MediaResource {
+  type: MediaType;
+  uri: string;           // 本地 URI 或云端 URL
+  fileID?: string;       // 云存储文件 ID
+  thumbnail?: string;    // 缩略图 URI（视频用）
+  duration?: number;     // 时长（秒，视频用）
+  size?: number;         // 文件大小（字节）
+  mimeType?: string;     // MIME 类型
+  uploadStatus?: UploadStatus;  // 上传状态
+  uploadError?: string;  // 上传错误信息（失败时显示）
+}
+
 // 日记接口
 export interface Diary {
   _id: string;
@@ -56,7 +75,7 @@ export interface Diary {
   scenario: ScenarioType;
   mood: MoodType;
   weather: WeatherType;
-  images?: string[];
+  media?: MediaResource[];   // 新媒体资源（最多 9 个）
   location?: string;
   companions?: string[];
   rating?: number; // 1-5 星评分

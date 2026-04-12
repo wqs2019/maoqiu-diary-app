@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TOKEN_EXPIRE_DAYS } from '../config/constant';
-import tcbService from './tcb';
+import tcbService, { CloudService } from './tcb';
 import aliyunSmsService from './aliyunSmsService';
 
 const TOKEN_KEY = 'user_token';
@@ -31,28 +31,8 @@ export class AuthService {
         throw new Error('验证码错误');
       }
 
-      // 模拟返回数据
-      console.log('Testing mode: Login with phone', phone);
-      const mockToken = 'mock-token-' + Date.now();
-      const mockUser: UserInfo = {
-        id: '1',
-        phone,
-        nickname: '测试用户',
-        avatar: '',
-      };
-
-      return { token: mockToken, user: mockUser };
-
-      // 实际代码（后面使用时取消注释）
-      /*
-      const functions = tcbService.getFunctions();
-      if (!functions) {
-        throw new Error('TCB functions not initialized');
-      }
-
       // 调用登录云函数
-      const result = await functions.callFunction({
-        name: 'login',
+      const result = await CloudService.callFunction('login', {
         data: {
           phone,
           code,
@@ -65,7 +45,6 @@ export class AuthService {
 
       const { token, user } = result.data;
       return { token, user };
-      */
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -77,24 +56,6 @@ export class AuthService {
       // 使用阿里云短信服务发送验证码
       const success = await aliyunSmsService.sendSmsVerifyCode(phone);
       return success;
-
-      // 实际代码（后面使用时取消注释）
-      /*
-      const functions = tcbService.getFunctions();
-      if (!functions) {
-        throw new Error('TCB functions not initialized');
-      }
-
-      // 调用发送验证码云函数
-      const result = await functions.callFunction({
-        name: 'sendCode',
-        data: {
-          phone,
-        },
-      });
-
-      return result.code === 0;
-      */
     } catch (error) {
       console.error('Send code error:', error);
       throw error;
