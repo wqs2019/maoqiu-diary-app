@@ -113,10 +113,14 @@ const HomeScreen: React.FC = () => {
   // 获取当前时间段的问候语
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 6) return '凌晨好';
-    if (hour < 12) return '上午好';
-    if (hour < 18) return '下午好';
-    return '晚上好';
+    let timeGreeting = '';
+    if (hour < 6) timeGreeting = '凌晨好';
+    else if (hour < 12) timeGreeting = '上午好';
+    else if (hour < 18) timeGreeting = '下午好';
+    else timeGreeting = '晚上好';
+
+    const name = user?.nickname || '毛球';
+    return `${name}，${timeGreeting}`;
   };
 
   const getFormattedDate = () => {
