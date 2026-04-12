@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { HEALING_COLORS, SCENARIO_COLORS } from '../../config/handDrawnTheme';
 import { ScenarioType } from '../../types';
+import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 
 interface ScenarioChipProps {
     type: ScenarioType;
@@ -17,6 +18,7 @@ export const ScenarioChip: React.FC<ScenarioChipProps> = ({
     count,
 }) => {
     const scenario = SCENARIO_COLORS[type];
+    const template = SCENARIO_TEMPLATES[type];
 
     return (
         <TouchableOpacity
@@ -35,14 +37,14 @@ export const ScenarioChip: React.FC<ScenarioChipProps> = ({
             onPress={onPress}
             activeOpacity={0.7}
         >
-            <Text style={styles.icon}>{scenario.icon}</Text>
+            <Text style={styles.icon}>{template.icon}</Text>
             <Text
                 style={[
                     styles.text,
                     selected ? { color: '#FFFFFF' } : { color: scenario.primary },
                 ]}
             >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
+                {template.name}
             </Text>
             {count !== undefined && (
                 <View style={[styles.badge, { backgroundColor: selected ? '#FFFFFF' : scenario.primary }]}>

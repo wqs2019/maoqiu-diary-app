@@ -12,6 +12,7 @@ interface HandDrawnButtonProps {
     icon?: string;
     size?: 'small' | 'medium' | 'large';
     color?: string;
+    buttonStyle?: ViewStyle;
 }
 
 export const HandDrawnButton: React.FC<HandDrawnButtonProps> = ({
@@ -24,6 +25,7 @@ export const HandDrawnButton: React.FC<HandDrawnButtonProps> = ({
     icon,
     size = 'medium',
     color,
+    buttonStyle,
 }) => {
     const handDrawnStyle = HAND_DRAWN_STYLES[styleType];
     const buttonColor = color || HEALING_COLORS.pink[400];
@@ -72,6 +74,7 @@ export const HandDrawnButton: React.FC<HandDrawnButtonProps> = ({
                 },
                 getVariantStyle(),
                 disabled && styles.disabled,
+                buttonStyle,
             ]}
             onPress={onPress}
             disabled={disabled || loading}

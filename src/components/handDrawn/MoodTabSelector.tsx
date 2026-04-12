@@ -8,21 +8,36 @@ interface MoodTabSelectorProps {
   label?: string;
 }
 
-const MOODS: { type: MoodType; emoji: string; label: string; color: string }[] = [
-  { type: 'happy', emoji: '😊', label: '开心', color: '#FFD60A' },
-  { type: 'excited', emoji: '🤩', label: '兴奋', color: '#FF6B9D' },
-  { type: 'relaxed', emoji: '😌', label: '轻松', color: '#34C759' },
-  { type: 'touched', emoji: '🥺', label: '感动', color: '#AF52DE' },
-  { type: 'normal', emoji: '😐', label: '平静', color: '#8E8E93' },
-  { type: 'sad', emoji: '😢', label: '难过', color: '#5AC8FA' },
-  { type: 'angry', emoji: '😠', label: '生气', color: '#FF3B30' },
-];
+const MOODS: {
+  type: MoodType;
+  emoji: string;
+  label: string;
+  primary: string;
+  secondary: string;
+  background: string;
+}[] = [
+    { type: 'happy', emoji: '😊', label: '开心', primary: '#FFD60A', secondary: '#FFE666', background: '#FFFBE6' },
+    { type: 'excited', emoji: '🤩', label: '兴奋', primary: '#FF6B9D', secondary: '#FFB6D1', background: '#FFF5F7' },
+    { type: 'relaxed', emoji: '😌', label: '轻松', primary: '#34C759', secondary: '#A8E6A8', background: '#F0FFF0' },
+    { type: 'touched', emoji: '🥺', label: '感动', primary: '#AF52DE', secondary: '#D9A8F0', background: '#F9F0FF' },
+    { type: 'normal', emoji: '😐', label: '平静', primary: '#8E8E93', secondary: '#C7C7CC', background: '#F5F5F5' },
+    { type: 'sad', emoji: '😢', label: '难过', primary: '#5AC8FA', secondary: '#B6E8FF', background: '#F0F9FF' },
+    { type: 'angry', emoji: '😠', label: '生气', primary: '#FF3B30', secondary: '#FF8A80', background: '#FFF5F5' },
+  ];
 
 export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
   selectedMood,
   onSelectMood,
   label = '心情',
 }) => {
+  const handlePress = (mood: MoodType) => {
+    if (selectedMood === mood) {
+      onSelectMood(undefined as any);
+    } else {
+      onSelectMood(mood);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -32,23 +47,26 @@ export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
             key={mood.type}
             style={[
               styles.tab,
-              selectedMood === mood.type && {
-                backgroundColor: mood.color + '20',
-                borderColor: mood.color,
-                borderWidth: 3,
-              },
+              selectedMood === mood.type
+                ? {
+                  backgroundColor: mood.primary,
+                  borderColor: mood.primary,
+                }
+                : {
+                  backgroundColor: mood.background,
+                  borderColor: mood.secondary,
+                },
             ]}
-            onPress={() => onSelectMood(mood.type)}
+            onPress={() => handlePress(mood.type)}
             activeOpacity={0.7}
           >
             <Text style={styles.emoji}>{mood.emoji}</Text>
             <Text
               style={[
                 styles.labelText,
-                selectedMood === mood.type && {
-                  color: mood.color,
-                  fontWeight: '700',
-                },
+                selectedMood === mood.type
+                  ? { color: '#FFFFFF', fontWeight: '700' }
+                  : { color: mood.primary },
               ]}
             >
               {mood.label}
@@ -75,9 +93,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 16,
-    backgroundColor: '#F5F5F5',
     borderWidth: 2,
-    borderColor: '#E5E5E5',
     marginRight: 12,
     minWidth: 70,
   },

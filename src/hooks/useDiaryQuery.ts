@@ -76,8 +76,8 @@ export const useCreateDiary = () => {
         {
             // 突变成功后执行
             onSuccess: () => {
-                // 失效日记列表缓存，触发重新获取
-                queryClient.invalidateQueries({ queryKey: ['diaryList'] });
+                // 重置日记列表缓存，触发重新获取
+                queryClient.resetQueries({ queryKey: ['diaryList'] });
             },
         }
     );

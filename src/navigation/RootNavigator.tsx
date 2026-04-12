@@ -96,8 +96,13 @@ export const RootNavigator = () => {
             name="EditDiary"
             component={EditDiaryScreen}
             options={{
-              presentation: 'modal',
               title: '写日记',
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: COLORS.surface,
+              },
+              headerTintColor: COLORS.text,
+              headerBackTitle: '', // 隐藏返回按钮的文字
             }}
           />
         </>

@@ -5,7 +5,6 @@ import {
     StyleSheet,
     ScrollView,
     TextInput,
-    TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
     Alert,
@@ -14,21 +13,22 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
-import { ScenarioType, MoodType, WeatherType, TagType, MediaResource } from '../../types';
+import { ScenarioType, MoodType, WeatherType, MediaResource } from '../../types';
 import { HandDrawnButton } from '../../components/handDrawn/HandDrawnButton';
 import { DatePicker } from '../../components/handDrawn/DatePicker';
 import { MoodTabSelector } from '../../components/handDrawn/MoodTabSelector';
 import { WeatherTabSelector } from '../../components/handDrawn/WeatherTabSelector';
-import { TagTabSelector } from '../../components/handDrawn/TagTabSelector';
 import { ScenarioChip } from '../../components/handDrawn/ScenarioChip';
 import { MediaSelector } from '../../components/handDrawn/MediaSelector';
 import { useCreateDiary } from '../../hooks/useDiaryQuery';
+import { useQueryClient } from '../../hooks/useQuery';
 
 type EditDiaryRouteProp = RouteProp<{ params: { scenario?: ScenarioType; diaryId?: string } }, 'params'>;
 
 const EditDiaryScreen: React.FC = () => {
     const navigation = useNavigation();
     const route = useRoute<EditDiaryRouteProp>();
+    const queryClient = useQueryClient();
     const initialScenario = route.params?.scenario || 'daily';
 
     const [scenario, setScenario] = React.useState<ScenarioType>(initialScenario);
@@ -38,7 +38,6 @@ const EditDiaryScreen: React.FC = () => {
     const [weather, setWeather] = React.useState<WeatherType | undefined>();
     const [title, setTitle] = React.useState('');
     const [content, setContent] = React.useState('');
-    const [tags, setTags] = React.useState<TagType[]>([]);
     const [media, setMedia] = React.useState<MediaResource[]>([]);
 
     const template = SCENARIO_TEMPLATES[scenario];
@@ -61,11 +60,12 @@ const EditDiaryScreen: React.FC = () => {
                 mood: mood || 'normal',
                 weather: weather || 'sunny',
                 location: location.trim(),
-                tags,
                 media: media.length > 0 ? media : undefined,
             },
             {
                 onSuccess: () => {
+                    // 重置日记列表缓存，触发首页刷新
+                    queryClient.resetQueries({ queryKey: ['diaryList'] });
                     Alert.alert('✨ 太棒了！', '日记已保存到云端，继续记录美好时光吧～', [
                         { text: '好的', onPress: () => navigation.goBack() },
                     ]);
@@ -80,12 +80,6 @@ const EditDiaryScreen: React.FC = () => {
         );
     };
 
-    const handleToggleTag = (tag: TagType) => {
-        setTags((prev) =>
-            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-        );
-    };
-
     const template1 = SCENARIO_TEMPLATES[scenario];
 
     return (
@@ -93,22 +87,6 @@ const EditDiaryScreen: React.FC = () => {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Text style={styles.backButtonText}>✕</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>记录{template1.name}</Text>
-                {createDiaryMutation.isPending ? (
-                    <ActivityIndicator size="small" color={HEALING_COLORS.pink[500]} />
-                ) : (
-                    <HandDrawnButton
-                        title="保存"
-                        size="small"
-                        onPress={handleSave}
-                    />
-                )}
-            </View>
-
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 {/* 场景选择 */}
                 <View style={styles.section}>
@@ -188,20 +166,27 @@ const EditDiaryScreen: React.FC = () => {
                     />
                 </View>
 
-                {/* 标签选择 */}
-                <View style={styles.section}>
-                    <TagTabSelector
-                        selectedTags={tags}
-                        onToggleTag={handleToggleTag}
-                    />
-                </View>
-
                 {/* 媒体附件选择 */}
                 <MediaSelector
                     media={media}
                     onMediaChange={setMedia}
                     maxCount={9}
                 />
+
+                {/* 保存按钮 */}
+                <View style={styles.saveButtonContainer}>
+                    {createDiaryMutation.isPending ? (
+                        <ActivityIndicator size="large" color={HEALING_COLORS.pink[500]} />
+                    ) : (
+                        <HandDrawnButton
+                            title="保存日记"
+                            size="large"
+                            onPress={handleSave}
+                            color={HEALING_COLORS.pink[500]}
+                            buttonStyle={styles.fullWidthButton}
+                        />
+                    )}
+                </View>
 
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -271,6 +256,14 @@ const styles = StyleSheet.create({
     contentInput: {
         minHeight: 150,
         lineHeight: 24,
+    },
+    saveButtonContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 20,
+        alignItems: 'center',
+    },
+    fullWidthButton: {
+        width: '100%',
     },
 });
 
