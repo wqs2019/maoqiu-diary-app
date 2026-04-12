@@ -126,7 +126,6 @@ export interface TimelineItem {
   scenario?: ScenarioType;
   mood?: MoodType;
   location?: string;
-  diaryId?: string;
 }
 
 // 分类接口

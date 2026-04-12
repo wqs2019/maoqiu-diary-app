@@ -50,11 +50,12 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
  * 获取日记详情
  */
 export const getDiaryDetail = async (_id: string): Promise<Diary> => {
-  const result = await CloudService.callFunction<Diary>('diary', {
+  const result = await CloudService.callFunction<CloudFunctionResponse<Diary[]>>('diary', {
     action: 'get',
     data: { _id },
   });
-  return result.data;
+  // 返回数组中的第一个元素
+  return result.data.data[0];
 };
 
 /**

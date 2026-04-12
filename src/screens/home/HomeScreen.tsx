@@ -94,8 +94,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleTimelineItemPress = (item: TimelineItem) => {
-    // TODO: 跳转到日记详情
-    console.log('Clicked item:', item);
+    (navigation as any).navigate('DiaryDetail', { _id: item._id });
   };
 
   // 将云端数据转换为 TimelineItem 格式
@@ -109,7 +108,6 @@ const HomeScreen: React.FC = () => {
       scenario: diary.scenario,
       mood: diary.mood,
       location: diary.location,
-      diaryId: diary._id,
     };
   };
 

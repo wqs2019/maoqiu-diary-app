@@ -13,12 +13,14 @@ import CategoryScreen from '@/screens/category/CategoryScreen';
 import AIScreen from '@/screens/ai/AIScreen';
 import MineScreen from '@/screens/mine/MineScreen';
 import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
+import DiaryDetailScreen from '@/screens/diary/DiaryDetailScreen';
 
 // Types
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
-  EditDiary: { scenario?: string; diaryId?: string };
+  EditDiary: { scenario?: string; _id?: string };
+  DiaryDetail: { _id: string };
 };
 
 export type AuthStackParamList = {
@@ -97,6 +99,19 @@ export const RootNavigator = () => {
             component={EditDiaryScreen}
             options={{
               title: '写日记',
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: COLORS.surface,
+              },
+              headerTintColor: COLORS.text,
+              headerBackTitle: '', // 隐藏返回按钮的文字
+            }}
+          />
+          <RootStack.Screen
+            name="DiaryDetail"
+            component={DiaryDetailScreen}
+            options={{
+              title: '日记详情',
               headerShown: true,
               headerStyle: {
                 backgroundColor: COLORS.surface,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Image, ViewStyle, TouchableOpacity } from 'react-native';
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
 
 interface HandDrawnCardProps {
@@ -57,10 +57,14 @@ export const HandDrawnCard: React.FC<HandDrawnCardProps> = ({
         return {};
     };
 
-    const cardContent = (
-        <View
+    return (
+        <TouchableOpacity
+            onPress={onPress}
+            activeOpacity={onPress ? 0.7 : 1}
+            disabled={!onPress}
             style={[
                 styles.container,
+                styles.pressable,
                 {
                     borderRadius: handDrawnStyle.borderRadius,
                     borderWidth: handDrawnStyle.borderWidth,
@@ -87,10 +91,8 @@ export const HandDrawnCard: React.FC<HandDrawnCardProps> = ({
             <View style={styles.content}>{children}</View>
 
             {footer && <View style={styles.footer}>{footer}</View>}
-        </View>
+        </TouchableOpacity>
     );
-
-    return cardContent;
 };
 
 const styles = StyleSheet.create({
