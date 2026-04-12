@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,9 +7,13 @@ import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../store/authStore';
 
 const MineScreen: React.FC = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, fetchUserInfo } = useAuthStore();
   const { theme } = useAppStore();
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, [fetchUserInfo]);
 
   const handleLogout = async () => {
     await logout();

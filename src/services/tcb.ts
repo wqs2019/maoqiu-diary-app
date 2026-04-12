@@ -121,11 +121,25 @@ export const CloudService = {
         ...options,
       });
 
-      console.log('[TCB] Function result received');
+      console.log('[TCB] Function result received:', res);
 
       // 将响应转换为纯 JSON 对象
       const responseData = res.result;
       const cleanData = JSON.parse(JSON.stringify(responseData || {}));
+
+      // 注意：这里为了兼容云函数直接返回 { code, message, data } 的格式
+      if (cleanData.code !== undefined) {
+        return cleanData as any;
+      }
+
+      // 如果云函数返回的是 { success: false, message: ... } 格式
+      if (cleanData.success === false) {
+        return {
+          code: -1,
+          message: cleanData.message || '操作失败',
+          data: cleanData as T,
+        };
+      }
 
       return {
         code: 0,

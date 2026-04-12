@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TimelineView } from '../../components/handDrawn/TimelineView';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
+import { useAuthStore } from '../../store/authStore';
 import { ScenarioType, TimelineItem, Diary } from '../../types';
 
 const { width, height } = Dimensions.get('window');
@@ -27,6 +28,7 @@ const { width, height } = Dimensions.get('window');
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { fetchUserInfo } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -63,6 +65,11 @@ const HomeScreen: React.FC = () => {
     scenario: undefined,
     keyword: debouncedSearchQuery || undefined,
   });
+
+  // 在首页挂载时获取最新的用户信息
+  useEffect(() => {
+    fetchUserInfo();
+  }, [fetchUserInfo]);
 
   // 悬浮按钮拖动
   const panY = useRef(new Animated.Value(0)).current;

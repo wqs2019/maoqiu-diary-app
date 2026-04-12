@@ -11,6 +11,7 @@ export interface AuthState {
   logout: () => Promise<void>;
   sendCode: (phone: string) => Promise<boolean>;
   checkAuth: () => Promise<boolean>;
+  fetchUserInfo: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -25,8 +26,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authService.saveToken(token);
       await authService.saveUserInfo(user);
       set({ isLoggedIn: true, user, loading: false });
-    } catch (error) {
-      set({ error: '登录失败', loading: false });
+    } catch (error: any) {
+      console.error('Login failed in store:', error);
+      set({ error: error.message || '登录失败', loading: false });
     }
   },
   logout: async () => {
@@ -53,10 +55,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true });
     try {
       const token = await authService.getToken();
-      const user = await authService.getUserInfo();
-      if (token && user) {
-        const valid = await authService.validateToken();
-        if (valid) {
+      if (token) {
+        const user = await authService.fetchUserInfoFromServer();
+        if (user) {
           set({ isLoggedIn: true, user, loading: false });
           return true;
         }
@@ -66,6 +67,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       set({ isLoggedIn: false, user: null, loading: false });
       return false;
+    }
+  },
+  fetchUserInfo: async () => {
+    try {
+      const user = await authService.fetchUserInfoFromServer();
+      if (user) {
+        set({ user });
+      }
+    } catch (error) {
+      console.error('Failed to fetch user info', error);
     }
   },
 }));

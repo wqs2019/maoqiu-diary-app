@@ -33,18 +33,27 @@ export class AuthService {
       }
 
       // 调用登录云函数
-      const result = await CloudService.callFunction('login', {
+      const response = await CloudService.callFunction('login', {
+        action: 'login',
         data: {
           phone,
           code,
         },
       });
 
-      if (result.code !== 0) {
-        throw new Error(result.message || '登录失败');
+      console.log('Login response:', response);
+
+      // 直接使用 response (如果 tcb 返回的是 { code, message, data } 结构)
+      const result = response;
+      if (!result || result.code !== 0) {
+        throw new Error(result?.message || '登录失败');
       }
 
-      const { token, user } = result.data;
+      const { token, user } = result.data || {};
+      if (!token || !user) {
+        throw new Error(result.data?.message || '返回数据格式错误，登录失败');
+      }
+
       return { token, user };
     } catch (error) {
       console.error('Login error:', error);
@@ -64,6 +73,7 @@ export class AuthService {
   }
 
   async saveToken(token: string): Promise<void> {
+    if (!token) return;
     const expiresAt = Date.now() + TOKEN_EXPIRE_DAYS * 24 * 60 * 60 * 1000;
     const tokenInfo: TokenInfo = { token, expiresAt };
     await AsyncStorage.setItem(TOKEN_KEY, JSON.stringify(tokenInfo));
@@ -87,12 +97,40 @@ export class AuthService {
   }
 
   async saveUserInfo(userInfo: UserInfo): Promise<void> {
+    if (!userInfo) return;
     await AsyncStorage.setItem(USER_INFO_KEY, JSON.stringify(userInfo));
   }
 
   async getUserInfo(): Promise<UserInfo | null> {
     const userInfoStr = await AsyncStorage.getItem(USER_INFO_KEY);
     return userInfoStr ? JSON.parse(userInfoStr) : null;
+  }
+
+  async fetchUserInfoFromServer(): Promise<UserInfo | null> {
+    try {
+      const token = await this.getToken();
+      if (!token) return null;
+
+      const response = await CloudService.callFunction('login', {
+        action: 'validateToken',
+        data: {
+          token,
+        },
+      });
+
+      // 根据更新后的 TCB 适配器，如果是直出的 JSON，它本身就是包含 {code, message, data} 的对象
+      const result = response;
+      if (result && result.code === 0 && result.data?.user) {
+        const user = result.data.user;
+        console.log('Fetched user from server:', user);
+        await this.saveUserInfo(user);
+        return user;
+      }
+      return null;
+    } catch (error) {
+      console.error('Fetch user info from server error:', error);
+      return null;
+    }
   }
 
   async clearUserInfo(): Promise<void> {
