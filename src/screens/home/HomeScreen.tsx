@@ -168,6 +168,7 @@ const HomeScreen: React.FC = () => {
       mood: diary.mood,
       weather: diary.weather,
       location: diary.location,
+      media: diary.media,
     };
   };
 
