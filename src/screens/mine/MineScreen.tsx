@@ -32,9 +32,14 @@ const MineScreen: React.FC = () => {
     iconName: keyof typeof Feather.glyphMap,
     title: string,
     color: string,
-    isLast = false
+    isLast = false,
+    onPress?: () => void
   ) => (
-    <TouchableOpacity style={[styles.menuItem, !isLast && styles.menuItemBorder]}>
+    <TouchableOpacity
+      style={[styles.menuItem, !isLast && styles.menuItemBorder]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={[styles.menuIconContainer, { backgroundColor: color + '15' }]}>
         <Feather name={iconName} size={20} color={color} />
       </View>
@@ -141,8 +146,12 @@ const MineScreen: React.FC = () => {
           ]}
         >
           {renderMenuItem('settings', '应用设置', HEALING_COLORS.gray[600])}
-          {renderMenuItem('info', '关于毛球', HEALING_COLORS.pink[400])}
-          {renderMenuItem('help-circle', '帮助与反馈', HEALING_COLORS.blue[400], true)}
+          {renderMenuItem('info', '关于毛球', HEALING_COLORS.pink[400], false, () =>
+            navigation.navigate('About' as any)
+          )}
+          {renderMenuItem('help-circle', '帮助与反馈', HEALING_COLORS.blue[400], true, () =>
+            navigation.navigate('Feedback' as any)
+          )}
         </View>
 
         {/* 退出登录按钮 */}

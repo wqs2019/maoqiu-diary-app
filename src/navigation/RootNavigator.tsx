@@ -14,6 +14,8 @@ import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
 import HomeScreen from '@/screens/home/HomeScreen';
 import EditProfileScreen from '@/screens/mine/EditProfileScreen';
 import MineScreen from '@/screens/mine/MineScreen';
+import AboutScreen from '@/screens/mine/AboutScreen';
+import FeedbackScreen from '@/screens/mine/FeedbackScreen';
 import PhotoWallScreen from '@/screens/category/PhotoWallScreen';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
@@ -26,6 +28,8 @@ export type RootStackParamList = {
   DiaryDetail: { _id: string };
   EditProfile: undefined;
   PhotoWall: { scenario?: string };
+  About: undefined;
+  Feedback: undefined;
 };
 
 export type AuthStackParamList = {
@@ -135,6 +139,20 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="PhotoWall"
             component={PhotoWallScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="About"
+            component={AboutScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="Feedback"
+            component={FeedbackScreen}
             options={{
               headerShown: false,
             }}
