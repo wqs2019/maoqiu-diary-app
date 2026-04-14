@@ -92,7 +92,7 @@ const MainNavigator = () => {
 };
 
 export const RootNavigator = () => {
-  const { isLoggedIn } = useAuthStore();
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>

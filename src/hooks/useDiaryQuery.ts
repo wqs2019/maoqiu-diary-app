@@ -30,6 +30,7 @@ export const useDiaryList = (params: DiaryListParams = {}) => {
       // 可选配置
       staleTime: 1000 * 60 * 1, // 1 分钟内数据不失效
       retry: 2, // 失败重试 2 次
+      enabled: !!params.userId, // 仅当 userId 存在时启用查询
     }
   );
 };

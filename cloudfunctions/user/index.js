@@ -93,16 +93,31 @@ const getUser = async (data) => {
       };
     }
 
-    const result = await db.collection('users').doc(_id).get();
+    let userResult;
+    try {
+      userResult = await db.collection('users').doc(_id).get();
+    } catch (e) {
+      console.log('Error fetching user directly by id, trying array result fallback:', e);
+      userResult = { data: null };
+    }
 
-    let userData = {};
-    if (result && result.data) {
-      userData = Array.isArray(result.data) ? result.data[0] : result.data;
+    let userData =
+      userResult && userResult.data
+        ? Array.isArray(userResult.data)
+          ? userResult.data[0]
+          : userResult.data
+        : null;
+
+    if (!userData) {
+      console.log('User data not found by doc(), trying where().get() for userId:', _id);
+      const fallbackResult = await db.collection('users').where({ _id }).get();
+      userData =
+        fallbackResult.data && fallbackResult.data.length > 0 ? fallbackResult.data[0] : null;
     }
 
     return {
       success: true,
-      data: userData,
+      data: userData || {},
     };
   } catch (error) {
     console.error('Get user error:', error);

@@ -105,14 +105,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   updateProfile: async (userId, data) => {
-    set({ loading: true, error: null });
+    // 资料更新不应触发全局 loading，因为它会触发 App.tsx 的 LoadingScreen 导致导航树重置
+    set({ error: null });
     try {
       const updatedUser = await userService.updateUserInfo(userId, data);
       // 数据持久化已在 userService 内部处理，Store 只需更新状态即可
-      set({ user: updatedUser, loading: false });
+      // 同时确保 isLoggedIn 保持为 true，防止状态丢失
+      set({ user: updatedUser, isLoggedIn: true });
     } catch (error: any) {
       console.error('Update profile error:', error);
-      set({ error: error.message || '更新资料失败', loading: false });
+      set({ error: error.message || '更新资料失败' });
       throw error;
     }
   },

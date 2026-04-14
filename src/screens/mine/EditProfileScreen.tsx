@@ -34,9 +34,9 @@ const EditProfileScreen: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 监听 user 对象变化，确保每次进入页面或用户信息更新时，能够重新填充表单数据
+  // 监听 user 对象变化，确保首次进入页面时能够填充表单数据
   useEffect(() => {
-    if (user) {
+    if (user && !nickname && !avatar) {
       setNickname(user.nickname || '');
       setAvatar(user.avatar || '');
       setGender(user.gender || 'secret');
@@ -66,8 +66,8 @@ const EditProfileScreen: React.FC = () => {
           asset.mimeType
         );
 
-        if (uploadResult.success && uploadResult.data?.tempURL) {
-          setAvatar(uploadResult.data.tempURL);
+        if (uploadResult.success && uploadResult.data?.url) {
+          setAvatar(uploadResult.data.url);
         } else {
           throw new Error(uploadResult.message || '上传头像失败');
         }
@@ -98,8 +98,8 @@ const EditProfileScreen: React.FC = () => {
         {
           text: '好的',
           onPress: () => {
-            // 确保强制退回到 Mine 页面，而不只是简单 goBack (防止堆栈混乱)
-            navigation.navigate('Mine' as never);
+            // 返回上一个页面（通常是“我的”页面）
+            navigation.goBack();
           },
         },
       ]);
@@ -162,8 +162,16 @@ const EditProfileScreen: React.FC = () => {
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={handlePickAvatar} style={styles.avatarContainer}>
             <Image
-              source={{ uri: avatar || 'https://api.dicebear.com/7.x/notionists/png?seed=Maoqiu' }}
+              source={
+                avatar
+                  ? { uri: avatar }
+                  : {
+                      uri: `https://api.dicebear.com/7.x/notionists/png?seed=${nickname || 'Maoqiu'}`,
+                    }
+              }
+              fadeDuration={0}
               style={styles.avatarImage}
+              resizeMode="cover"
             />
             <View style={styles.avatarOverlay}>
               {isUploading ? (

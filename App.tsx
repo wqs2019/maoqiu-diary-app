@@ -15,8 +15,9 @@ if (!__DEV__) {
 }
 
 export default function App() {
-  const { checkAuth, loading: authLoading, user } = useAuthStore();
-  const { theme } = useAppStore();
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+  const user = useAuthStore((state) => state.user);
+  const theme = useAppStore((state) => state.theme);
   const [appLoading, setAppLoading] = useState(true);
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export default function App() {
       setAppLoading(false);
     };
     initApp();
-  }, [checkAuth]);
+  }, []); // Only once on mount
 
   // 设置 Sentry 用户上下文
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function App() {
     }
   }, [user]);
 
-  if (appLoading || authLoading) {
+  if (appLoading) {
     return <LoadingScreen />;
   }
 

@@ -18,8 +18,11 @@ const MineScreen: React.FC = () => {
   const themeStyle = HAND_DRAWN_STYLES.soft; // 使用柔和手绘风格
 
   useEffect(() => {
-    fetchUserInfo();
-  }, [fetchUserInfo]);
+    // 仅在没有用户信息时才主动获取，避免重复获取导致页面闪烁
+    if (!user) {
+      fetchUserInfo();
+    }
+  }, [fetchUserInfo, user]);
 
   const handleLogout = async () => {
     await logout();
@@ -66,9 +69,12 @@ const MineScreen: React.FC = () => {
           ]}
         >
           <Image
-            source={{
-              uri: user?.avatar || 'https://api.dicebear.com/7.x/notionists/png?seed=Maoqiu',
-            }}
+            source={
+              user?.avatar
+                ? { uri: user.avatar }
+                : { uri: 'https://api.dicebear.com/7.x/notionists/png?seed=Maoqiu' }
+            }
+            fadeDuration={0}
             style={styles.avatar}
           />
           <View style={styles.userDetails}>

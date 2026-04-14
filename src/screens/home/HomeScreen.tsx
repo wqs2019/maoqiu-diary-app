@@ -79,8 +79,10 @@ const HomeScreen: React.FC = () => {
 
   // 在首页挂载时获取最新的用户信息
   useEffect(() => {
-    fetchUserInfo();
-  }, [fetchUserInfo]);
+    if (!user) {
+      fetchUserInfo();
+    }
+  }, [fetchUserInfo, user]);
 
   // 悬浮按钮拖动
   const panY = useRef(new Animated.Value(0)).current;
