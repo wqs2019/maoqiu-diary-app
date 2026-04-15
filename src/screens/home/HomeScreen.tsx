@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AnimatedBackgroundBlobs } from '../../components/common/AnimatedBackgroundBlobs';
 import { TimelineView } from '../../components/handDrawn/TimelineView';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
@@ -234,11 +235,7 @@ const HomeScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Background Blobs */}
-      <View style={[styles.blob, styles.blobTopLeft]} />
-      <View style={[styles.blob, styles.blobTopRight]} />
-      <View style={[styles.blob, styles.blobBottomLeft]} />
-      <View style={[styles.blob, styles.blobBottomRight]} />
-      <View style={[styles.blob, styles.blobBottomCenter]} />
+      <AnimatedBackgroundBlobs />
 
       {/* Fixed Header & Search */}
       <View style={[styles.fixedHeader, { paddingTop: insets.top + 16 }]}>
@@ -544,50 +541,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     position: 'relative',
   },
-  blob: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  blobTopLeft: {
-    width: 250,
-    height: 250,
-    backgroundColor: '#FFF0F5', // Light pink
-    top: -80,
-    left: -80,
-    opacity: 0.8,
-  },
-  blobTopRight: {
-    width: 280,
-    height: 280,
-    backgroundColor: '#E6F7FF', // Light cyan/blue
-    top: -50,
-    right: -100,
-    opacity: 0.8,
-  },
-  blobBottomLeft: {
-    width: 300,
-    height: 300,
-    backgroundColor: '#FFFFE0', // Light yellow
-    bottom: 50,
-    left: -150,
-    opacity: 0.6,
-  },
-  blobBottomRight: {
-    width: 250,
-    height: 250,
-    backgroundColor: '#F3E5F5', // Light purple
-    bottom: 100,
-    right: -100,
-    opacity: 0.8,
-  },
-  blobBottomCenter: {
-    width: 400,
-    height: 200,
-    backgroundColor: '#E8F5E9', // Light green
-    bottom: -100,
-    alignSelf: 'center',
-    opacity: 0.7,
-  },
   fixedHeader: {
     paddingHorizontal: 20,
     zIndex: 1,
@@ -643,7 +596,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 10,
     zIndex: 1,
   },
   searchInputWrapper: {
