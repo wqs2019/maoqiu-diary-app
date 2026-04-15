@@ -6,6 +6,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { useDiaryStats } from '../../hooks/useDiaryQuery';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useAuthStore } from '../../store/authStore';
 
@@ -16,6 +17,9 @@ const MineScreen: React.FC = () => {
   const { user, logout, fetchUserInfo } = useAuthStore();
   const insets = useSafeAreaInsets();
   const themeStyle = HAND_DRAWN_STYLES.soft; // 使用柔和手绘风格
+
+  // 获取用户所有日记统计数据
+  const stats = useDiaryStats(user?._id);
 
   useEffect(() => {
     // 仅在没有用户信息时才主动获取，避免重复获取导致页面闪烁
@@ -97,19 +101,23 @@ const MineScreen: React.FC = () => {
         {/* 统计数据区 */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>12</Text>
+            <Text style={styles.statNumber}>{stats.totalDiaries}</Text>
             <Text style={styles.statLabel}>日记</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>5</Text>
+            <Text style={styles.statNumber}>{stats.currentStreak}</Text>
             <Text style={styles.statLabel}>连续打卡</Text>
           </View>
           <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>3</Text>
+          <TouchableOpacity
+            style={styles.statItem}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('Badges' as any)}
+          >
+            <Text style={styles.statNumber}>{stats.badges}</Text>
             <Text style={styles.statLabel}>收集徽章</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* 菜单区块 1 */}
@@ -128,7 +136,9 @@ const MineScreen: React.FC = () => {
         >
           {renderMenuItem('book-open', '我的日记本', HEALING_COLORS.blue[500])}
           {renderMenuItem('star', '收藏夹', HEALING_COLORS.yellow[500])}
-          {renderMenuItem('calendar', '打卡日历', HEALING_COLORS.green[500], true)}
+          {renderMenuItem('calendar', '打卡日历', HEALING_COLORS.green[500], true, () =>
+            navigation.navigate('Calendar' as any)
+          )}
         </View>
 
         {/* 菜单区块 2 */}
