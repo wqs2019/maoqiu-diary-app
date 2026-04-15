@@ -7,6 +7,7 @@ export { Diary, DiaryListResponse };
 export interface DiaryListParams {
   page?: number;
   pageSize?: number;
+  notebookId?: string;
   mood?: MoodType;
   scenario?: ScenarioType;
   startDate?: string;
@@ -39,6 +40,7 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
       data: {
         page: params.page || 1,
         pageSize: params.pageSize || 10,
+        notebookId: params.notebookId,
         mood: params.mood,
         scenario: params.scenario,
         startDate: params.startDate,

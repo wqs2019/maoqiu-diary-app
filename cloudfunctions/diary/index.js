@@ -10,7 +10,7 @@ const db = app.database();
 // 创建日记
 const createDiary = async (data) => {
   try {
-    const { title, content, date, scenario, mood, weather, location, tags, media, userId } = data;
+    const { title, content, date, scenario, mood, weather, location, tags, media, userId, notebookId } = data;
 
     if (!userId) {
       return {
@@ -30,6 +30,7 @@ const createDiary = async (data) => {
     // 创建日记记录
     const result = await db.collection('diaries').add({
       userId,
+      notebookId: notebookId,
       title: title || '',
       content: content || '',
       date: date || new Date().toISOString(), // 保存用户选择的时间
@@ -50,6 +51,7 @@ const createDiary = async (data) => {
       success: true,
       data: {
         _id: result._id,
+        notebookId: notebookId,
         title,
         content,
         date: date || new Date().toISOString(),
@@ -150,7 +152,7 @@ const getDiaryDetail = async (data) => {
 // 获取日记列表
 const getDiaryList = async (data) => {
   try {
-    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId } = data;
+    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId } = data;
     const _ = db.command;
 
     if (!userId) {
@@ -185,12 +187,16 @@ const getDiaryList = async (data) => {
 
     let finalQuery = query;
 
+    if (notebookId) {
+      finalQuery.notebookId = notebookId;
+    }
+
     if (keyword) {
       const keywordRegex = db.RegExp({
         regexp: keyword,
         options: 'i',
       });
-      finalQuery = _.and([query, _.or([{ title: keywordRegex }, { content: keywordRegex }])]);
+      finalQuery = _.and([finalQuery, _.or([{ title: keywordRegex }, { content: keywordRegex }])]);
     }
 
     // 计算分页

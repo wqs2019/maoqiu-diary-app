@@ -1,0 +1,9 @@
+{
+  "name": "notebook",
+  "version": "1.0.0",
+  "description": "Notebook management cloud function",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest"
+  }
+}

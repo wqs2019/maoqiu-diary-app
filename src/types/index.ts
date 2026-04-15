@@ -82,6 +82,7 @@ export interface MediaResource {
 // 日记接口
 export interface Diary {
   _id: string;
+  notebookId?: string; // 所属日记本 ID
   title: string;
   content: string;
   date: string; // 用户选择的日记发生时间

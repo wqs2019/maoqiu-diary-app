@@ -23,6 +23,7 @@ import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useCreateDiary, useUpdateDiary, useDiaryDetail } from '../../hooks/useDiaryQuery';
 import { useQueryClient } from '../../hooks/useQuery';
 import { useAuthStore } from '../../store/authStore';
+import { useNotebookStore } from '../../store/notebookStore';
 import { ScenarioType, MoodType, WeatherType, MediaResource } from '../../types';
 
 type EditDiaryRouteProp = RouteProp<
@@ -70,6 +71,7 @@ const EditDiaryScreen: React.FC = () => {
   const createDiaryMutation = useCreateDiary();
   const updateDiaryMutation = useUpdateDiary();
   const user = useAuthStore((state) => state.user);
+  const getCurrentNotebook = useNotebookStore((state) => state.getCurrentNotebook);
 
   const handleSave = () => {
     if (!title.trim() && !content.trim()) {
@@ -85,8 +87,11 @@ const EditDiaryScreen: React.FC = () => {
     // 过滤掉仅在本地使用的状态字段
     const cleanMedia = media.map(({ uploadStatus, uploadError, ...rest }) => rest);
 
+    const currentNotebook = getCurrentNotebook(user._id);
+
     const payload = {
       userId: user._id,
+      notebookId: currentNotebook._id,
       title: title.trim(),
       content: content.trim(),
       date: date.toISOString(), // 保存用户选择的日期

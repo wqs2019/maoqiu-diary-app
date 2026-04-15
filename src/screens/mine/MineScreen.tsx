@@ -9,6 +9,7 @@ import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useDiaryStats } from '../../hooks/useDiaryQuery';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useAuthStore } from '../../store/authStore';
+import { useNotebookStore } from '../../store/notebookStore';
 
 type MineScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -20,13 +21,18 @@ const MineScreen: React.FC = () => {
 
   // 获取用户所有日记统计数据
   const stats = useDiaryStats(user?._id);
+  const getNotebooks = useNotebookStore((state) => state.getNotebooks);
+  const fetchNotebooks = useNotebookStore((state) => state.fetchNotebooks);
+  const notebookCount = user?._id ? getNotebooks(user._id).length : 0;
 
   useEffect(() => {
     // 仅在没有用户信息时才主动获取，避免重复获取导致页面闪烁
     if (!user) {
       fetchUserInfo();
+    } else {
+      fetchNotebooks(user._id);
     }
-  }, [fetchUserInfo, user]);
+  }, [fetchUserInfo, user, fetchNotebooks]);
 
   const handleLogout = async () => {
     await logout();
@@ -101,13 +107,18 @@ const MineScreen: React.FC = () => {
         {/* 统计数据区 */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{notebookCount}</Text>
+            <Text style={styles.statLabel}>日记本</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
             <Text style={styles.statNumber}>{stats.totalDiaries}</Text>
             <Text style={styles.statLabel}>日记</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>{stats.currentStreak}</Text>
-            <Text style={styles.statLabel}>连续打卡</Text>
+            <Text style={styles.statLabel}>打卡(天)</Text>
           </View>
           <View style={styles.statDivider} />
           <TouchableOpacity
@@ -116,7 +127,7 @@ const MineScreen: React.FC = () => {
             onPress={() => navigation.navigate('Badges' as any)}
           >
             <Text style={styles.statNumber}>{stats.badges}</Text>
-            <Text style={styles.statLabel}>收集徽章</Text>
+            <Text style={styles.statLabel}>徽章</Text>
           </TouchableOpacity>
         </View>
 

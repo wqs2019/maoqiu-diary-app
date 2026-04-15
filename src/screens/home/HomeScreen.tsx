@@ -24,6 +24,7 @@ import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
+import { useNotebookStore } from '../../store/notebookStore';
 import { ScenarioType, TimelineItem, Diary } from '../../types';
 
 const { width, height } = Dimensions.get('window');
@@ -42,6 +43,8 @@ const HomeScreen: React.FC = () => {
   // 场景筛选状态
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | undefined>(undefined);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [isNotebookModalVisible, setIsNotebookModalVisible] = useState(false);
+  const [newNotebookName, setNewNotebookName] = useState('');
 
   // 记录是否是代码触发的滚动，避免 onScroll 冲突
   const isProgrammaticScroll = useRef(false);
@@ -64,6 +67,26 @@ const HomeScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const userId = user?._id;
 
+  const getNotebooks = useNotebookStore((state) => state.getNotebooks);
+  const getCurrentNotebook = useNotebookStore((state) => state.getCurrentNotebook);
+  const setCurrentNotebook = useNotebookStore((state) => state.setCurrentNotebook);
+  const addNotebook = useNotebookStore((state) => state.addNotebook);
+  const fetchNotebooks = useNotebookStore((state) => state.fetchNotebooks);
+
+  // 监听当前用户的日记本数据和选中的日记本ID，以便在切换时触发重新渲染
+  const userNotebooks = useNotebookStore((state) => userId ? state.notebooksByUserId[userId] : undefined);
+  const currentNotebookId = useNotebookStore((state) => userId ? state.currentNotebookIdByUserId[userId] : undefined);
+
+  const notebooks = userNotebooks && userNotebooks.length > 0 ? userNotebooks : (userId ? getNotebooks(userId) : []);
+  const currentNotebook = (userNotebooks && userNotebooks.find(n => n._id === currentNotebookId)) || (userId ? getCurrentNotebook(userId) : { _id: 'default', name: '毛球日记', createdAt: '' });
+
+  // 拉取用户的日记本数据
+  useEffect(() => {
+    if (userId) {
+      fetchNotebooks(userId);
+    }
+  }, [userId, fetchNotebooks]);
+
   const {
     data: diaryList,
     isLoading,
@@ -72,6 +95,7 @@ const HomeScreen: React.FC = () => {
   } = useDiaryList({
     page: 1,
     pageSize: 20,
+    notebookId: currentNotebook._id,
     scenario: selectedScenario,
     keyword: debouncedSearchQuery || undefined,
     userId: userId,
@@ -220,10 +244,10 @@ const HomeScreen: React.FC = () => {
       <View style={[styles.fixedHeader, { paddingTop: insets.top + 16 }]}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>毛球日记</Text>
+            <TouchableOpacity style={styles.titleRow} onPress={() => setIsNotebookModalVisible(true)}>
+              <Text style={styles.title}>{currentNotebook.name}</Text>
               <Ionicons name="chevron-down" size={20} color="#333" />
-            </View>
+            </TouchableOpacity>
             <Text style={styles.dateText}>{getFormattedDate()}</Text>
           </View>
           <View style={styles.headerRight}>
@@ -320,6 +344,89 @@ const HomeScreen: React.FC = () => {
                       </TouchableOpacity>
                     );
                   })}
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* 日记本切换 Modal */}
+      <Modal
+        visible={isNotebookModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsNotebookModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setIsNotebookModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>我的日记本</Text>
+                  <TouchableOpacity onPress={() => setIsNotebookModalVisible(false)}>
+                    <Ionicons name="close" size={24} color="#666" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={{ maxHeight: 300, marginBottom: 20 }}>
+                  {notebooks.map((notebook, index) => (
+                    <TouchableOpacity
+                      key={notebook._id || `notebook-${index}`}
+                      style={[
+                        styles.notebookItem,
+                        currentNotebook._id === notebook._id && styles.notebookItemActive,
+                      ]}
+                      onPress={() => {
+                        if (userId) {
+                          setCurrentNotebook(userId, notebook._id);
+                          setIsNotebookModalVisible(false);
+                        }
+                      }}
+                    >
+                      <Ionicons 
+                        name="book" 
+                        size={20} 
+                        color={currentNotebook._id === notebook._id ? HEALING_COLORS.pink[500] : '#666'} 
+                      />
+                      <Text style={[
+                        styles.notebookItemText,
+                        currentNotebook._id === notebook._id && styles.notebookItemTextActive,
+                      ]}>
+                        {notebook.name}
+                      </Text>
+                      {currentNotebook._id === notebook._id && (
+                        <Ionicons name="checkmark" size={20} color={HEALING_COLORS.pink[500]} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <View style={styles.addNotebookContainer}>
+                  <TextInput
+                    style={styles.addNotebookInput}
+                    placeholder="新日记本名称..."
+                    value={newNotebookName}
+                    onChangeText={setNewNotebookName}
+                    maxLength={20}
+                  />
+                  <TouchableOpacity
+                    style={styles.addNotebookBtn}
+                    onPress={async () => {
+                      if (newNotebookName.trim() && userId) {
+                        try {
+                          const newNb = await addNotebook(userId, newNotebookName.trim());
+                          setCurrentNotebook(userId, newNb._id);
+                          setNewNotebookName('');
+                          setIsNotebookModalVisible(false);
+                        } catch (e) {
+                          console.error('新建日记本失败', e);
+                        }
+                      }
+                    }}
+                  >
+                    <Text style={styles.addNotebookBtnText}>新建</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </TouchableWithoutFeedback>
@@ -725,6 +832,60 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '400',
     marginTop: -2,
+  },
+  notebookItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F5F5F5',
+  },
+  notebookItemActive: {
+    backgroundColor: '#FFF0F5',
+    borderColor: HEALING_COLORS.pink[200],
+  },
+  notebookItemText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 12,
+  },
+  notebookItemTextActive: {
+    color: HEALING_COLORS.pink[500],
+    fontWeight: '600',
+  },
+  addNotebookContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F5',
+    paddingTop: 16,
+  },
+  addNotebookInput: {
+    flex: 1,
+    height: 44,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    marginRight: 12,
+    fontSize: 14,
+  },
+  addNotebookBtn: {
+    backgroundColor: HEALING_COLORS.pink[400],
+    paddingHorizontal: 20,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addNotebookBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
