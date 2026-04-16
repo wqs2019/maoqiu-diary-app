@@ -94,10 +94,8 @@ const updateDiary = async (data) => {
       .collection('diaries')
       .doc(_id)
       .update({
-        data: {
-          ...updateData,
-          updatedAt: db.serverDate(),
-        },
+        ...updateData,
+        updatedAt: db.serverDate(),
       });
 
     return {
@@ -152,7 +150,7 @@ const getDiaryDetail = async (data) => {
 // 获取日记列表
 const getDiaryList = async (data) => {
   try {
-    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId } = data;
+    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId, isFavorite } = data;
     const _ = db.command;
 
     if (!userId) {
@@ -173,6 +171,10 @@ const getDiaryList = async (data) => {
 
     if (mood) {
       query.mood = mood;
+    }
+
+    if (isFavorite !== undefined) {
+      query.isFavorite = isFavorite;
     }
 
     if (startDate || endDate) {

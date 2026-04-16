@@ -15,6 +15,7 @@ export interface DiaryListParams {
   tags?: TagType[];
   keyword?: string;
   userId?: string;
+  isFavorite?: boolean;
 }
 
 /**
@@ -48,6 +49,7 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
         tags: params.tags,
         keyword: params.keyword,
         userId: params.userId,
+        isFavorite: params.isFavorite,
       },
     }
   );

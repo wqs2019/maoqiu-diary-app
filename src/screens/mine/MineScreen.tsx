@@ -146,7 +146,9 @@ const MineScreen: React.FC = () => {
           ]}
         >
           {renderMenuItem('book-open', '我的日记本', HEALING_COLORS.blue[500])}
-          {renderMenuItem('star', '收藏夹', HEALING_COLORS.yellow[500])}
+          {renderMenuItem('star', '收藏夹', HEALING_COLORS.yellow[500], true, () =>
+            navigation.navigate('Favorites' as any)
+          )}
           {renderMenuItem('calendar', '打卡日历', HEALING_COLORS.green[500], true, () =>
             navigation.navigate('Calendar' as any)
           )}

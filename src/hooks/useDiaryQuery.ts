@@ -300,14 +300,27 @@ export const useUpdateDiary = () => {
     ['diary', 'update'],
     ({ id, ...data }: { id: string } & Partial<diaryApi.Diary>) => diaryApi.updateDiary(id, data),
     {
-      onSuccess: (updatedDiary, variables) => {
-        // 更新单个日记详情缓存
-        queryClient.setQueryData(['diaryDetail', variables.id], updatedDiary);
-        // 失效列表缓存
+      onSuccess: (updatedDiaryResult, variables) => {
+        // 直接让详情页和列表页重新获取最新数据，不手动维护缓存
+        queryClient.invalidateQueries({ queryKey: ['diaryDetail', variables.id] });
         queryClient.invalidateQueries({ queryKey: ['diaryList'] });
       },
     }
   );
+};
+
+/**
+ * 切换收藏状态
+ */
+export const useToggleFavorite = () => {
+  const updateMutation = useUpdateDiary();
+  
+  return (id: string, currentStatus: boolean) => {
+    return updateMutation.mutateAsync({
+      id,
+      isFavorite: !currentStatus,
+    });
+  };
 };
 
 /**

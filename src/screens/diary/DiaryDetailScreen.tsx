@@ -15,7 +15,7 @@ import {
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
-import { useDiaryDetail, useDeleteDiary } from '../../hooks/useDiaryQuery';
+import { useDiaryDetail, useDeleteDiary, useToggleFavorite } from '../../hooks/useDiaryQuery';
 import { MoodType, WeatherType } from '../../types';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 
@@ -28,9 +28,19 @@ const DiaryDetailScreen: React.FC = () => {
 
   const { data: diary, isLoading, error } = useDiaryDetail(_id);
   const deleteMutation = useDeleteDiary();
+  const toggleFavorite = useToggleFavorite();
 
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+
+  const handleToggleFavorite = async () => {
+    if (!diary) return;
+    try {
+      await toggleFavorite(_id, !!diary.isFavorite);
+    } catch (e) {
+      Alert.alert('提示', '操作失败，请重试');
+    }
+  };
 
   const handleShare = async () => {
     if (!diary) return;
@@ -118,7 +128,16 @@ const DiaryDetailScreen: React.FC = () => {
 
       {/* 标题 */}
       <View style={styles.titleSection}>
-        <Text style={styles.title}>{diary.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{diary.title}</Text>
+          <TouchableOpacity onPress={handleToggleFavorite} style={styles.favoriteBtn}>
+            <Ionicons
+              name={diary.isFavorite ? 'star' : 'star-outline'}
+              size={28}
+              color={diary.isFavorite ? '#FFD700' : '#CCC'}
+            />
+          </TouchableOpacity>
+        </View>
         {diary.location && (
           <View style={styles.locationTag}>
             <Ionicons name="location" size={16} color={HEALING_COLORS.pink[400]} />
@@ -271,11 +290,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   title: {
     fontSize: 24,
     fontWeight: '700',
     color: '#333',
-    marginBottom: 8,
+    flex: 1,
+    marginRight: 10,
+  },
+  favoriteBtn: {
+    padding: 4,
   },
   locationTag: {
     flexDirection: 'row',
