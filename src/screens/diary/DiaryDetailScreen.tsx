@@ -8,7 +8,6 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  Share,
   Alert,
 } from 'react-native';
 
@@ -16,8 +15,8 @@ import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useDiaryDetail, useDeleteDiary, useToggleFavorite } from '../../hooks/useDiaryQuery';
-import { MoodType, WeatherType } from '../../types';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
+import { ShareCardModal } from '../../components/handDrawn/ShareCardModal';
 
 type DiaryDetailRouteProp = RouteProp<{ params: { _id: string } }, 'params'>;
 
@@ -32,6 +31,7 @@ const DiaryDetailScreen: React.FC = () => {
 
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [shareModalVisible, setShareModalVisible] = useState(false);
 
   const handleToggleFavorite = async () => {
     if (!diary) return;
@@ -42,15 +42,9 @@ const DiaryDetailScreen: React.FC = () => {
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = () => {
     if (!diary) return;
-    try {
-      await Share.share({
-        message: `${diary.title}\n\n${diary.content}\n\n—— 来自毛球日记`,
-      });
-    } catch (error) {
-      console.error('Share failed:', error);
-    }
+    setShareModalVisible(true);
   };
 
   const handleDelete = () => {
@@ -243,6 +237,13 @@ const DiaryDetailScreen: React.FC = () => {
       </View>
 
       <View style={{ height: 40 }} />
+
+      {/* 分享卡片弹窗 */}
+      <ShareCardModal
+        visible={shareModalVisible}
+        diary={diary}
+        onClose={() => setShareModalVisible(false)}
+      />
     </ScrollView>
   );
 };
