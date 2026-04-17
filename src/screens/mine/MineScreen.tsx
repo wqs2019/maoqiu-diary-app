@@ -145,8 +145,10 @@ const MineScreen: React.FC = () => {
             },
           ]}
         >
-          {renderMenuItem('book-open', '我的日记本', HEALING_COLORS.blue[500])}
-          {renderMenuItem('star', '收藏夹', HEALING_COLORS.yellow[500], true, () =>
+          {renderMenuItem('book-open', '我的日记本', HEALING_COLORS.blue[500], false, () =>
+            navigation.navigate('Notebooks' as any)
+          )}
+          {renderMenuItem('star', '收藏夹', HEALING_COLORS.yellow[500], false, () =>
             navigation.navigate('Favorites' as any)
           )}
           {renderMenuItem('calendar', '打卡日历', HEALING_COLORS.green[500], true, () =>
@@ -168,7 +170,7 @@ const MineScreen: React.FC = () => {
             },
           ]}
         >
-          {renderMenuItem('settings', '应用设置', HEALING_COLORS.gray[600])}
+          {renderMenuItem('settings', '应用设置', HEALING_COLORS.gray[600], false, () => {})}
           {renderMenuItem('info', '关于毛球', HEALING_COLORS.pink[400], false, () =>
             navigation.navigate('About' as any)
           )}

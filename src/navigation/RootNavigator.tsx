@@ -19,6 +19,7 @@ import FeedbackScreen from '@/screens/mine/FeedbackScreen';
 import BadgesScreen from '@/screens/mine/BadgesScreen';
 import CalendarScreen from '@/screens/mine/CalendarScreen';
 import FavoritesScreen from '@/screens/mine/FavoritesScreen';
+import NotebooksScreen from '@/screens/mine/NotebooksScreen';
 import PhotoWallScreen from '@/screens/category/PhotoWallScreen';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
@@ -36,6 +37,7 @@ export type RootStackParamList = {
   Badges: undefined;
   Calendar: undefined;
   Favorites: undefined;
+  Notebooks: undefined;
 };
 
 export type AuthStackParamList = {
@@ -180,6 +182,13 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="Favorites"
             component={FavoritesScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="Notebooks"
+            component={NotebooksScreen}
             options={{
               headerShown: false,
             }}
