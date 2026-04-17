@@ -1,10 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
-import { HandDrawnCard } from './HandDrawnCard';
+import { DiaryCard } from './DiaryCard';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
-import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
-import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { TimelineItem } from '../../types';
 
 interface TimelineViewProps {
@@ -73,71 +71,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               <View key={item._id} style={styles.timelineItem}>
                 <View style={styles.timelineDot} />
                 <View style={styles.timelineContent}>
-                  <HandDrawnCard style="soft" padding="medium" onPress={() => onItemPress?.(item)}>
-                    <View style={styles.itemHeader}>
-                      <View style={styles.titleContainer}>
-                        <Text style={styles.itemDate}>{formatCardDate(item.date)}</Text>
-                        <Text style={styles.itemTitle} numberOfLines={1}>
-                          {item.title}
-                        </Text>
-                      </View>
-                      {item.scenario && (
-                        <View
-                          style={[
-                            styles.scenarioTagContainer,
-                            { backgroundColor: SCENARIO_TEMPLATES[item.scenario].color + '20' }, // 20% 透明度的背景色
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.scenarioTagText,
-                              { color: SCENARIO_TEMPLATES[item.scenario].color },
-                            ]}
-                          >
-                            {SCENARIO_TEMPLATES[item.scenario].name}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <View style={styles.contentRow}>
-                      <View style={styles.textContainer}>
-                        <Text style={styles.itemDescription} numberOfLines={2}>
-                          {item.description}
-                        </Text>
-                        <View style={styles.footerContainer}>
-                          {item.location && (
-                            <Text style={styles.itemLocation}>📍 {item.location}</Text>
-                          )}
-                          <View style={styles.iconContainer}>
-                            {item.mood && (
-                              <Text style={styles.statusIcon}>
-                                {getMoodConfig(item.mood).emoji}
-                              </Text>
-                            )}
-                            {item.weather && (
-                              <Text style={styles.statusIcon}>
-                                {getWeatherConfig(item.weather).emoji}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                      </View>
-
-                      {item.media && item.media.length > 0 && (
-                        <Image
-                          source={{
-                            uri:
-                              item.media[0].type === 'video' && item.media[0].thumbnail
-                                ? item.media[0].thumbnail
-                                : item.media[0].uri,
-                          }}
-                          style={styles.itemImage}
-                          resizeMode="cover"
-                        />
-                      )}
-                    </View>
-                  </HandDrawnCard>
+                  <DiaryCard item={item} onPress={onItemPress} />
                 </View>
               </View>
             ))}
@@ -154,39 +88,6 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       )}
     </View>
   );
-};
-
-const formatCardDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (date.toDateString() === today.toDateString()) {
-    return '今天';
-  }
-  if (date.toDateString() === yesterday.toDateString()) {
-    return '昨天';
-  }
-
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-  const weekDay = days[date.getDay()];
-
-  return `${month}月${day}日 ${weekDay}`;
-};
-
-const getScenarioIcon = (scenario: string): string => {
-  const icons: Record<string, string> = {
-    travel: '✈️',
-    movie: '🎬',
-    outing: '🌳',
-    food: '🍔',
-    daily: '📝',
-    special: '🎉',
-  };
-  return icons[scenario] || '📝';
 };
 
 const styles = StyleSheet.create({
@@ -233,81 +134,6 @@ const styles = StyleSheet.create({
   },
   timelineContent: {
     flex: 1,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  titleContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemDate: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: HEALING_COLORS.pink[400],
-    marginRight: 8,
-  },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    flex: 1,
-  },
-  scenarioTagContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  scenarioTagText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  scenarioIcon: {
-    fontSize: 24,
-    marginLeft: 4,
-  },
-  statusIcon: {
-    fontSize: 20,
-    marginLeft: 4,
-  },
-  iconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  footerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  itemDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  itemLocation: {
-    fontSize: 12,
-    color: '#999',
-  },
-  contentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  textContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  itemImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
   },
   emptyState: {
     alignItems: 'center',

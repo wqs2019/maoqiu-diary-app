@@ -51,8 +51,12 @@ export const HandDrawnCard: React.FC<HandDrawnCardProps> = ({
     }
     if (variant === 'minimal') {
       return {
-        borderWidth: 1,
-        shadowOpacity: 0.05,
+        borderWidth: 0,
+        shadowColor: '#000000', // 增强阴影，改用深色阴影增加厚重感
+        shadowOpacity: 0.18,    // 调高不透明度
+        shadowRadius: 20,       // 增加阴影模糊半径
+        shadowOffset: { width: 0, height: 8 }, // 加大向下偏移
+        elevation: 12,          // Android 下加强投影
       };
     }
     return {};
@@ -105,7 +109,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   pressable: {
-    overflow: 'hidden',
+    // 移除 overflow: 'hidden'，否则在 iOS 下会把外部的 shadow 给裁剪掉，导致阴影不可见
   },
   pressableContainer: {
     opacity: 1,
