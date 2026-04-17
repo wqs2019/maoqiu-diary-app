@@ -16,8 +16,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { MediaSelector } from '../../components/handDrawn/MediaSelector';
 import feedbackService from '../../services/feedbackService';
 import { useAuthStore } from '../../store/authStore';
+import { MediaResource } from '../../types';
 
 const FeedbackScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -28,6 +30,7 @@ const FeedbackScreen: React.FC = () => {
   const [feedbackType, setFeedbackType] = useState<'bug' | 'feature' | 'other'>('bug');
   const [content, setContent] = useState('');
   const [contact, setContact] = useState('');
+  const [media, setMedia] = useState<MediaResource[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -41,6 +44,9 @@ const FeedbackScreen: React.FC = () => {
       return;
     }
 
+    // 过滤掉仅在本地使用的状态字段
+    const cleanMedia = media.map(({ uploadStatus, uploadError, ...rest }) => rest);
+
     setIsSubmitting(true);
     try {
       await feedbackService.submitFeedback({
@@ -48,6 +54,7 @@ const FeedbackScreen: React.FC = () => {
         type: feedbackType,
         content: content.trim(),
         contact: contact.trim(),
+        media: cleanMedia.length > 0 ? cleanMedia : undefined,
       });
 
       Alert.alert('发送成功！', '毛球已经收到你的反馈啦，我们会努力变得更好！🐾', [
@@ -127,6 +134,11 @@ const FeedbackScreen: React.FC = () => {
             maxLength={500}
           />
           <Text style={styles.wordCount}>{content.length}/500</Text>
+
+          <Text style={[styles.label, { marginTop: 12 }]}>图片/视频（最多3个）</Text>
+          <View style={styles.mediaContainer}>
+            <MediaSelector media={media} onMediaChange={setMedia} maxCount={3} hideHeader={true} />
+          </View>
 
           <Text style={[styles.label, { marginTop: 12 }]}>联系方式（选填）</Text>
           <TextInput
@@ -267,6 +279,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 15,
     color: HEALING_COLORS.gray[800],
+  },
+  mediaContainer: {
+    marginBottom: 12,
   },
   submitButton: {
     backgroundColor: HEALING_COLORS.pink[500],

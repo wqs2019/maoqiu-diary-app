@@ -1,4 +1,5 @@
 import { CloudService } from './tcb';
+import { MediaResource } from '../types';
 
 export interface FeedbackData {
   _id?: string;
@@ -8,6 +9,7 @@ export interface FeedbackData {
   contact?: string;
   status?: 'pending' | 'processing' | 'resolved';
   createdAt?: string;
+  media?: MediaResource[];
 }
 
 export interface FeedbackListResponse {

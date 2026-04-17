@@ -9,7 +9,7 @@ const db = app.database();
 // 添加反馈
 const addFeedback = async (data) => {
   try {
-    const { userId, type, content, contact } = data;
+    const { userId, type, content, contact, media } = data;
 
     if (!userId || !type || !content) {
       return { success: false, message: '缺少必要参数' };
@@ -20,6 +20,7 @@ const addFeedback = async (data) => {
       type,
       content,
       contact: contact || '',
+      media: media || [],
       status: 'pending', // 默认状态为待处理
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),

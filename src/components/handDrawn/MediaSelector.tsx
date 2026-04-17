@@ -21,12 +21,14 @@ interface MediaSelectorProps {
   media: MediaResource[];
   onMediaChange: (media: MediaResource[]) => void;
   maxCount?: number;
+  hideHeader?: boolean;
 }
 
 export const MediaSelector: React.FC<MediaSelectorProps> = ({
   media,
   onMediaChange,
   maxCount = 9,
+  hideHeader = false,
 }) => {
   const isUploading = useRef(false);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -424,15 +426,17 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          媒体附件
-          <Text style={styles.subtitle}>（最多{maxCount}个）</Text>
-        </Text>
-        <Text style={styles.count}>
-          {media.length}/{maxCount}
-        </Text>
-      </View>
+      {!hideHeader && (
+        <View style={styles.header}>
+          <Text style={styles.title}>
+            媒体附件
+            <Text style={styles.subtitle}>（最多{maxCount}个）</Text>
+          </Text>
+          <Text style={styles.count}>
+            {media.length}/{maxCount}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.mediaGrid}>
         {media.map((item, index) => renderMediaPreview(item, index))}
