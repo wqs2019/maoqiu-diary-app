@@ -22,6 +22,7 @@ export default function App() {
 
   useEffect(() => {
     const initApp = async () => {
+      await useAppStore.getState().initFirstLaunch();
       await checkAuth();
       setAppLoading(false);
     };

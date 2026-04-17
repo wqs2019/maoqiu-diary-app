@@ -21,11 +21,13 @@ import CalendarScreen from '@/screens/mine/CalendarScreen';
 import FavoritesScreen from '@/screens/mine/FavoritesScreen';
 import NotebooksScreen from '@/screens/mine/NotebooksScreen';
 import PhotoWallScreen from '@/screens/category/PhotoWallScreen';
+import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
 
 // Types
 export type RootStackParamList = {
+  Onboarding: undefined;
   Auth: undefined;
   Main: undefined;
   EditDiary: { scenario?: string; _id?: string };
@@ -105,10 +107,13 @@ const MainNavigator = () => {
 
 export const RootNavigator = () => {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isFirstLaunch = useAppStore((state) => state.isFirstLaunch);
 
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
-      {isLoggedIn ? (
+      {isFirstLaunch ? (
+        <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
+      ) : isLoggedIn ? (
         <>
           <RootStack.Screen name="Main" component={MainNavigator} />
           <RootStack.Screen
