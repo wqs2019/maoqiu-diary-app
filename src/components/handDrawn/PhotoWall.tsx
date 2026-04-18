@@ -20,44 +20,7 @@ interface PhotoWallProps {
 export const PhotoWall: React.FC<PhotoWallProps> = ({ memories = [] }) => {
   const handDrawnStyle = HAND_DRAWN_STYLES.warm;
 
-  // 模拟数据
-  const defaultMemories: MemoryCard[] = [
-    {
-      id: '1',
-      title: '周末野餐时光',
-      date: '2024-03-15',
-      images: [
-        'https://picsum.photos/300/300?random=1',
-        'https://picsum.photos/300/300?random=2',
-        'https://picsum.photos/300/300?random=3',
-      ],
-      scenario: 'outing',
-      mood: 'happy',
-    },
-    {
-      id: '2',
-      title: '京都之旅',
-      date: '2024-02-20',
-      images: ['https://picsum.photos/300/300?random=4', 'https://picsum.photos/300/300?random=5'],
-      scenario: 'travel',
-      mood: 'excited',
-    },
-    {
-      id: '3',
-      title: '生日派对',
-      date: '2024-01-10',
-      images: [
-        'https://picsum.photos/300/300?random=6',
-        'https://picsum.photos/300/300?random=7',
-        'https://picsum.photos/300/300?random=8',
-        'https://picsum.photos/300/300?random=9',
-      ],
-      scenario: 'special',
-      mood: 'happy',
-    },
-  ];
-
-  const displayMemories = memories.length > 0 ? memories : defaultMemories;
+  const displayMemories = memories.length > 0 ? memories : [];
 
   const getScenarioEmoji = (scenario: string): string => {
     const emojis: Record<string, string> = {

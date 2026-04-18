@@ -64,8 +64,7 @@ maoqiu-diary-app/
 │   └── COMPONENTS_GUIDE.md    # 组件文档
 │
 └── 🎨 资源文件 (assets/)
-    ├── icon.png               # 应用图标
-    ├── splash-icon.png        # 启动图标
+    ├── logo.jpg               # 应用图标
     └── logo.jpg               # Logo
 ```
 

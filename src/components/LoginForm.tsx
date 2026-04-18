@@ -150,9 +150,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         <Ionicons name="arrow-forward" size={20} color={COLORS.surface} />
       </TouchableOpacity>
 
-      <View style={styles.testHint}>
+      {/* <View style={styles.testHint}>
         <Text style={styles.testHintText}>测试模式：验证码输入 123456</Text>
-      </View>
+      </View> */}
     </View>
   );
 };

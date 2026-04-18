@@ -32,7 +32,7 @@
       "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "CAMERA", "RECORD_AUDIO"]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logo.jpg"
     },
     "plugins": [
       [
