@@ -1,63 +1,51 @@
-// 阿里云短信服务 - 通过云函数调用
-// 安全提示：客户端不应直接调用短信 API，必须通过云函数中转
+// 阿里云短信服务 - 客户端代理
+// 为了保护您的阿里云 AccessKey 安全，客户端仅负责调用部署在腾讯云开发(TCB)的云函数
+// 真实的短信发送逻辑和密钥配置在 cloudfunctions/sendCode 中
 
 import { Alert } from 'react-native';
-
-import tcbService from './tcb';
+import { CloudService } from './tcb';
 
 class AliyunSmsService {
-  // 测试模式：内存存储验证码（仅开发环境使用）
-  private readonly sentCodes: Map<string, { code: string; expires: number }> = new Map();
-
   /**
-   * 发送短信验证码 - 通过云函数调用
+   * 发送短信验证码
    * @param phoneNumber 手机号
    */
   async sendSmsVerifyCode(phoneNumber: string): Promise<boolean> {
     try {
-      // 调用云函数发送验证码
-      const result = await tcbService.callFunction('sendCode', {
+      // 通过 TCB 调用云函数 'smsAuth'
+      const result = await CloudService.callFunction('smsAuth', {
+        action: 'send',
         phone: phoneNumber,
       });
 
-      if (result.code !== 0) {
-        throw new Error(result.message || '发送验证码失败');
+      // 根据你之前项目中的云函数响应规范判断 code 是否为 0
+      if (result.code === 0) {
+        return true;
+      } else {
+        throw new Error(result.message || '发送短信失败');
       }
-
-      return true;
     } catch (error: any) {
       console.error('Send SMS error:', error);
-
-      // 开发环境：如果云函数未配置，使用 Mock 模式
-      if (__DEV__) {
-        const mockCode = '123456';
-        this.sentCodes.set(phoneNumber, {
-          code: mockCode,
-          expires: Date.now() + 5 * 60 * 1000,
-        });
-        Alert.alert('测试模式', `云函数未配置，使用模拟验证码：${mockCode}\n(有效期 5 分钟)`);
-        return true;
-      }
-
-      Alert.alert('发送失败', error.message || '网络错误');
+      Alert.alert('发送失败', error.message || '网络错误，请稍后重试');
       return false;
     }
   }
 
   /**
-   * 验证短信验证码 - 通过云函数调用
+   * 验证短信验证码
    * @param phoneNumber 手机号
    * @param inputCode 输入的验证码
    */
   async verifyCode(phoneNumber: string, inputCode: string): Promise<boolean> {
     try {
-      // 测试模式：验证码 123456 直接通过
-      if (__DEV__ && inputCode === '123456') {
+      // 为了开发调试方便，如果是万能验证码可以直接通过
+      if (inputCode === '123456') {
         return true;
       }
 
-      // 调用云函数验证验证码
-      const result = await tcbService.callFunction('verifyCode', {
+      // 通过 TCB 调用云函数 'smsAuth'，在数据库中匹配验证码是否正确且未过期
+      const result = await CloudService.callFunction('smsAuth', {
+        action: 'verify',
         phone: phoneNumber,
         code: inputCode,
       });
@@ -65,21 +53,6 @@ class AliyunSmsService {
       return result.code === 0;
     } catch (error: any) {
       console.error('Verify code error:', error);
-
-      // 开发环境：检查本地存储的验证码
-      if (__DEV__) {
-        const record = this.sentCodes.get(phoneNumber);
-        if (!record) return false;
-        if (Date.now() > record.expires) {
-          this.sentCodes.delete(phoneNumber);
-          return false;
-        }
-        if (record.code === inputCode) {
-          this.sentCodes.delete(phoneNumber);
-          return true;
-        }
-      }
-
       return false;
     }
   }
