@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +14,7 @@ import {
   ActivityIndicator,
   Keyboard,
   Image,
+  Alert,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,6 +62,40 @@ const AIScreen: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const listRef = useRef<FlashListRef<Message>>(null);
+
+  // 加载聊天历史记录
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!user?._id) return;
+      try {
+        const saved = await AsyncStorage.getItem(`@ai_chat_history_${user._id}`);
+        if (saved) {
+          setMessages(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.error('Failed to load chat history', e);
+      }
+    };
+    loadHistory();
+  }, [user?._id]);
+
+  // 保存聊天历史记录
+  useEffect(() => {
+    const saveHistory = async () => {
+      if (!user?._id || messages.length === 0) return;
+      try {
+        // 只保留最近的 50 条消息以防止存储过大或超长 Token 限制
+        const messagesToSave = messages.slice(-50);
+        await AsyncStorage.setItem(`@ai_chat_history_${user._id}`, JSON.stringify(messagesToSave));
+      } catch (e) {
+        console.error('Failed to save chat history', e);
+      }
+    };
+    // 为了防止在加载的时候就触发保存覆盖，这里做个简单延迟或确保有数据
+    if (messages.length > 1 || (messages.length === 1 && messages[0].id !== 'welcome')) {
+      saveHistory();
+    }
+  }, [messages, user?._id]);
 
   const isDark = theme === 'dark';
   const backgroundColor = isDark ? '#1C1C1E' : COLORS.background;
@@ -421,7 +457,32 @@ const AIScreen: React.FC = () => {
           <Ionicons name="chevron-back" size={24} color={textColor} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: textColor }]}>AI 助手</Text>
-        <View style={styles.headerRight} />
+        <TouchableOpacity
+          style={styles.headerRight}
+          onPress={() => {
+            Alert.alert('清空记录', '确定要清空和毛球的聊天记录吗？', [
+              { text: '取消', style: 'cancel' },
+              {
+                text: '清空',
+                style: 'destructive',
+                onPress: async () => {
+                  const initialMsg: Message = {
+                    id: 'welcome',
+                    role: 'assistant',
+                    content: '你好！我是毛球，你的专属时光手账助手。在这里，你可以卸下疲惫，和我分享你的开心、难过或是突如其来的灵感。今天有什么想记录的吗？🐾✨',
+                    createdAt: Date.now(),
+                  };
+                  setMessages([initialMsg]);
+                  if (user?._id) {
+                    await AsyncStorage.removeItem(`@ai_chat_history_${user._id}`);
+                  }
+                },
+              },
+            ]);
+          }}
+        >
+          <Ionicons name="trash-outline" size={20} color={textColor} />
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView
