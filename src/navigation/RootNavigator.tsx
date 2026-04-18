@@ -99,7 +99,14 @@ const MainNavigator = () => {
     >
       <MainTab.Screen name="Home" component={HomeScreen} options={{ title: '足迹' }} />
       <MainTab.Screen name="Category" component={CategoryScreen} options={{ title: '分类' }} />
-      <MainTab.Screen name="AI" component={AIScreen} options={{ title: 'AI问答' }} />
+      <MainTab.Screen 
+        name="AI" 
+        component={AIScreen} 
+        options={{ 
+          title: 'AI问答',
+          tabBarStyle: { display: 'none' }
+        }} 
+      />
       <MainTab.Screen name="Mine" component={MineScreen} options={{ title: '我的' }} />
     </MainTab.Navigator>
   );
