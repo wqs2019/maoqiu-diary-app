@@ -21,6 +21,7 @@ import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
 import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useDiaryDetail, useLikeDiary, useCommentDiary } from '@/hooks/useDiaryQuery';
 import { useAuthStore } from '@/store/authStore';
+import { FormatUtil } from '@/utils/format';
 
 const { width } = Dimensions.get('window');
 
@@ -33,7 +34,7 @@ const CircleDetailScreen: React.FC = () => {
 
   const { data: diary, isLoading, error } = useDiaryDetail(_id);
   const user = useAuthStore((state) => state.user);
-  
+
   const likeMutation = useLikeDiary();
   const commentMutation = useCommentDiary();
 
@@ -51,18 +52,19 @@ const CircleDetailScreen: React.FC = () => {
 
   const handleSendComment = () => {
     if (!commentText.trim() || !user) return;
-    
+
     const newComment = {
       id: Date.now().toString(),
       user: user.nickname || '某只毛球',
+      avatar: user.avatar,
       content: commentText.trim(),
-      time: '刚刚'
+      time: new Date().toISOString()
     };
-    
+
     // 乐观更新
     setComments([newComment, ...comments]);
     setCommentText('');
-    
+
     // 调用接口
     commentMutation.mutate({ id: _id, comment: newComment });
   };
@@ -99,8 +101,7 @@ const CircleDetailScreen: React.FC = () => {
     );
   }
 
-  const date = new Date(diary.createdAt || diary.date);
-  const formattedDate = `${date.getMonth() + 1}月${date.getDate()}日 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  const formattedDate = FormatUtil.formatRelativeTime(diary.createdAt || diary.date);
 
   return (
     <View style={styles.container}>
@@ -146,12 +147,16 @@ const CircleDetailScreen: React.FC = () => {
           {comments.map((comment) => (
             <View key={comment.id} style={styles.commentItem}>
               <View style={styles.commentAvatar}>
-                <Text style={styles.commentAvatarEmoji}>😸</Text>
+                {comment.avatar ? (
+                  <Image source={{ uri: comment.avatar }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                ) : (
+                  <Text style={styles.commentAvatarEmoji}>😸</Text>
+                )}
               </View>
               <View style={styles.commentContent}>
                 <View style={styles.commentHeader}>
                   <Text style={styles.commentUser}>{comment.user}</Text>
-                  <Text style={styles.commentTime}>{comment.time}</Text>
+                  <Text style={styles.commentTime}>{comment.time ? FormatUtil.formatRelativeTime(comment.time) : ''}</Text>
                 </View>
                 <Text style={styles.commentText}>{comment.content}</Text>
               </View>
@@ -164,7 +169,7 @@ const CircleDetailScreen: React.FC = () => {
       </ScrollView>
 
       {/* 底部互动与输入栏 */}
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >

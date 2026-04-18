@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { LoadableImage } from '@/components/handDrawn/PhotoWall';
 import { MediaPreviewer } from '@/components/handDrawn/MediaPreviewer';
 import { HandDrawnCard } from '@/components/handDrawn/HandDrawnCard';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
@@ -23,15 +22,10 @@ import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useDiaryList, useLikeDiary } from '@/hooks/useDiaryQuery';
 import { useAuthStore } from '@/store/authStore';
 import { Diary } from '@/types';
+import { FormatUtil } from '@/utils/format';
 
 const { width } = Dimensions.get('window');
 const CONTENT_WIDTH = width - 32; // padding 16 * 2
-
-// 格式化时间辅助函数
-const formatTime = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return `${date.getMonth() + 1}月${date.getDate()}日 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-};
 
 const CircleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
@@ -43,7 +37,7 @@ const CircleScreen: React.FC = () => {
     pageSize: 100, // Fetch enough for now
     isPublic: true, // Fetch public diaries
   });
-  
+
   const likeMutation = useLikeDiary();
 
   const diaries = data?.list || [];
@@ -77,59 +71,59 @@ const CircleScreen: React.FC = () => {
     return (
       <View style={styles.diaryWrapper}>
         <HandDrawnCard style="soft" variant="default" padding="medium">
-            <View style={styles.feedCard}>
-              <TouchableOpacity activeOpacity={1} onPress={() => handleDiaryPress(item)}>
-                {/* 顶部：头像、昵称、时间 */}
-                <View style={styles.feedHeader}>
-                  <View style={styles.avatarPlaceholder}>
-                    {item.authorInfo?.avatar ? (
-                      <Image source={{ uri: item.authorInfo.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                    ) : (
-                      <Text style={styles.avatarEmoji}>🧶</Text>
-                    )}
-                  </View>
-                  <View style={styles.headerInfo}>
-                    <Text style={styles.nickname}>{item.authorInfo?.nickname || '某只毛球'}</Text>
-                    <Text style={styles.time}>{formatTime(item.createdAt || item.date)}</Text>
-                  </View>
+          <View style={styles.feedCard}>
+            <TouchableOpacity activeOpacity={1} onPress={() => handleDiaryPress(item)}>
+              {/* 顶部：头像、昵称、时间 */}
+              <View style={styles.feedHeader}>
+                <View style={styles.avatarPlaceholder}>
+                  {item.authorInfo?.avatar ? (
+                    <Image source={{ uri: item.authorInfo.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                  ) : (
+                    <Text style={styles.avatarEmoji}>🧶</Text>
+                  )}
                 </View>
-
-                {/* 标题 */}
-                {!!item.title && (
-                  <Text style={styles.title}>{item.title}</Text>
-                )}
-
-                {/* 内容 */}
-                {!!item.content && (
-                  <Text style={styles.content} numberOfLines={4}>
-                    {item.content}
-                  </Text>
-                )}
-
-                {/* 图片网格 */}
-                {hasMedia && (
-                  <View style={{ marginBottom: 12 }}>
-                    <NineGridMedia
-                      media={item.media!}
-                      containerWidth={CONTENT_WIDTH - 24} // 减去内边距
-                      onPreview={(media, index) => handlePreview(media, index)}
-                    />
-                  </View>
-                )}
-              </TouchableOpacity>
-
-              {/* 底部操作栏：点赞和评论数量 */}
-              <View style={styles.actionBar}>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => handleLike(item)}>
-                  <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={22} color={hasLiked ? HEALING_COLORS.pink[500] : "#666"} />
-                  <Text style={[styles.actionText, hasLiked && { color: HEALING_COLORS.pink[500] }]}>{item.likesCount || 0}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => handleDiaryPress(item)}>
-                  <Ionicons name="chatbubble-outline" size={20} color="#666" />
-                  <Text style={styles.actionText}>{item.commentsCount || 0}</Text>
-                </TouchableOpacity>
+                <View style={styles.headerInfo}>
+                  <Text style={styles.nickname}>{item.authorInfo?.nickname || '某只毛球'}</Text>
+                  <Text style={styles.time}>{FormatUtil.formatRelativeTime(item.createdAt || item.date)}</Text>
+                </View>
               </View>
+
+              {/* 标题 */}
+              {!!item.title && (
+                <Text style={styles.title}>{item.title}</Text>
+              )}
+
+              {/* 内容 */}
+              {!!item.content && (
+                <Text style={styles.content} numberOfLines={4}>
+                  {item.content}
+                </Text>
+              )}
+
+              {/* 图片网格 */}
+              {hasMedia && (
+                <View style={{ marginBottom: 12 }}>
+                  <NineGridMedia
+                    media={item.media!}
+                    containerWidth={CONTENT_WIDTH - 24} // 减去内边距
+                    onPreview={(media, index) => handlePreview(media, index)}
+                  />
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* 底部操作栏：点赞和评论数量 */}
+            <View style={styles.actionBar}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => handleLike(item)}>
+                <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={22} color={hasLiked ? HEALING_COLORS.pink[500] : "#666"} />
+                <Text style={[styles.actionText, hasLiked && { color: HEALING_COLORS.pink[500] }]}>{item.likesCount || 0}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => handleDiaryPress(item)}>
+                <Ionicons name="chatbubble-outline" size={20} color="#666" />
+                <Text style={styles.actionText}>{item.commentsCount || 0}</Text>
+              </TouchableOpacity>
             </View>
+          </View>
         </HandDrawnCard>
       </View>
     );
