@@ -1,8 +1,69 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Animated } from 'react-native';
 
 import { HandDrawnCard } from '../../components/handDrawn/HandDrawnCard';
 import { HEALING_COLORS, HAND_DRAWN_STYLES } from '../../config/handDrawnTheme';
+
+// Skeleton Component for Images
+export const ImageSkeleton = () => {
+  const [pulseAnim] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    const sharedAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    sharedAnimation.start();
+    return () => sharedAnimation.stop();
+  }, [pulseAnim]);
+
+  const opacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.1, 0.8],
+  });
+
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.skeletonContainer]}>
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: '#A0A0A0', opacity },
+        ]}
+      />
+    </View>
+  );
+};
+
+// Component to handle individual image loading state
+export const LoadableImage = ({ source, style, resizeMode }: any) => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  return (
+    <View style={[style, { overflow: 'hidden', position: 'relative' }]}>
+      {/* 始终渲染骨架图在底层，Image 渲染在上层 */}
+      <View style={StyleSheet.absoluteFill}>
+        {isLoading && <ImageSkeleton />}
+      </View>
+      <Image
+        source={source}
+        style={[StyleSheet.absoluteFill, { opacity: isLoading ? 0 : 1 }]}
+        resizeMode={resizeMode}
+        onLoadStart={() => setIsLoading(true)}
+        onLoadEnd={() => setIsLoading(false)}
+      />
+    </View>
+  );
+};
 
 interface MemoryCard {
   id: string;
@@ -15,9 +76,10 @@ interface MemoryCard {
 
 interface PhotoWallProps {
   memories?: MemoryCard[];
+  isLoading?: boolean;
 }
 
-export const PhotoWall: React.FC<PhotoWallProps> = ({ memories = [] }) => {
+export const PhotoWall: React.FC<PhotoWallProps> = ({ memories = [], isLoading = false }) => {
   const handDrawnStyle = HAND_DRAWN_STYLES.warm;
 
   const displayMemories = memories.length > 0 ? memories : [];
@@ -55,48 +117,66 @@ export const PhotoWall: React.FC<PhotoWallProps> = ({ memories = [] }) => {
       </View>
 
       <View style={styles.grid}>
-        {displayMemories.map((memory) => (
-          <HandDrawnCard key={memory.id} style="warm" variant="default" padding="small">
-            <View style={styles.memoryCard}>
-              {/* 照片拼贴 */}
-              <View style={styles.photoGrid}>
-                {memory.images.slice(0, 4).map((image, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.photoItem,
-                      memory.images.length === 1 && styles.singlePhoto,
-                      memory.images.length > 1 && index === 0 && styles.firstPhoto,
-                    ]}
-                  >
-                    <Image source={{ uri: image }} style={styles.photo} resizeMode="cover" />
+        {isLoading
+          ? Array.from({ length: 3 }).map((_, index) => (
+              <HandDrawnCard key={`skeleton-${index}`} style="warm" variant="default" padding="small">
+                <View style={styles.memoryCard}>
+                  <View style={styles.photoGrid}>
+                    <View style={[styles.photoItem, styles.singlePhoto, { backgroundColor: 'transparent' }]}>
+                      <ImageSkeleton />
+                    </View>
                   </View>
-                ))}
-                {memory.images.length > 4 && (
-                  <View style={[styles.photoItem, styles.morePhotos]}>
-                    <Text style={styles.moreText}>+{memory.images.length - 4}</Text>
+                  <View style={styles.info}>
+                    <View style={styles.infoHeader}>
+                      <View style={{ width: 120, height: 20, backgroundColor: '#E5E5E5', borderRadius: 4, marginBottom: 4 }} />
+                    </View>
+                    <View style={{ width: 80, height: 14, backgroundColor: '#E5E5E5', borderRadius: 4 }} />
                   </View>
-                )}
-              </View>
-
-              {/* 信息区域 */}
-              <View style={styles.info}>
-                <View style={styles.infoHeader}>
-                  <Text style={styles.scenarioEmoji}>{getScenarioEmoji(memory.scenario)}</Text>
-                  <Text style={styles.memoryTitle} numberOfLines={1}>
-                    {memory.title}
-                  </Text>
-                  <Text style={styles.moodEmoji}>{getMoodEmoji(memory.mood)}</Text>
                 </View>
-                <Text style={styles.memoryDate}>{memory.date}</Text>
-              </View>
-            </View>
-          </HandDrawnCard>
-        ))}
+              </HandDrawnCard>
+            ))
+          : displayMemories.map((memory) => (
+              <HandDrawnCard key={memory.id} style="warm" variant="default" padding="small">
+                <View style={styles.memoryCard}>
+                  {/* 照片拼贴 */}
+                  <View style={styles.photoGrid}>
+                    {memory.images.slice(0, 4).map((image, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.photoItem,
+                          memory.images.length === 1 && styles.singlePhoto,
+                          memory.images.length > 1 && index === 0 && styles.firstPhoto,
+                        ]}
+                      >
+                        <LoadableImage source={{ uri: image }} style={styles.photo} resizeMode="cover" />
+                      </View>
+                    ))}
+                    {memory.images.length > 4 && (
+                      <View style={[styles.photoItem, styles.morePhotos]}>
+                        <Text style={styles.moreText}>+{memory.images.length - 4}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* 信息区域 */}
+                  <View style={styles.info}>
+                    <View style={styles.infoHeader}>
+                      <Text style={styles.scenarioEmoji}>{getScenarioEmoji(memory.scenario)}</Text>
+                      <Text style={styles.memoryTitle} numberOfLines={1}>
+                        {memory.title}
+                      </Text>
+                      <Text style={styles.moodEmoji}>{getMoodEmoji(memory.mood)}</Text>
+                    </View>
+                    <Text style={styles.memoryDate}>{memory.date}</Text>
+                  </View>
+                </View>
+              </HandDrawnCard>
+            ))}
       </View>
 
       {/* 空状态 */}
-      {displayMemories.length === 0 && (
+      {!isLoading && displayMemories.length === 0 && (
         <View style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>📷</Text>
           <Text style={styles.emptyText}>暂无照片</Text>
@@ -212,5 +292,10 @@ const styles = StyleSheet.create({
   emptySubText: {
     fontSize: 14,
     color: '#999',
+  },
+  skeletonContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
   },
 });

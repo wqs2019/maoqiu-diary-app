@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LoadableImage } from '../../components/handDrawn/PhotoWall';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES, getAllScenarios } from '../../config/scenarioTemplates';
@@ -202,7 +203,7 @@ const CategoryScreen: React.FC = () => {
               }}
               style={styles.photoItem}
             >
-              <Image
+              <LoadableImage
                 source={{ uri: media.thumbnail || media.uri }}
                 style={styles.photoImage}
                 resizeMode="cover"

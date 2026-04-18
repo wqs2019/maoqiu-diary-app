@@ -13,6 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 
+import { LoadableImage } from '../../components/handDrawn/PhotoWall';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
@@ -113,7 +114,7 @@ const PhotoWallScreen: React.FC = () => {
         }}
         style={[styles.mediaCard, { height }]}
       >
-        <Image
+        <LoadableImage
           source={{ uri: item.thumbnail || item.uri }}
           style={styles.mediaImage}
           resizeMode="cover"
