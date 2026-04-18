@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 
 import { DatePicker } from '../../components/handDrawn/DatePicker';
@@ -50,6 +51,7 @@ const EditDiaryScreen: React.FC = () => {
   const [title, setTitle] = React.useState('');
   const [content, setContent] = React.useState('');
   const [media, setMedia] = React.useState<MediaResource[]>([]);
+  const [isPublic, setIsPublic] = React.useState(false);
 
   // 填充已有日记数据
   React.useEffect(() => {
@@ -62,6 +64,7 @@ const EditDiaryScreen: React.FC = () => {
       setTitle(existingDiary.title);
       setContent(existingDiary.content);
       setMedia(existingDiary.media || []);
+      setIsPublic(!!existingDiary.isPublic);
     }
   }, [isEditMode, existingDiary]);
 
@@ -100,6 +103,11 @@ const EditDiaryScreen: React.FC = () => {
       weather: weather || 'sunny',
       location: location.trim(),
       media: cleanMedia.length > 0 ? cleanMedia : undefined,
+      isPublic,
+      authorInfo: {
+        nickname: user?.nickname,
+        avatar: user?.avatar,
+      },
     };
 
     if (isEditMode) {
@@ -227,6 +235,20 @@ const EditDiaryScreen: React.FC = () => {
         {/* 媒体附件选择 */}
         <MediaSelector media={media} onMediaChange={setMedia} maxCount={9} draggable />
 
+        {/* 分享到圈子 */}
+        <View style={styles.switchSection}>
+          <View style={styles.switchInfo}>
+            <Text style={styles.switchTitle}>🌍 分享到圈子</Text>
+            <Text style={styles.switchSubtitle}>让所有人都能看到这篇美好的日记</Text>
+          </View>
+          <Switch
+            value={isPublic}
+            onValueChange={setIsPublic}
+            trackColor={{ false: '#E5E5E5', true: HEALING_COLORS.pink[400] }}
+            thumbColor={'#FFFFFF'}
+          />
+        </View>
+
         {/* 保存按钮 */}
         <View style={styles.saveButtonContainer}>
           {createDiaryMutation.isPending || updateDiaryMutation.isPending ? (
@@ -318,6 +340,28 @@ const styles = StyleSheet.create({
   },
   fullWidthButton: {
     width: '100%',
+  },
+  switchSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  switchInfo: {
+    flex: 1,
+  },
+  switchTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  switchSubtitle: {
+    fontSize: 12,
+    color: '#999',
   },
 });
 

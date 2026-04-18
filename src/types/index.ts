@@ -82,6 +82,7 @@ export interface MediaResource {
 // 日记接口
 export interface Diary {
   _id: string;
+  userId?: string;
   notebookId?: string; // 所属日记本 ID
   title: string;
   content: string;
@@ -98,6 +99,21 @@ export interface Diary {
   updatedAt: string;
   isFavorite?: boolean;
   isPrivate?: boolean;
+  isPublic?: boolean;
+  likesCount?: number;
+  likedUserIds?: string[]; // 记录点赞用户的 ID
+  commentsCount?: number;
+  authorInfo?: {
+    nickname?: string;
+    avatar?: string;
+  };
+  comments?: Array<{
+    id: string;
+    user: string;
+    content: string;
+    time: string;
+    image?: string;
+  }>;
 }
 
 // 日记列表响应

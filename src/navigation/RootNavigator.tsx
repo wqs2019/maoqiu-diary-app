@@ -13,6 +13,8 @@ import PhotoWallScreen from '@/screens/category/PhotoWallScreen';
 import DiaryDetailScreen from '@/screens/diary/DiaryDetailScreen';
 import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
 import HomeScreen from '@/screens/home/HomeScreen';
+import CircleDetailScreen from '@/screens/circle/CircleDetailScreen';
+import CircleScreen from '@/screens/circle/CircleScreen';
 import AboutScreen from '@/screens/mine/AboutScreen';
 import BadgesScreen from '@/screens/mine/BadgesScreen';
 import CalendarScreen from '@/screens/mine/CalendarScreen';
@@ -30,8 +32,9 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
   Main: undefined;
-  EditDiary: { scenario?: string; _id?: string };
+  EditDiary: { scenario?: string; diaryId?: string };
   DiaryDetail: { _id: string };
+  CircleDetail: { _id: string };
   EditProfile: undefined;
   PhotoWall: { scenario?: string };
   About: undefined;
@@ -48,6 +51,7 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
+  Circle: undefined;
   Category: undefined;
   AI: undefined;
   Mine: undefined;
@@ -75,6 +79,8 @@ const MainNavigator = () => {
 
           if (route.name === 'Home') {
             iconName = focused ? 'paw' : 'paw-outline';
+          } else if (route.name === 'Circle') {
+            iconName = focused ? 'planet' : 'planet-outline';
           } else if (route.name === 'Category') {
             iconName = focused ? 'grid' : 'grid-outline';
           } else if (route.name === 'AI') {
@@ -98,6 +104,7 @@ const MainNavigator = () => {
       })}
     >
       <MainTab.Screen name="Home" component={HomeScreen} options={{ title: '足迹' }} />
+      <MainTab.Screen name="Circle" component={CircleScreen} options={{ title: '圈子' }} />
       <MainTab.Screen name="Category" component={CategoryScreen} options={{ title: '分类' }} />
       <MainTab.Screen
         name="AI"
@@ -141,6 +148,19 @@ export const RootNavigator = () => {
             component={DiaryDetailScreen}
             options={{
               title: '日记详情',
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: COLORS.surface,
+              },
+              headerTintColor: COLORS.text,
+              headerBackTitle: '返回',
+            }}
+          />
+          <RootStack.Screen
+            name="CircleDetail"
+            component={CircleDetailScreen}
+            options={{
+              title: '圈子详情',
               headerShown: true,
               headerStyle: {
                 backgroundColor: COLORS.surface,

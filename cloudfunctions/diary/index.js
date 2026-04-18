@@ -10,7 +10,7 @@ const db = app.database();
 // 创建日记
 const createDiary = async (data) => {
   try {
-    const { title, content, date, scenario, mood, weather, location, tags, media, userId, notebookId } = data;
+    const { title, content, date, scenario, mood, weather, location, tags, media, userId, notebookId, isPublic } = data;
 
     if (!userId) {
       return {
@@ -40,9 +40,15 @@ const createDiary = async (data) => {
       location: location || '',
       tags: tags || [],
       media: media || [], // 保存 media 字段
+      isPublic: isPublic || false, // 世界功能
       // 扩展字段（预留，后续实现）
       isFavorite: false, // TODO: 收藏功能 - 用户可标记重要日记
       isPrivate: false, // TODO: 私密日记 - 需要密码查看
+      likesCount: 0,
+      likedUserIds: [],
+      commentsCount: 0,
+      comments: [],
+      authorInfo: data.authorInfo || null,
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),
     });
@@ -65,6 +71,7 @@ const createDiary = async (data) => {
         updatedAt: new Date().toISOString(),
         isFavorite: false,
         isPrivate: false,
+        authorInfo: data.authorInfo || null,
       },
     };
   } catch (error) {
@@ -150,20 +157,33 @@ const getDiaryDetail = async (data) => {
 // 获取日记列表
 const getDiaryList = async (data) => {
   try {
-    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId, isFavorite } = data;
+    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId, isFavorite, isPublic } = data;
     const _ = db.command;
 
-    if (!userId) {
+    if (!userId && !isPublic) {
       return {
         success: false,
-        message: '用户ID不能为空',
+        message: '用户ID或isPublic标识不能为空',
       };
     }
 
     // 构建查询条件
-    let query = {
-      userId,
-    };
+    let query = {};
+    
+    // 如果指定了 userId 且不是查询全局公开，则限制为当前用户
+    // 如果既有 userId 又有 isPublic，可以认为是查询某个用户的公开日记，或者根据业务需要调整
+    if (userId) {
+      query.userId = userId;
+    } else if (isPublic) {
+      // 全局公开查询不需要限制 userId
+    }
+
+    if (isPublic !== undefined) {
+      query.isPublic = isPublic;
+      if (isPublic === true) {
+        delete query.userId; // 确保世界频道展示所有人
+      }
+    }
 
     if (scenario) {
       query.scenario = scenario;
@@ -263,6 +283,66 @@ const deleteDiary = async (data) => {
   }
 };
 
+// 点赞日记
+const likeDiary = async (data) => {
+  try {
+    const { _id, userId } = data;
+    if (!_id || !userId) {
+      return { success: false, message: '日记 ID 或用户 ID 不能为空' };
+    }
+    
+    const diaryRes = await db.collection('diaries').doc(_id).get();
+    if (!diaryRes.data) {
+      return { success: false, message: '日记不存在' };
+    }
+
+    const likedUserIds = diaryRes.data.likedUserIds || [];
+    const hasLiked = likedUserIds.includes(userId);
+    
+    const _ = db.command;
+    if (hasLiked) {
+      // 取消点赞
+      await db.collection('diaries').doc(_id).update({
+        likesCount: _.inc(-1),
+        likedUserIds: _.pull(userId),
+        updatedAt: db.serverDate(),
+      });
+      return { success: true, message: '取消点赞成功', data: { action: 'unlike' } };
+    } else {
+      // 点赞
+      await db.collection('diaries').doc(_id).update({
+        likesCount: _.inc(1),
+        likedUserIds: _.push(userId),
+        updatedAt: db.serverDate(),
+      });
+      return { success: true, message: '点赞成功', data: { action: 'like' } };
+    }
+  } catch (error) {
+    return { success: false, message: '操作失败', error: error.message };
+  }
+};
+
+// 评论日记
+const commentDiary = async (data) => {
+  try {
+    const { _id, comment } = data;
+    if (!_id || !comment) {
+      return { success: false, message: '日记 ID 或评论内容不能为空' };
+    }
+    
+    const _ = db.command;
+    await db.collection('diaries').doc(_id).update({
+      comments: _.push(comment),
+      commentsCount: _.inc(1),
+      updatedAt: db.serverDate(),
+    });
+    
+    return { success: true, message: '评论成功' };
+  } catch (error) {
+    return { success: false, message: '评论失败', error: error.message };
+  }
+};
+
 // 导出主函数
 exports.main = async (event, context) => {
   const { action, data } = event;
@@ -278,6 +358,10 @@ exports.main = async (event, context) => {
       return await getDiaryList(data);
     case 'delete':
       return await deleteDiary(data);
+    case 'like':
+      return await likeDiary(data);
+    case 'comment':
+      return await commentDiary(data);
     default:
       return {
         success: false,

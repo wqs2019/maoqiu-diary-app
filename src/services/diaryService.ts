@@ -16,6 +16,7 @@ export interface DiaryListParams {
   keyword?: string;
   userId?: string;
   isFavorite?: boolean;
+  isPublic?: boolean;
 }
 
 /**
@@ -50,6 +51,7 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
         keyword: params.keyword,
         userId: params.userId,
         isFavorite: params.isFavorite,
+        isPublic: params.isPublic,
       },
     }
   );
@@ -130,4 +132,25 @@ export const deleteDiary = async (_id: string): Promise<void> => {
     data: { _id },
   });
   return result.data;
+};
+
+/**
+ * 点赞/取消点赞日记
+ */
+export const likeDiary = async (_id: string, userId: string): Promise<{ action: 'like' | 'unlike' }> => {
+  const res = await CloudService.callFunction('diary', {
+    action: 'like',
+    data: { _id, userId },
+  });
+  return res.data;
+};
+
+/**
+ * 评论日记
+ */
+export const commentDiary = async (_id: string, comment: any): Promise<void> => {
+  await CloudService.callFunction('diary', {
+    action: 'comment',
+    data: { _id, comment },
+  });
 };
