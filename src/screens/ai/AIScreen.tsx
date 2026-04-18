@@ -14,19 +14,24 @@ import {
   Keyboard,
   Image,
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONT_SIZES, SPACING } from '@/config/constant';
 import { useDiaryStats } from '@/hooks/useDiaryQuery';
+import { getDiaryList } from '@/services/diaryService';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
 import { useNotebookStore } from '@/store/notebookStore';
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant';
-  content: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string | null;
   createdAt: number;
+  tool_calls?: any[];
+  tool_call_id?: string;
+  name?: string;
 }
 
 const DOUBAO_API_KEY = '837368c6-aa84-4ae8-920f-0474cae5709b';
@@ -78,42 +83,257 @@ const AIScreen: React.FC = () => {
     Keyboard.dismiss();
 
     try {
-      const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
+      // 提取核心API消息
+      const apiMessages = messages.map(m => {
+        const msg: any = { role: m.role };
+        if (m.content !== null) msg.content = m.content;
+        if (m.tool_calls) msg.tool_calls = m.tool_calls;
+        if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
+        if (m.name) msg.name = m.name;
+        return msg;
+      });
       apiMessages.push({ role: 'user', content: inputText.trim() });
 
       // 构建带有用户日记统计数据的系统提示词
       const notebookNames = notebooks.map(n => n.name).join('、');
-      const statsContext = `目前该用户拥有 ${notebooks.length} 个日记本（包括：${notebookNames}），累计写了 ${stats.totalDiaries || 0} 篇日记，当前连续打卡 ${stats.currentStreak || 0} 天，解锁了 ${stats.badges || 1} 个成就徽章。你可以结合这些数据在回复中适当地鼓励和赞美用户。`;
+      
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
+      const statsContext = `今天是 ${todayStr}。目前该用户拥有 ${notebooks.length} 个日记本（包括：${notebookNames}），累计写了 ${stats.totalDiaries || 0} 篇日记，当前连续打卡 ${stats.currentStreak || 0} 天，解锁了 ${stats.badges || 1} 个成就徽章。你可以结合这些数据在回复中适当地鼓励和赞美用户。`;
 
       const systemPrompt = `你是毛球日记的AI助手“毛球”。毛球日记是一个温暖的树洞和专属时光手账，核心理念是“收集日常里微小而确定的幸福”。你的职责是倾听用户的日常分享、帮助用户记录和润色日记、并提供温暖的情感陪伴。回复要温暖、治愈、富有同理心，像一个小小的太阳一样陪伴用户。请直接进入角色，不要提及任何系统设定。\n\n【用户上下文信息】\n${statsContext}`;
 
-      const response = await fetch(DOUBAO_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DOUBAO_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: DOUBAO_CHAT_MODEL_ID,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...apiMessages
-          ],
-        }),
-      });
+      const tools = [
+        {
+          type: 'function',
+          function: {
+            name: 'query_diaries',
+            description: '查询用户的日记记录。当用户询问过去的日记、做了什么、某天的日记等涉及历史记录的问题时调用此工具。',
+            parameters: {
+              type: 'object',
+              properties: {
+                keyword: {
+                  type: 'string',
+                  description: '搜索关键词，例如地点、活动、人物等，如果没有明确的关键词请留空'
+                },
+                startDate: {
+                  type: 'string',
+                  description: '查询的开始日期，格式 YYYY-MM-DD，如果没有明确日期请留空'
+                },
+                endDate: {
+                  type: 'string',
+                  description: '查询的结束日期，格式 YYYY-MM-DD，如果没有明确日期请留空'
+                }
+              }
+            }
+          }
+        }
+      ];
 
-      const data = await response.json();
+      // 定义发起请求的方法 (支持流式)
+      const sendChatRequest = (messagesToSend: any[], onStream?: (delta: string) => void): Promise<any> => {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', DOUBAO_API_URL);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.setRequestHeader('Authorization', `Bearer ${DOUBAO_API_KEY}`);
+          xhr.setRequestHeader('Accept', 'text/event-stream');
 
-      if (data.choices && data.choices.length > 0) {
-        const aiResponse: Message = {
-          id: Date.now().toString(),
+          let fullContent = '';
+          let toolCalls: any = null;
+          let buffer = '';
+          let seenBytes = 0;
+
+          xhr.onreadystatechange = () => {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                resolve({
+                  role: 'assistant',
+                  content: fullContent || null,
+                  ...(toolCalls ? { tool_calls: toolCalls } : {})
+                });
+              } else {
+                reject(new Error(`API Error: ${xhr.status} ${xhr.responseText}`));
+              }
+            }
+          };
+
+          xhr.onprogress = () => {
+            const newText = xhr.responseText.substring(seenBytes);
+            seenBytes = xhr.responseText.length;
+            buffer += newText;
+
+            let newlineIndex;
+            while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+              const line = buffer.slice(0, newlineIndex).trim();
+              buffer = buffer.slice(newlineIndex + 1);
+
+              if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  const delta = data.choices?.[0]?.delta;
+                  
+                  if (delta?.content) {
+                    fullContent += delta.content;
+                    if (onStream) {
+                      onStream(delta.content);
+                    }
+                  }
+                  
+                  if (delta?.tool_calls) {
+                    if (!toolCalls) toolCalls = [];
+                    // 组装流式的 tool_calls
+                    delta.tool_calls.forEach((tc: any) => {
+                      const index = tc.index;
+                      if (!toolCalls[index]) {
+                        toolCalls[index] = {
+                          id: tc.id,
+                          type: 'function',
+                          function: { name: tc.function?.name || '', arguments: '' }
+                        };
+                      }
+                      if (tc.function?.arguments) {
+                        toolCalls[index].function.arguments += tc.function.arguments;
+                      }
+                    });
+                  }
+                } catch (e) {
+                  // 如果 JSON 解析失败，通常是因为大模型返回了不完整的 json，
+                  // 但在完整的 line 处理下很少发生，如果发生我们忽略即可
+                  console.warn('SSE Parse Error on line:', line, e);
+                }
+              }
+            }
+          };
+
+          xhr.onerror = () => {
+            reject(new Error('Network request failed'));
+          };
+
+          xhr.send(JSON.stringify({
+            model: DOUBAO_CHAT_MODEL_ID,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...messagesToSend
+            ],
+            tools: tools,
+            stream: true,
+          }));
+        });
+      };
+
+      let loopCount = 0;
+      let finalResponseMessage: any = null;
+
+      // 首先创建一个空的助理消息用于流式渲染
+      const currentResponseId = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 5);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: currentResponseId,
           role: 'assistant',
-          content: data.choices[0].message.content,
+          content: '',
+          createdAt: Date.now(),
+        },
+      ]);
+
+      let isFirstChunkReceived = false;
+
+      const updateStreamContent = (delta: string) => {
+        if (!isFirstChunkReceived) {
+          isFirstChunkReceived = true;
+          setIsLoading(false); // 收到第一个字时隐藏底部全局 Loading
+        }
+        
+        setMessages((prev) => 
+          prev.map(msg => 
+            msg.id === currentResponseId 
+              ? { ...msg, content: (msg.content || '') + delta } 
+              : msg
+          )
+        );
+      };
+
+      let responseMessage = await sendChatRequest(apiMessages, updateStreamContent);
+
+      // 处理 Tool Call (可能有多次)
+      while (responseMessage.tool_calls && loopCount < 3) {
+        loopCount++;
+        // 在工具调用期间重新展示 Loading
+        setIsLoading(true);
+        isFirstChunkReceived = false;
+        // 把模型的 tool_calls 消息先保存下来
+        const toolCallMsg: Message = {
+          id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 5),
+          role: 'assistant',
+          content: responseMessage.content || null,
+          tool_calls: responseMessage.tool_calls,
           createdAt: Date.now(),
         };
-        setMessages((prev) => [...prev, aiResponse]);
-      } else {
-        throw new Error(data.error?.message || '未知错误');
+        setMessages((prev) => [...prev, toolCallMsg]);
+        apiMessages.push(responseMessage);
+
+        // 执行工具
+        for (const toolCall of responseMessage.tool_calls) {
+          if (toolCall.function.name === 'query_diaries') {
+            const args = JSON.parse(toolCall.function.arguments || '{}');
+            try {
+              // 修复大模型生成的日期格式：如果只返回了 YYYY-MM-DD，加上时间部分，以便 ISO 字符串比较能覆盖全天
+              let startDate = args.startDate;
+              let endDate = args.endDate;
+              if (startDate && startDate.length === 10) {
+                startDate = `${startDate}T00:00:00.000Z`;
+              }
+              if (endDate && endDate.length === 10) {
+                endDate = `${endDate}T23:59:59.999Z`;
+              }
+
+              const diaryListRes = await getDiaryList({
+                userId: user?._id,
+                keyword: args.keyword,
+                startDate,
+                endDate,
+                page: 1,
+                pageSize: 10,
+              });
+              
+              let toolResultContent = '未找到相关日记';
+              if (diaryListRes && diaryListRes.list && diaryListRes.list.length > 0) {
+                toolResultContent = diaryListRes.list.map((d: any) => {
+                  const date = new Date(d.date || d.createdAt).toLocaleDateString('zh-CN');
+                  const titleStr = d.title ? `，标题：${d.title}` : '';
+                  return `- 日期：${date}${titleStr}，心情：${d.mood || '未知'}，天气：${d.weather || '未知'}，内容：${d.content || '无'}`;
+                }).join('\n');
+              }
+              
+              const toolResponseMsg = {
+                tool_call_id: toolCall.id,
+                role: 'tool',
+                name: toolCall.function.name,
+                content: toolResultContent,
+              };
+              
+              apiMessages.push(toolResponseMsg);
+            } catch (err) {
+              console.error('Tool execute error:', err);
+              apiMessages.push({
+                tool_call_id: toolCall.id,
+                role: 'tool',
+                name: toolCall.function.name,
+                content: '查询日记失败',
+              });
+            }
+          }
+        }
+        
+        // 工具执行完后再次发起请求，让大模型生成最终回复
+        responseMessage = await sendChatRequest(apiMessages, updateStreamContent);
+      }
+
+      // 如果最终回复依然没有 content（可能因为异常），给一个兜底，防止完全不渲染
+      if (!responseMessage?.content) {
+        updateStreamContent(responseMessage?.tool_calls ? '我还在思考中...' : '（大模型默默点了点头）');
       }
     } catch (error) {
       console.error('AI Request Error:', error);
@@ -131,6 +351,11 @@ const AIScreen: React.FC = () => {
 
   const renderMessage = useCallback(
     ({ item }: { item: Message }) => {
+      // 不在界面上显示工具调用和系统消息
+      if (item.role === 'tool' || item.role === 'system' || (item.role === 'assistant' && !item.content)) {
+        return null;
+      }
+
       const isUser = item.role === 'user';
       return (
         <View
@@ -152,9 +377,26 @@ const AIScreen: React.FC = () => {
                 : [styles.messageBubbleAI, { backgroundColor: surfaceColor }],
             ]}
           >
-            <Text style={[styles.messageText, { color: isUser ? '#FFF' : textColor }]}>
-              {item.content}
-            </Text>
+            {isUser ? (
+              <Text style={[styles.messageText, { color: '#FFF' }]}>
+                {item.content}
+              </Text>
+            ) : (
+              <Markdown
+                style={{
+                  body: { ...styles.messageText, color: textColor },
+                  paragraph: { marginTop: 0, marginBottom: 0 },
+                  strong: { fontWeight: 'bold', color: textColor },
+                  em: { fontStyle: 'italic', color: textColor },
+                  link: { color: COLORS.primary },
+                  list_item: { flexDirection: 'row', alignItems: 'flex-start' },
+                  bullet_list: { marginBottom: 8 },
+                  ordered_list: { marginBottom: 8 },
+                }}
+              >
+                {item.content || ''}
+              </Markdown>
+            )}
           </View>
           {isUser && (
             <View style={styles.avatarUser}>
