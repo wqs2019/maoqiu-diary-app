@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MediaPreviewer } from '@/components/handDrawn/MediaPreviewer';
-import { HandDrawnCard } from '@/components/handDrawn/HandDrawnCard';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
 import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useDiaryList, useLikeDiary } from '@/hooks/useDiaryQuery';
@@ -25,18 +24,33 @@ import { Diary } from '@/types';
 import { FormatUtil } from '@/utils/format';
 
 const { width } = Dimensions.get('window');
-const CONTENT_WIDTH = width - 32; // padding 16 * 2
+const CONTENT_WIDTH = width; // full width
 
 const CircleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const user = useAuthStore((state) => state.user);
 
-  const { data, isLoading, refetch, isRefetching } = useDiaryList({
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  const { data, isLoading, refetch } = useDiaryList({
     page: 1,
     pageSize: 100, // Fetch enough for now
     isPublic: true, // Fetch public diaries
   });
+
+  const onRefresh = useCallback(async () => {
+    setIsManualRefreshing(true);
+    await refetch();
+    setIsManualRefreshing(false);
+  }, [refetch]);
+
+  // 当进入圈子页面时自动刷新数据，确保获取最新的公开日记
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   const likeMutation = useLikeDiary();
 
@@ -57,11 +71,17 @@ const CircleScreen: React.FC = () => {
   };
 
   const handleLike = (item: Diary) => {
+    if (likeMutation.isGlobalMutating) return;
     if (!user) {
       Alert.alert('提示', '请先登录！');
       return;
     }
-    likeMutation.mutate({ id: item._id, userId: user._id });
+    const hasLiked = (item.likedUserIds || []).includes(user._id);
+    likeMutation.mutate({
+      id: item._id,
+      userId: user._id,
+      action: hasLiked ? 'unlike' : 'like',
+    });
   };
 
   const renderItem = ({ item }: { item: Diary }) => {
@@ -70,61 +90,59 @@ const CircleScreen: React.FC = () => {
 
     return (
       <View style={styles.diaryWrapper}>
-        <HandDrawnCard style="soft" variant="default" padding="medium">
-          <View style={styles.feedCard}>
-            <TouchableOpacity activeOpacity={1} onPress={() => handleDiaryPress(item)}>
-              {/* 顶部：头像、昵称、时间 */}
-              <View style={styles.feedHeader}>
-                <View style={styles.avatarPlaceholder}>
-                  {item.authorInfo?.avatar ? (
-                    <Image source={{ uri: item.authorInfo.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                  ) : (
-                    <Text style={styles.avatarEmoji}>🧶</Text>
-                  )}
-                </View>
-                <View style={styles.headerInfo}>
-                  <Text style={styles.nickname}>{item.authorInfo?.nickname || '某只毛球'}</Text>
-                  <Text style={styles.time}>{FormatUtil.formatRelativeTime(item.createdAt || item.date)}</Text>
-                </View>
+        <View style={styles.feedCard}>
+          <TouchableOpacity activeOpacity={1} onPress={() => handleDiaryPress(item)}>
+            {/* 顶部：头像、昵称、时间 */}
+            <View style={styles.feedHeader}>
+              <View style={styles.avatarPlaceholder}>
+                {item.authorInfo?.avatar ? (
+                  <Image source={{ uri: item.authorInfo.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                ) : (
+                  <Text style={styles.avatarEmoji}>🧶</Text>
+                )}
               </View>
-
-              {/* 标题 */}
-              {!!item.title && (
-                <Text style={styles.title}>{item.title}</Text>
-              )}
-
-              {/* 内容 */}
-              {!!item.content && (
-                <Text style={styles.content} numberOfLines={4}>
-                  {item.content}
-                </Text>
-              )}
-
-              {/* 图片网格 */}
-              {hasMedia && (
-                <View style={{ marginBottom: 12 }}>
-                  <NineGridMedia
-                    media={item.media!}
-                    containerWidth={CONTENT_WIDTH - 24} // 减去内边距
-                    onPreview={(media, index) => handlePreview(media, index)}
-                  />
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {/* 底部操作栏：点赞和评论数量 */}
-            <View style={styles.actionBar}>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => handleLike(item)}>
-                <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={22} color={hasLiked ? HEALING_COLORS.pink[500] : "#666"} />
-                <Text style={[styles.actionText, hasLiked && { color: HEALING_COLORS.pink[500] }]}>{item.likesCount || 0}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => handleDiaryPress(item)}>
-                <Ionicons name="chatbubble-outline" size={20} color="#666" />
-                <Text style={styles.actionText}>{item.commentsCount || 0}</Text>
-              </TouchableOpacity>
+              <View style={styles.headerInfo}>
+                <Text style={styles.nickname}>{item.authorInfo?.nickname || '某只毛球'}</Text>
+                <Text style={styles.time}>{FormatUtil.formatRelativeTime(item.createdAt || item.date)}</Text>
+              </View>
             </View>
+
+            {/* 标题 */}
+            {!!item.title && (
+              <Text style={styles.title}>{item.title}</Text>
+            )}
+
+            {/* 内容 */}
+            {!!item.content && (
+              <Text style={styles.content} numberOfLines={4}>
+                {item.content}
+              </Text>
+            )}
+
+            {/* 图片网格 */}
+            {hasMedia && (
+              <View style={{ marginBottom: 12 }}>
+                <NineGridMedia
+                  media={item.media!}
+                  containerWidth={CONTENT_WIDTH - 32} // 减去内边距 16 * 2
+                  onPreview={(media, index) => handlePreview(media, index)}
+                />
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* 底部操作栏：点赞和评论数量 */}
+          <View style={styles.actionBar}>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => handleLike(item)}>
+              <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={22} color={hasLiked ? HEALING_COLORS.pink[500] : "#666"} />
+              <Text style={[styles.actionText, hasLiked && { color: HEALING_COLORS.pink[500] }]}>{item.likedUserIds?.length || 0}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => handleDiaryPress(item)}>
+              <Ionicons name="chatbubble-outline" size={20} color="#666" />
+              <Text style={styles.actionText}>{item.comments?.length || 0}</Text>
+            </TouchableOpacity>
           </View>
-        </HandDrawnCard>
+        </View>
       </View>
     );
   };
@@ -136,7 +154,7 @@ const CircleScreen: React.FC = () => {
         <Text style={styles.headerSubtitle}>探索大家分享的美好瞬间</Text>
       </View>
 
-      {isLoading && !isRefetching ? (
+      {isLoading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={HEALING_COLORS.pink[400]} />
         </View>
@@ -149,8 +167,8 @@ const CircleScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={refetch}
+              refreshing={isManualRefreshing}
+              onRefresh={onRefresh}
               tintColor={HEALING_COLORS.pink[400]}
             />
           }
@@ -195,14 +213,17 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   listContent: {
-    padding: 16,
     paddingBottom: 40,
   },
   diaryWrapper: {
-    marginBottom: 16,
+    marginBottom: 8,
+    marginHorizontal: 0,
+    backgroundColor: '#fff',
   },
   feedCard: {
-    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
   feedHeader: {
     flexDirection: 'row',

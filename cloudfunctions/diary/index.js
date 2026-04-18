@@ -42,11 +42,9 @@ const createDiary = async (data) => {
       media: media || [], // 保存 media 字段
       isPublic: isPublic || false, // 世界功能
       // 扩展字段（预留，后续实现）
-      isFavorite: false, // TODO: 收藏功能 - 用户可标记重要日记
+      isFavorite: false, // 收藏功能
       isPrivate: false, // TODO: 私密日记 - 需要密码查看
-      likesCount: 0,
       likedUserIds: [],
-      commentsCount: 0,
       comments: [],
       authorInfo: data.authorInfo || null,
       createdAt: db.serverDate(),
@@ -286,7 +284,7 @@ const deleteDiary = async (data) => {
 // 点赞日记
 const likeDiary = async (data) => {
   try {
-    const { _id, userId } = data;
+    const { _id, userId, action } = data;
     if (!_id || !userId) {
       return { success: false, message: '日记 ID 或用户 ID 不能为空' };
     }
@@ -297,27 +295,32 @@ const likeDiary = async (data) => {
     }
 
     const likedUserIds = diaryRes.data.likedUserIds || [];
-    const hasLiked = likedUserIds.includes(userId);
     
-    const _ = db.command;
-    if (hasLiked) {
-      // 取消点赞
+    // 去除空字符串或无效数据，防止由于其他原因导致的意外格式
+    const validLikedUserIds = likedUserIds.filter(id => id && typeof id === 'string');
+    
+    const hasLiked = validLikedUserIds.includes(userId);
+    const nextAction = action || (hasLiked ? 'unlike' : 'like');
+
+    if (nextAction === 'unlike') {
+      // 取消点赞：过滤掉目标 userId
+      const newLikedUserIds = validLikedUserIds.filter(id => id !== userId);
       await db.collection('diaries').doc(_id).update({
-        likesCount: _.inc(-1),
-        likedUserIds: _.pull(userId),
+        likedUserIds: newLikedUserIds,
         updatedAt: db.serverDate(),
       });
       return { success: true, message: '取消点赞成功', data: { action: 'unlike' } };
     } else {
-      // 点赞
+      // 点赞：添加目标 userId（并去重）
+      const newLikedUserIds = [...new Set([...validLikedUserIds, userId])];
       await db.collection('diaries').doc(_id).update({
-        likesCount: _.inc(1),
-        likedUserIds: _.push(userId),
+        likedUserIds: newLikedUserIds,
         updatedAt: db.serverDate(),
       });
       return { success: true, message: '点赞成功', data: { action: 'like' } };
     }
   } catch (error) {
+    console.error('Like diary error:', error);
     return { success: false, message: '操作失败', error: error.message };
   }
 };
@@ -330,10 +333,13 @@ const commentDiary = async (data) => {
       return { success: false, message: '日记 ID 或评论内容不能为空' };
     }
     
-    const _ = db.command;
+    const diaryRes = await db.collection('diaries').doc(_id).get();
+    const comments = diaryRes.data ? (diaryRes.data.comments || []) : [];
+    
+    const newComments = [...comments, comment];
+    
     await db.collection('diaries').doc(_id).update({
-      comments: _.push(comment),
-      commentsCount: _.inc(1),
+      comments: newComments,
       updatedAt: db.serverDate(),
     });
     

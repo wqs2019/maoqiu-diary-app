@@ -71,7 +71,11 @@ const CircleDetailScreen: React.FC = () => {
 
   const handleLike = () => {
     if (!user) return;
-    likeMutation.mutate({ id: _id, userId: user._id });
+    likeMutation.mutate({
+      id: _id,
+      userId: user._id,
+      action: hasLiked ? 'unlike' : 'like',
+    });
   };
 
   const isMyDiary = user?._id === diary?.userId;
@@ -79,6 +83,7 @@ const CircleDetailScreen: React.FC = () => {
 
   const handleAction = (type: string) => {
     if (type === '点赞') {
+      if (likeMutation.isGlobalMutating) return;
       handleLike();
     } else {
       Alert.alert('提示', `“${type}”功能开发中，敬请期待！`);
@@ -192,7 +197,10 @@ const CircleDetailScreen: React.FC = () => {
           </View>
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('点赞')}>
-              <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={28} color={hasLiked ? HEALING_COLORS.pink[500] : "#4B5563"} />
+              <View style={styles.actionIconWithText}>
+                <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={28} color={hasLiked ? HEALING_COLORS.pink[500] : "#4B5563"} />
+                <Text style={[styles.actionIconText, hasLiked && { color: HEALING_COLORS.pink[500] }]}>{diary.likedUserIds?.length || 0}</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('分享')}>
               <Ionicons name="share-social-outline" size={26} color="#4B5563" />
@@ -312,6 +320,16 @@ const styles = StyleSheet.create({
   },
   actionIcon: {
     marginLeft: 16,
+  },
+  actionIconWithText: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionIconText: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginLeft: 4,
+    fontWeight: '500',
   },
   commentsSection: {
     paddingHorizontal: 16,

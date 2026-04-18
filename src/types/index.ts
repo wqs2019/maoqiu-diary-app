@@ -100,9 +100,7 @@ export interface Diary {
   isFavorite?: boolean;
   isPrivate?: boolean;
   isPublic?: boolean;
-  likesCount?: number;
   likedUserIds?: string[]; // 记录点赞用户的 ID
-  commentsCount?: number;
   authorInfo?: {
     nickname?: string;
     avatar?: string;

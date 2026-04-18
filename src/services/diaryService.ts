@@ -137,12 +137,16 @@ export const deleteDiary = async (_id: string): Promise<void> => {
 /**
  * 点赞/取消点赞日记
  */
-export const likeDiary = async (_id: string, userId: string): Promise<{ action: 'like' | 'unlike' }> => {
+export const likeDiary = async (
+  _id: string,
+  userId: string,
+  action?: 'like' | 'unlike'
+): Promise<{ action: 'like' | 'unlike' }> => {
   const res = await CloudService.callFunction('diary', {
     action: 'like',
-    data: { _id, userId },
+    data: { _id, userId, action },
   });
-  return res.data;
+  return res.data.data;
 };
 
 /**

@@ -1,7 +1,7 @@
 // 日记相关的 React Query Hooks
 import React from 'react';
 
-import { useAppQuery, useAppMutation, useQueryClient } from '../hooks/useQuery';
+import { useAppQuery, useAppMutation, useQueryClient, useIsMutating } from '../hooks/useQuery';
 import * as diaryApi from '../services/diaryService';
 import type { DiaryListParams } from '../services/diaryService';
 
@@ -323,75 +323,84 @@ export const useUpdateDiary = () => {
 };
 
 /**
- * 点赞日记
+ * 切换日记点赞状态
  */
 export const useLikeDiary = () => {
   const queryClient = useQueryClient();
+  const isMutating = useIsMutating({ mutationKey: ['diary', 'like'] });
+  type LikeDiaryVariables = { id: string; userId: string; action: 'like' | 'unlike' };
+  type LikeDiaryContext = {
+    previousDetail?: diaryApi.Diary;
+    previousLists: Array<[readonly unknown[], diaryApi.DiaryListResponse | undefined]>;
+  };
 
-  return useAppMutation(
+  const toggleLikedState = (diary?: diaryApi.Diary) => (variables: LikeDiaryVariables) => {
+    if (!diary) return diary;
+
+    const likedUserIds = diary.likedUserIds || [];
+    const hasLiked = likedUserIds.includes(variables.userId);
+
+    return {
+      ...diary,
+      likedUserIds: hasLiked
+        ? likedUserIds.filter((id) => id !== variables.userId)
+        : [...likedUserIds, variables.userId],
+    };
+  };
+
+  const mutation = useAppMutation(
     ['diary', 'like'],
-    ({ id, userId }: { id: string; userId: string }) => diaryApi.likeDiary(id, userId),
+    async ({ id, userId, action }: LikeDiaryVariables) => {
+      const result = await diaryApi.likeDiary(id, userId, action);
+      return result;
+    },
     {
-      onMutate: async ({ id, userId }) => {
-        // 取消任何正在进行的查询
-        await queryClient.cancelQueries({ queryKey: ['diaryDetail', id] });
-        await queryClient.cancelQueries({ queryKey: ['diaryList'] });
+      onMutate: async (variables): Promise<LikeDiaryContext> => {
+        await Promise.all([
+          queryClient.cancelQueries({ queryKey: ['diaryDetail', variables.id] }),
+          queryClient.cancelQueries({ queryKey: ['diaryList'] }),
+        ]);
 
-        // 快照之前的值
-        const previousDiary = queryClient.getQueryData(['diaryDetail', id]);
-        
-        // 乐观地更新详情页的缓存
-        queryClient.setQueryData(['diaryDetail', id], (old: any) => {
-          if (!old) return old;
-          const likedUserIds = old.likedUserIds || [];
-          const hasLiked = likedUserIds.includes(userId);
+        const previousDetail = queryClient.getQueryData<diaryApi.Diary>(['diaryDetail', variables.id]);
+        const previousLists =
+          queryClient.getQueriesData<diaryApi.DiaryListResponse>({ queryKey: ['diaryList'] }) as Array<
+            [readonly unknown[], diaryApi.DiaryListResponse | undefined]
+          >;
+
+        queryClient.setQueryData<diaryApi.Diary>(['diaryDetail', variables.id], (old) =>
+          toggleLikedState(old)(variables)
+        );
+
+        queryClient.setQueriesData<diaryApi.DiaryListResponse>({ queryKey: ['diaryList'] }, (old) => {
+          if (!old?.list) return old;
+
           return {
             ...old,
-            likesCount: hasLiked ? Math.max(0, (old.likesCount || 0) - 1) : (old.likesCount || 0) + 1,
-            likedUserIds: hasLiked ? likedUserIds.filter((uid: string) => uid !== userId) : [...likedUserIds, userId]
+            list: old.list.map((item) =>
+              item._id === variables.id ? toggleLikedState(item)(variables) ?? item : item
+            ),
           };
         });
 
-        // 乐观地更新列表页的缓存
-        queryClient.setQueriesData({ queryKey: ['diaryList'] }, (oldData: any) => {
-          if (!oldData?.list) return oldData;
-          return {
-            ...oldData,
-            list: oldData.list.map((item: any) => {
-              if (item._id === id) {
-                const likedUserIds = item.likedUserIds || [];
-                const hasLiked = likedUserIds.includes(userId);
-                return {
-                  ...item,
-                  likesCount: hasLiked ? Math.max(0, (item.likesCount || 0) - 1) : (item.likesCount || 0) + 1,
-                  likedUserIds: hasLiked ? likedUserIds.filter((uid: string) => uid !== userId) : [...likedUserIds, userId]
-                };
-              }
-              return item;
-            }),
-          };
-        });
-
-        return { previousDiary };
+        return { previousDetail, previousLists };
       },
-      onError: (err, newTodo, context: any) => {
-        // 如果发生错误，回滚到之前的值（如果是详情页）
-        if (context?.previousDiary) {
-          queryClient.setQueryData(['diaryDetail', newTodo.id], context.previousDiary);
-        }
-        // 注意：列表页的回滚在这里比较复杂，简单起见我们直接 invalidate 触发重新获取
+      onError: (_error, variables, context) => {
+        if (!context) return;
+
+        queryClient.setQueryData(['diaryDetail', variables.id], context.previousDetail);
+        context.previousLists.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      },
+      onSettled: (data, error, variables) => {
+        // 无论成功还是失败，都重新获取最新数据，保证本地状态与服务器一致
+        queryClient.invalidateQueries({ queryKey: ['diaryDetail', variables.id] });
         queryClient.invalidateQueries({ queryKey: ['diaryList'] });
-      },
-      onSettled: (_, error, variables) => {
-        // 请求结束后只在出错时 invalidate，或者不 invalidate 以避免刷新的闪烁
-        // 因为乐观更新已经处理了状态
-        if (error) {
-          queryClient.invalidateQueries({ queryKey: ['diaryDetail', variables.id] });
-          queryClient.invalidateQueries({ queryKey: ['diaryList'] });
-        }
       },
     }
   );
+
+  return { ...mutation, isGlobalMutating: isMutating > 0 };
 };
 
 /**

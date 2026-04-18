@@ -5,6 +5,7 @@ import {
   useQueryClient,
   UseQueryOptions,
   UseMutationOptions,
+  useIsMutating,
 } from '@tanstack/react-query';
 
 // 通用查询 Hook
@@ -41,4 +42,4 @@ export const useAppMutation = <
   });
 };
 
-export { useQueryClient };
+export { useQueryClient, useIsMutating };
