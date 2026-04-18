@@ -45,8 +45,8 @@ const EditDiaryScreen: React.FC = () => {
   const [scenario, setScenario] = React.useState<ScenarioType>(initialScenario);
   const [date, setDate] = React.useState(new Date());
   const [location, setLocation] = React.useState('');
-  const [mood, setMood] = React.useState<MoodType | undefined>();
-  const [weather, setWeather] = React.useState<WeatherType | undefined>();
+  const [mood, setMood] = React.useState<MoodType | undefined>('happy');
+  const [weather, setWeather] = React.useState<WeatherType | undefined>('sunny');
   const [title, setTitle] = React.useState('');
   const [content, setContent] = React.useState('');
   const [media, setMedia] = React.useState<MediaResource[]>([]);
@@ -225,7 +225,7 @@ const EditDiaryScreen: React.FC = () => {
         </View>
 
         {/* 媒体附件选择 */}
-        <MediaSelector media={media} onMediaChange={setMedia} maxCount={9} />
+        <MediaSelector media={media} onMediaChange={setMedia} maxCount={9} draggable />
 
         {/* 保存按钮 */}
         <View style={styles.saveButtonContainer}>

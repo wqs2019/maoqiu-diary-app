@@ -10,7 +10,9 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+import { DraggableGrid } from 'react-native-draggable-grid';
 
 import { MediaPreviewer } from './MediaPreviewer';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
@@ -22,6 +24,7 @@ interface MediaSelectorProps {
   onMediaChange: (media: MediaResource[]) => void;
   maxCount?: number;
   hideHeader?: boolean;
+  draggable?: boolean;
 }
 
 export const MediaSelector: React.FC<MediaSelectorProps> = ({
@@ -29,6 +32,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   onMediaChange,
   maxCount = 9,
   hideHeader = false,
+  draggable = false,
 }) => {
   const isUploading = useRef(false);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -326,20 +330,16 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     onMediaChange(newMedia);
   };
 
-  const renderMediaPreview = (item: MediaResource, index: number) => {
+  const renderMediaPreview = (item: MediaResource, originalIndex: number) => {
     const isUploading = item.uploadStatus === 'loading';
     const isFailed = item.uploadStatus === 'fail';
 
+    // Calculate current index in the media array
+    const currentIndex = media.findIndex((m) => m.uri === item.uri);
+
     return (
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => {
-          if (!isUploading && !isFailed) {
-            setPreviewIndex(index);
-            setPreviewVisible(true);
-          }
-        }}
-        key={`${item.type}-${index}`}
+      <View
+        key={item.uri}
         style={[
           styles.mediaItem,
           isFailed && styles.mediaItemFailed,
@@ -386,7 +386,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         <TouchableOpacity
           style={styles.removeButton}
           onPress={() => {
-            removeMedia(index);
+            removeMedia(currentIndex);
           }}
         >
           <Ionicons name="close-circle" size={24} color="#FF4444" />
@@ -394,7 +394,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
 
         {/* 重试按钮（仅失败时显示） */}
         {isFailed && (
-          <TouchableOpacity style={styles.retryButton} onPress={() => retryUpload(index)}>
+          <TouchableOpacity style={styles.retryButton} onPress={() => retryUpload(currentIndex)}>
             <Ionicons name="refresh" size={24} color="#FFF" />
           </TouchableOpacity>
         )}
@@ -412,7 +412,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
             <Text style={styles.errorText}>上传失败</Text>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -424,34 +424,93 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  const gridData = React.useMemo(() => {
+    const data = media.map((item, index) => ({
+      ...item,
+      // 使用唯一的 uri 作为 key，而不是 index，防止重排时组件卸载重建
+      key: item.uri,
+      disabledDrag: !draggable,
+      disabledReSorted: !draggable,
+    }));
+
+    if (media.length < maxCount) {
+      data.push({
+        key: 'add-button',
+        isAddButton: true,
+        disabledDrag: true,
+        disabledReSorted: true,
+      } as any);
+    }
+    return data;
+  }, [media, maxCount]);
+
+  const renderGridItem = (item: any, index: number) => {
+    if (item.isAddButton) {
+      return (
+        <View style={styles.gridItemContainer} key={item.key}>
+          <View
+            style={[styles.addButton, isUploading.current && styles.addButtonDisabled]}
+          >
+            <Ionicons name="add-circle-outline" size={32} color={HEALING_COLORS.pink[500]} />
+            <Text style={styles.addButtonText}>添加媒体</Text>
+          </View>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.gridItemContainer} key={item.key}>
+        {renderMediaPreview(item, index)}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       {!hideHeader && (
         <View style={styles.header}>
-          <Text style={styles.title}>
-            媒体附件
-            <Text style={styles.subtitle}>（最多{maxCount}个）</Text>
-          </Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>媒体附件</Text>
+            <Text style={styles.subtitle}>
+              （最多{maxCount}个{draggable && media.length > 1 ? '，长按可拖动排序' : ''}）
+            </Text>
+          </View>
           <Text style={styles.count}>
             {media.length}/{maxCount}
           </Text>
         </View>
       )}
 
-      <View style={styles.mediaGrid}>
-        {media.map((item, index) => renderMediaPreview(item, index))}
-
-        {media.length < maxCount && (
-          <TouchableOpacity
-            style={[styles.addButton, isUploading.current && styles.addButtonDisabled]}
-            onPress={showMediaOptions}
-            disabled={isUploading.current}
-          >
-            <Ionicons name="add-circle-outline" size={32} color={HEALING_COLORS.pink[500]} />
-            <Text style={styles.addButtonText}>添加媒体</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <DraggableGrid
+        numColumns={3}
+        data={gridData}
+        renderItem={renderGridItem}
+        itemHeight={120}
+        delayLongPress={200}
+        onItemPress={(item: any) => {
+          if (item.isAddButton) {
+            if (!isUploading.current) {
+              showMediaOptions();
+            }
+          } else {
+            const isUploadingItem = item.uploadStatus === 'loading';
+            const isFailed = item.uploadStatus === 'fail';
+            if (!isUploadingItem && !isFailed) {
+              const currentIndex = media.findIndex((m) => m.uri === item.uri);
+              if (currentIndex >= 0) {
+                setPreviewIndex(currentIndex);
+                setPreviewVisible(true);
+              }
+            }
+          }
+        }}
+        onDragRelease={(newData) => {
+          const newMedia = newData.filter((i: any) => !i.isAddButton).map((i: any) => {
+            const { key, isAddButton, disabledDrag, disabledReSorted, ...rest } = i;
+            return rest;
+          });
+          onMediaChange(newMedia as MediaResource[]);
+        }}
+      />
 
       <MediaPreviewer
         visible={previewVisible}
@@ -483,6 +542,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
   title: {
     fontSize: 14,
     fontWeight: '600',
@@ -502,9 +565,15 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  gridItemContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   mediaItem: {
-    width: 100,
-    height: 100,
+    width: 115,
+    height: 115,
     borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
@@ -628,8 +697,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   addButton: {
-    width: 100,
-    height: 100,
+    width: 115,
+    height: 115,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: HEALING_COLORS.pink[300],
