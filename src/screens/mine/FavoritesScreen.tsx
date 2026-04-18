@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import {
+  View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AnimatedBackgroundBlobs } from '../../components/common/AnimatedBackgroundBlobs';
 import { TimelineView } from '../../components/handDrawn/TimelineView';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 import { TimelineItem, Diary } from '../../types';
-import { AnimatedBackgroundBlobs } from '../../components/common/AnimatedBackgroundBlobs';
 
 const FavoritesScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -17,7 +24,11 @@ const FavoritesScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const userId = user?._id;
 
-  const { data: diaryList, isLoading, error } = useDiaryList({
+  const {
+    data: diaryList,
+    isLoading,
+    error,
+  } = useDiaryList({
     page: 1,
     pageSize: 100, // 收藏页暂不分页，获取尽可能多的数据
     userId,
@@ -73,8 +84,8 @@ const FavoritesScreen: React.FC = () => {
           <Text style={styles.emptyStateSubText}>去详情页点击右上角的星星收藏吧</Text>
         </View>
       ) : (
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >

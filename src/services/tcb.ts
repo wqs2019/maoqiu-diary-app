@@ -129,7 +129,7 @@ export const CloudService = {
 
       // 注意：这里为了兼容云函数直接返回 { code, message, data } 的格式
       if (cleanData.code !== undefined) {
-        return cleanData as any;
+        return cleanData;
       }
 
       // 如果云函数返回的是 { success: false, message: ... } 格式

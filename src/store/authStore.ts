@@ -9,6 +9,7 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
   login: (phone: string, code: string) => Promise<void>;
+  loginWithWechat: () => Promise<void>;
   logout: () => Promise<void>;
   sendCode: (phone: string) => Promise<boolean>;
   checkAuth: () => Promise<boolean>;
@@ -31,6 +32,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error: any) {
       console.error('Login failed in store:', error);
       set({ error: error.message || '登录失败', loading: false });
+    }
+  },
+  loginWithWechat: async () => {
+    set({ loading: true, error: null });
+    try {
+      // TODO: 替换为实际的微信 SDK 登录逻辑
+      // 1. 调用微信 SDK 获取 code
+      // const code = await WeChat.sendAuthRequest('snsapi_userinfo');
+      // 2. 调用后端接口，用 code 换取 token 和用户信息
+      // const { token, user } = await authService.loginWithWechat(code);
+
+      // 模拟微信登录成功
+      console.log('WeChat login placeholder');
+      setTimeout(() => {
+        set({ loading: false, error: '微信登录暂未接入SDK' });
+      }, 1000);
+    } catch (error: any) {
+      console.error('WeChat login failed:', error);
+      set({ error: error.message || '微信登录失败', loading: false });
     }
   },
   logout: async () => {

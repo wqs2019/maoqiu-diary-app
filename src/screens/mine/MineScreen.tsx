@@ -1,4 +1,4 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect } from 'react';
@@ -98,7 +98,9 @@ const MineScreen: React.FC = () => {
           </View>
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => navigation.navigate('EditProfile')}
+            onPress={() => {
+              navigation.navigate('EditProfile');
+            }}
           >
             <Feather name="edit-2" size={16} color={HEALING_COLORS.pink[500]} />
           </TouchableOpacity>
@@ -124,7 +126,9 @@ const MineScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.statItem}
             activeOpacity={0.7}
-            onPress={() => navigation.navigate('Badges' as any)}
+            onPress={() => {
+              navigation.navigate('Badges' as any);
+            }}
           >
             <Text style={styles.statNumber}>{stats.badges}</Text>
             <Text style={styles.statLabel}>徽章</Text>
@@ -145,15 +149,15 @@ const MineScreen: React.FC = () => {
             },
           ]}
         >
-          {renderMenuItem('book-open', '我的日记本', HEALING_COLORS.blue[500], false, () =>
-            navigation.navigate('Notebooks' as any)
-          )}
-          {renderMenuItem('star', '收藏夹', HEALING_COLORS.yellow[500], false, () =>
-            navigation.navigate('Favorites' as any)
-          )}
-          {renderMenuItem('calendar', '打卡日历', HEALING_COLORS.green[500], true, () =>
-            navigation.navigate('Calendar' as any)
-          )}
+          {renderMenuItem('book-open', '我的日记本', HEALING_COLORS.blue[500], false, () => {
+            navigation.navigate('Notebooks' as any);
+          })}
+          {renderMenuItem('star', '收藏夹', HEALING_COLORS.yellow[500], false, () => {
+            navigation.navigate('Favorites' as any);
+          })}
+          {renderMenuItem('calendar', '打卡日历', HEALING_COLORS.green[500], true, () => {
+            navigation.navigate('Calendar' as any);
+          })}
         </View>
 
         {/* 菜单区块 2 */}
@@ -171,12 +175,12 @@ const MineScreen: React.FC = () => {
           ]}
         >
           {renderMenuItem('settings', '应用设置', HEALING_COLORS.gray[600], false, () => {})}
-          {renderMenuItem('info', '关于毛球', HEALING_COLORS.pink[400], false, () =>
-            navigation.navigate('About' as any)
-          )}
-          {renderMenuItem('help-circle', '帮助与反馈', HEALING_COLORS.blue[400], true, () =>
-            navigation.navigate('Feedback' as any)
-          )}
+          {renderMenuItem('info', '关于毛球', HEALING_COLORS.pink[400], false, () => {
+            navigation.navigate('About' as any);
+          })}
+          {renderMenuItem('help-circle', '帮助与反馈', HEALING_COLORS.blue[400], true, () => {
+            navigation.navigate('Feedback' as any);
+          })}
         </View>
 
         {/* 退出登录按钮 */}

@@ -48,7 +48,7 @@ export class AuthService {
 
       // 直接使用 response (如果 tcb 返回的是 { code, message, data } 结构)
       const result = response;
-      if (!result || result.code !== 0) {
+      if (result?.code !== 0) {
         throw new Error(result?.message || '登录失败');
       }
 
@@ -123,7 +123,7 @@ export class AuthService {
 
       // 根据更新后的 TCB 适配器，如果是直出的 JSON，它本身就是包含 {code, message, data} 的对象
       const result = response;
-      if (result && result.code === 0 && result.data?.user) {
+      if (result?.code === 0 && result.data?.user) {
         const user = result.data.user;
         console.log('Fetched user from server:', user);
         await this.saveUserInfo(user);

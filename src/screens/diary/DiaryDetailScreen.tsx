@@ -1,22 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 
+import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
+import { ShareCardModal } from '../../components/handDrawn/ShareCardModal';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useDiaryDetail, useDeleteDiary, useToggleFavorite } from '../../hooks/useDiaryQuery';
-import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
-import { ShareCardModal } from '../../components/handDrawn/ShareCardModal';
 
 type DiaryDetailRouteProp = RouteProp<{ params: { _id: string } }, 'params'>;
 
@@ -211,7 +203,9 @@ const DiaryDetailScreen: React.FC = () => {
           visible={previewVisible}
           media={diary.media}
           initialIndex={previewIndex}
-          onClose={() => setPreviewVisible(false)}
+          onClose={() => {
+            setPreviewVisible(false);
+          }}
         />
       )}
 
@@ -242,7 +236,9 @@ const DiaryDetailScreen: React.FC = () => {
       <ShareCardModal
         visible={shareModalVisible}
         diary={diary}
-        onClose={() => setShareModalVisible(false)}
+        onClose={() => {
+          setShareModalVisible(false);
+        }}
       />
     </ScrollView>
   );

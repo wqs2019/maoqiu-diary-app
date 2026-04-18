@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Sharing from 'expo-sharing';
 import React, { useRef, useState } from 'react';
 import {
   View,
@@ -11,13 +13,11 @@ import {
   Dimensions,
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
-import { Ionicons } from '@expo/vector-icons';
 
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
-import { Diary, ScenarioType, MoodType, WeatherType } from '../../types';
+import { Diary } from '../../types';
 
 interface ShareCardModalProps {
   visible: boolean;
@@ -31,9 +31,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
   const viewShotRef = useRef<ViewShot>(null);
   const [isSharing, setIsSharing] = useState(false);
 
-  const scenario = SCENARIO_TEMPLATES[diary.scenario as ScenarioType];
-  const mood = getMoodConfig(diary.mood as MoodType);
-  const weather = getWeatherConfig(diary.weather as WeatherType);
+  const scenario = SCENARIO_TEMPLATES[diary.scenario];
+  const mood = getMoodConfig(diary.mood);
+  const weather = getWeatherConfig(diary.weather);
   const date = new Date(diary.date || diary.createdAt);
   const formattedDate = date.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -84,8 +84,16 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
     if (count === 2) {
       return (
         <View style={styles.gridRow}>
-          <Image source={{ uri: media[0].thumbnail || media[0].uri }} style={styles.gridImageItem} resizeMode="cover" />
-          <Image source={{ uri: media[1].thumbnail || media[1].uri }} style={styles.gridImageItem} resizeMode="cover" />
+          <Image
+            source={{ uri: media[0].thumbnail || media[0].uri }}
+            style={styles.gridImageItem}
+            resizeMode="cover"
+          />
+          <Image
+            source={{ uri: media[1].thumbnail || media[1].uri }}
+            style={styles.gridImageItem}
+            resizeMode="cover"
+          />
         </View>
       );
     }
@@ -93,10 +101,22 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
     if (count === 3) {
       return (
         <View style={styles.gridContainer}>
-          <Image source={{ uri: media[0].thumbnail || media[0].uri }} style={[styles.gridImageFull, { height: 160 }]} resizeMode="cover" />
+          <Image
+            source={{ uri: media[0].thumbnail || media[0].uri }}
+            style={[styles.gridImageFull, { height: 160 }]}
+            resizeMode="cover"
+          />
           <View style={styles.gridRow}>
-            <Image source={{ uri: media[1].thumbnail || media[1].uri }} style={styles.gridImageItem} resizeMode="cover" />
-            <Image source={{ uri: media[2].thumbnail || media[2].uri }} style={styles.gridImageItem} resizeMode="cover" />
+            <Image
+              source={{ uri: media[1].thumbnail || media[1].uri }}
+              style={styles.gridImageItem}
+              resizeMode="cover"
+            />
+            <Image
+              source={{ uri: media[2].thumbnail || media[2].uri }}
+              style={styles.gridImageItem}
+              resizeMode="cover"
+            />
           </View>
         </View>
       );
@@ -106,13 +126,29 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
     return (
       <View style={styles.gridContainer}>
         <View style={styles.gridRow}>
-          <Image source={{ uri: media[0].thumbnail || media[0].uri }} style={styles.gridImageItem} resizeMode="cover" />
-          <Image source={{ uri: media[1].thumbnail || media[1].uri }} style={styles.gridImageItem} resizeMode="cover" />
+          <Image
+            source={{ uri: media[0].thumbnail || media[0].uri }}
+            style={styles.gridImageItem}
+            resizeMode="cover"
+          />
+          <Image
+            source={{ uri: media[1].thumbnail || media[1].uri }}
+            style={styles.gridImageItem}
+            resizeMode="cover"
+          />
         </View>
         <View style={styles.gridRow}>
-          <Image source={{ uri: media[2].thumbnail || media[2].uri }} style={styles.gridImageItem} resizeMode="cover" />
+          <Image
+            source={{ uri: media[2].thumbnail || media[2].uri }}
+            style={styles.gridImageItem}
+            resizeMode="cover"
+          />
           <View style={styles.imageOverlayContainer}>
-            <Image source={{ uri: media[3].thumbnail || media[3].uri }} style={styles.gridImageItem} resizeMode="cover" />
+            <Image
+              source={{ uri: media[3].thumbnail || media[3].uri }}
+              style={styles.gridImageItem}
+              resizeMode="cover"
+            />
             {count > 4 && (
               <View style={styles.overlayTextContainer}>
                 <Text style={styles.overlayText}>+{count - 4}</Text>

@@ -80,7 +80,9 @@ const CategoryScreen: React.FC = () => {
       <View style={styles.gridContainer}>
         <TouchableOpacity
           style={[styles.gridItem, selectedScenario === 'all' && styles.gridItemSelected]}
-          onPress={() => setSelectedScenario('all')}
+          onPress={() => {
+            setSelectedScenario('all');
+          }}
           activeOpacity={0.8}
         >
           <View style={[styles.iconContainer, { backgroundColor: '#F3F4F6' }]}>
@@ -100,7 +102,9 @@ const CategoryScreen: React.FC = () => {
             <TouchableOpacity
               key={type}
               style={[styles.gridItem, isSelected && styles.gridItemSelected]}
-              onPress={() => setSelectedScenario(type)}
+              onPress={() => {
+                setSelectedScenario(type);
+              }}
               activeOpacity={0.8}
             >
               <View style={[styles.iconContainer, { backgroundColor: scenario.color + '20' }]}>
@@ -261,7 +265,9 @@ const CategoryScreen: React.FC = () => {
           visible={previewVisible}
           media={allMedia.slice(0, 9)}
           initialIndex={previewIndex}
-          onClose={() => setPreviewVisible(false)}
+          onClose={() => {
+            setPreviewVisible(false);
+          }}
         />
       )}
     </View>

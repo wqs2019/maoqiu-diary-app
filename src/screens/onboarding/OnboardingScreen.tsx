@@ -129,11 +129,7 @@ const OnboardingScreen: React.FC = () => {
           })}
         </View>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={scrollToNext}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.button} onPress={scrollToNext} activeOpacity={0.8}>
           <Text style={styles.buttonText}>
             {currentIndex === SLIDES.length - 1 ? '立即开启' : '下一步'}
           </Text>

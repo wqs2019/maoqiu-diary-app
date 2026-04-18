@@ -19,7 +19,7 @@ const LoginScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [countdown, setCountdown] = useState(0);
-  const { login, sendCode, loading, error } = useAuthStore();
+  const { login, loginWithWechat, sendCode, loading, error } = useAuthStore();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -146,6 +146,26 @@ const LoginScreen: React.FC = () => {
             <Text style={styles.loginButtonText}>{loading ? '登录中...' : '登录'}</Text>
             <Ionicons name="arrow-forward" size={20} color={COLORS.surface} />
           </TouchableOpacity>
+
+          {/* 微信登录（因个人开发者暂无权限，先隐藏以便后续使用） */}
+          {false && (
+            <>
+              <View style={styles.dividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>或</Text>
+                <View style={styles.divider} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.wechatButton}
+                onPress={loginWithWechat}
+                disabled={loading}
+              >
+                <Ionicons name="logo-wechat" size={24} color="#07C160" />
+                <Text style={styles.wechatButtonText}>微信一键登录</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
           {/* 测试提示 */}
           <View style={styles.testHint}>
@@ -293,6 +313,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.medium,
     paddingVertical: SPACING.small,
     borderRadius: 12,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: SPACING.xlarge,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  dividerText: {
+    marginHorizontal: SPACING.medium,
+    color: COLORS.textSecondary,
+    fontSize: FONT_SIZES.medium,
+  },
+  wechatButton: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 24,
+    paddingVertical: SPACING.medium + 4,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#07C160',
+    shadowColor: '#07C160',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4.65,
+    elevation: 4,
+  },
+  wechatButtonText: {
+    color: '#07C160',
+    fontSize: FONT_SIZES.large,
+    fontWeight: '600',
+    marginLeft: SPACING.small,
   },
 });
 

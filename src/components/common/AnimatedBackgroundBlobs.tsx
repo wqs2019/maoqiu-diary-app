@@ -87,41 +87,41 @@ const AnimatedBlob = ({
 export const AnimatedBackgroundBlobs = () => {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <AnimatedBlob 
-        style={styles.blobTopLeft} 
-        delay={0} 
-        duration={5000} 
-        xOffset={30} 
-        yOffset={40} 
+      <AnimatedBlob
+        style={styles.blobTopLeft}
+        delay={0}
+        duration={5000}
+        xOffset={30}
+        yOffset={40}
       />
-      <AnimatedBlob 
-        style={styles.blobTopRight} 
-        delay={1000} 
-        duration={6000} 
-        xOffset={-40} 
-        yOffset={30} 
+      <AnimatedBlob
+        style={styles.blobTopRight}
+        delay={1000}
+        duration={6000}
+        xOffset={-40}
+        yOffset={30}
       />
-      <AnimatedBlob 
-        style={styles.blobBottomLeft} 
-        delay={2000} 
-        duration={5500} 
-        xOffset={40} 
-        yOffset={-30} 
+      <AnimatedBlob
+        style={styles.blobBottomLeft}
+        delay={2000}
+        duration={5500}
+        xOffset={40}
+        yOffset={-30}
       />
-      <AnimatedBlob 
-        style={styles.blobBottomRight} 
-        delay={1500} 
-        duration={4500} 
-        xOffset={-30} 
-        yOffset={-40} 
+      <AnimatedBlob
+        style={styles.blobBottomRight}
+        delay={1500}
+        duration={4500}
+        xOffset={-30}
+        yOffset={-40}
       />
-      <AnimatedBlob 
-        style={styles.blobBottomCenter} 
-        delay={500} 
-        duration={7000} 
-        xOffset={50} 
-        yOffset={20} 
-        scaleOffset={1.05} 
+      <AnimatedBlob
+        style={styles.blobBottomCenter}
+        delay={500}
+        duration={7000}
+        xOffset={50}
+        yOffset={20}
+        scaleOffset={1.05}
       />
     </View>
   );

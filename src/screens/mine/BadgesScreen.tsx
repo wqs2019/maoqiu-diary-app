@@ -43,7 +43,12 @@ const BadgesScreen: React.FC = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            navigation.goBack();
+          }}
+        >
           <Feather name="chevron-left" size={28} color={HEALING_COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>我的徽章</Text>
@@ -73,7 +78,9 @@ const BadgesScreen: React.FC = () => {
                   isUnlocked ? styles.badgeUnlocked : styles.badgeLocked,
                 ]}
                 activeOpacity={0.7}
-                onPress={() => handleBadgePress(badge)}
+                onPress={() => {
+                  handleBadgePress(badge);
+                }}
               >
                 <View
                   style={[
@@ -88,7 +95,9 @@ const BadgesScreen: React.FC = () => {
                 <Text
                   style={[
                     styles.badgeName,
-                    isUnlocked ? { color: HEALING_COLORS.gray[800] } : { color: HEALING_COLORS.gray[400] },
+                    isUnlocked
+                      ? { color: HEALING_COLORS.gray[800] }
+                      : { color: HEALING_COLORS.gray[400] },
                   ]}
                   numberOfLines={1}
                 >

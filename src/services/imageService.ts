@@ -1,4 +1,5 @@
 // 修复 COS SDK 在 React Native 下由于 navigator.userAgent 缺失导致的报错
+import { CloudService } from './tcb';
 if (typeof global !== 'undefined') {
   if (!global.navigator) {
     (global as any).navigator = {};
@@ -9,7 +10,6 @@ if (typeof global !== 'undefined') {
 }
 
 const COS = require('cos-js-sdk-v5');
-import { CloudService } from './tcb';
 
 class ImageService {
   private cos: any = null;

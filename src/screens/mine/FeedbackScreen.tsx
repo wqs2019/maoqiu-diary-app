@@ -15,8 +15,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
 import { MediaSelector } from '../../components/handDrawn/MediaSelector';
+import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
 import feedbackService from '../../services/feedbackService';
 import { useAuthStore } from '../../store/authStore';
 import { MediaResource } from '../../types';
@@ -58,7 +58,12 @@ const FeedbackScreen: React.FC = () => {
       });
 
       Alert.alert('发送成功！', '毛球已经收到你的反馈啦，我们会努力变得更好！🐾', [
-        { text: '好的', onPress: () => navigation.goBack() },
+        {
+          text: '好的',
+          onPress: () => {
+            navigation.goBack();
+          },
+        },
       ]);
     } catch (error: any) {
       Alert.alert('提交失败', error.message || '网络开小差了，请稍后重试');
@@ -78,7 +83,9 @@ const FeedbackScreen: React.FC = () => {
             borderColor: HEALING_COLORS.pink[300],
           },
         ]}
-        onPress={() => setFeedbackType(type)}
+        onPress={() => {
+          setFeedbackType(type);
+        }}
         activeOpacity={0.7}
       >
         <Text style={styles.typeIcon}>{icon}</Text>
@@ -100,7 +107,12 @@ const FeedbackScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.header, { paddingTop: insets.top }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            navigation.goBack();
+          }}
+        >
           <Feather name="chevron-left" size={28} color={HEALING_COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>帮助与反馈</Text>
@@ -137,7 +149,7 @@ const FeedbackScreen: React.FC = () => {
 
           <Text style={[styles.label, { marginTop: 12 }]}>图片/视频（最多3个）</Text>
           <View style={styles.mediaContainer}>
-            <MediaSelector media={media} onMediaChange={setMedia} maxCount={3} hideHeader={true} />
+            <MediaSelector media={media} onMediaChange={setMedia} maxCount={3} hideHeader />
           </View>
 
           <Text style={[styles.label, { marginTop: 12 }]}>联系方式（选填）</Text>

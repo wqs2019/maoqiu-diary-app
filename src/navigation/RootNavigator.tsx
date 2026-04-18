@@ -9,18 +9,18 @@ import { COLORS } from '@/config/constant';
 import AIScreen from '@/screens/ai/AIScreen';
 import LoginScreen from '@/screens/auth/LoginScreen';
 import CategoryScreen from '@/screens/category/CategoryScreen';
+import PhotoWallScreen from '@/screens/category/PhotoWallScreen';
 import DiaryDetailScreen from '@/screens/diary/DiaryDetailScreen';
 import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
 import HomeScreen from '@/screens/home/HomeScreen';
-import EditProfileScreen from '@/screens/mine/EditProfileScreen';
-import MineScreen from '@/screens/mine/MineScreen';
 import AboutScreen from '@/screens/mine/AboutScreen';
-import FeedbackScreen from '@/screens/mine/FeedbackScreen';
 import BadgesScreen from '@/screens/mine/BadgesScreen';
 import CalendarScreen from '@/screens/mine/CalendarScreen';
+import EditProfileScreen from '@/screens/mine/EditProfileScreen';
 import FavoritesScreen from '@/screens/mine/FavoritesScreen';
+import FeedbackScreen from '@/screens/mine/FeedbackScreen';
+import MineScreen from '@/screens/mine/MineScreen';
 import NotebooksScreen from '@/screens/mine/NotebooksScreen';
-import PhotoWallScreen from '@/screens/category/PhotoWallScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
@@ -99,13 +99,13 @@ const MainNavigator = () => {
     >
       <MainTab.Screen name="Home" component={HomeScreen} options={{ title: '足迹' }} />
       <MainTab.Screen name="Category" component={CategoryScreen} options={{ title: '分类' }} />
-      <MainTab.Screen 
-        name="AI" 
-        component={AIScreen} 
-        options={{ 
+      <MainTab.Screen
+        name="AI"
+        component={AIScreen}
+        options={{
           title: 'AI问答',
-          tabBarStyle: { display: 'none' }
-        }} 
+          tabBarStyle: { display: 'none' },
+        }}
       />
       <MainTab.Screen name="Mine" component={MineScreen} options={{ title: '我的' }} />
     </MainTab.Navigator>

@@ -12,10 +12,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
+import { MediaPreviewer } from './MediaPreviewer';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { imageService } from '../../services/imageService';
 import { MediaResource } from '../../types';
-import { MediaPreviewer } from './MediaPreviewer';
 
 interface MediaSelectorProps {
   media: MediaResource[];
@@ -60,7 +60,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       const uploadResult = await imageService.uploadImage(item.uri, cloudPath, item.mimeType);
 
       let thumbnailUrl = item.thumbnail;
-      if (item.type === 'video' && item.thumbnail && item.thumbnail.startsWith('file://')) {
+      if (item.type === 'video' && item.thumbnail?.startsWith('file://')) {
         try {
           const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
           const thumbUploadResult = await imageService.uploadImage(
@@ -136,7 +136,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
 
         let thumbnailUrl = item.thumbnail;
         // 如果是视频且有本地封面图，也需要上传封面图
-        if (item.type === 'video' && item.thumbnail && item.thumbnail.startsWith('file://')) {
+        if (item.type === 'video' && item.thumbnail?.startsWith('file://')) {
           try {
             const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
             const thumbUploadResult = await imageService.uploadImage(
@@ -462,7 +462,9 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
             .filter((m) => m.uploadStatus !== 'loading' && m.uploadStatus !== 'fail')
             .findIndex((m) => m.uri === media[previewIndex]?.uri)
         )}
-        onClose={() => setPreviewVisible(false)}
+        onClose={() => {
+          setPreviewVisible(false);
+        }}
       />
     </View>
   );

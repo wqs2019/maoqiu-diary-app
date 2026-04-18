@@ -108,7 +108,9 @@ const PhotoWallScreen: React.FC = () => {
       <TouchableOpacity
         key={index}
         activeOpacity={0.8}
-        onPress={() => handlePreview(index)}
+        onPress={() => {
+          handlePreview(index);
+        }}
         style={[styles.mediaCard, { height }]}
       >
         <Image
@@ -180,7 +182,9 @@ const PhotoWallScreen: React.FC = () => {
           visible={previewVisible}
           media={allMedia}
           initialIndex={previewIndex}
-          onClose={() => setPreviewVisible(false)}
+          onClose={() => {
+            setPreviewVisible(false);
+          }}
         />
       )}
     </View>

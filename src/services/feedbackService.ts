@@ -23,7 +23,9 @@ export class FeedbackService {
   /**
    * 提交反馈
    */
-  async submitFeedback(data: Omit<FeedbackData, '_id' | 'status' | 'createdAt'>): Promise<FeedbackData> {
+  async submitFeedback(
+    data: Omit<FeedbackData, '_id' | 'status' | 'createdAt'>
+  ): Promise<FeedbackData> {
     try {
       const response: any = await CloudService.callFunction('feedback', {
         action: 'add',

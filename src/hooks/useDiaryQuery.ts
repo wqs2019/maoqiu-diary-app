@@ -1,5 +1,6 @@
 // 日记相关的 React Query Hooks
-import React, { useMemo } from 'react';
+import React from 'react';
+
 import { useAppQuery, useAppMutation, useQueryClient } from '../hooks/useQuery';
 import * as diaryApi from '../services/diaryService';
 import type { DiaryListParams } from '../services/diaryService';
@@ -72,13 +73,13 @@ export const useDiaryStats = (userId?: string) => {
 
       const allDiariesMap: Record<string, boolean> = {};
       const uniqueMoods = new Set();
-      
+
       let nightOwlCount = 0;
       let hasLongStory = false;
       let fullPhotosCount = 0;
       const uniqueLocations = new Set<string>();
       const weekendDates = new Set<string>();
-      
+
       // 连续雨雪天辅助变量
       let maxRainySnowyStreak = 0;
       let currentRainySnowyStreak = 0;
@@ -95,7 +96,7 @@ export const useDiaryStats = (userId?: string) => {
           d.getDate()
         ).padStart(2, '0')}`;
         allDiariesMap[dateKey] = true;
-        
+
         if (diary.mood) {
           uniqueMoods.add(diary.mood);
         }
@@ -107,7 +108,13 @@ export const useDiaryStats = (userId?: string) => {
         }
 
         // 10. 洋洋洒洒：字数超 2000 且至少 3 张图
-        if (!hasLongStory && diary.content && diary.content.length >= 2000 && diary.media && diary.media.length >= 3) {
+        if (
+          !hasLongStory &&
+          diary.content &&
+          diary.content.length >= 2000 &&
+          diary.media &&
+          diary.media.length >= 3
+        ) {
           hasLongStory = true;
         }
 
@@ -151,21 +158,23 @@ export const useDiaryStats = (userId?: string) => {
       let hasPerfectWeekends = false;
       if (weekendDates.size >= 8) {
         // 将所有周末日期转为时间戳并排序
-        const weekendTimes = Array.from(weekendDates).map(dateStr => new Date(dateStr).getTime()).sort();
+        const weekendTimes = Array.from(weekendDates)
+          .map((dateStr) => new Date(dateStr).getTime())
+          .sort();
         let consecutivePerfectWeekends = 0;
-        
+
         // 简单判断逻辑：检查近期的周末
         // 这里采用一个简化的判定：从最近的周末开始往前推
         // 如果遇到一个周日，检查是否有前一天的周六，如果有，则为一个完美周末
         // 然后再检查上个周日（相隔 7 天），以此类推
         const today = new Date();
-        let checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        
+        const checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
         // 找到最近的一个周日或周六作为起点
         while (checkDate.getDay() !== 0 && checkDate.getDay() !== 6) {
           checkDate.setDate(checkDate.getDate() - 1);
         }
-        
+
         // 如果起点是周六，把它调整为同一周的周日以便统一计算
         if (checkDate.getDay() === 6) {
           checkDate.setDate(checkDate.getDate() + 1);
@@ -174,11 +183,11 @@ export const useDiaryStats = (userId?: string) => {
         // 往回查最多 10 个星期
         for (let i = 0; i < 10; i++) {
           const sundayStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
-          
+
           const saturday = new Date(checkDate);
           saturday.setDate(saturday.getDate() - 1);
           const saturdayStr = `${saturday.getFullYear()}-${String(saturday.getMonth() + 1).padStart(2, '0')}-${String(saturday.getDate()).padStart(2, '0')}`;
-          
+
           if (weekendDates.has(sundayStr) && weekendDates.has(saturdayStr)) {
             consecutivePerfectWeekends++;
             if (consecutivePerfectWeekends >= 4) {
@@ -188,22 +197,26 @@ export const useDiaryStats = (userId?: string) => {
           } else {
             consecutivePerfectWeekends = 0;
           }
-          
+
           // 往前推一周
           checkDate.setDate(checkDate.getDate() - 7);
         }
       }
 
       const today = new Date();
-      let checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      
+      const checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
       while (true) {
         const dateKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
         if (allDiariesMap[dateKey]) {
           currentStreak++;
           checkDate.setDate(checkDate.getDate() - 1);
         } else {
-          if (currentStreak === 0 && checkDate.getTime() === new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) {
+          if (
+            currentStreak === 0 &&
+            checkDate.getTime() ===
+              new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+          ) {
             checkDate.setDate(checkDate.getDate() - 1);
             continue;
           }
@@ -314,7 +327,7 @@ export const useUpdateDiary = () => {
  */
 export const useToggleFavorite = () => {
   const updateMutation = useUpdateDiary();
-  
+
   return (id: string, currentStatus: boolean) => {
     return updateMutation.mutateAsync({
       id,

@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import * as notebookService from '../services/notebookService';
 
 export interface Notebook {
@@ -33,7 +34,7 @@ export const useNotebookStore = create<NotebookState>()(
         set({ isLoading: true });
         try {
           let notebooks = await notebookService.getNotebookList(userId);
-          
+
           if (!notebooks || notebooks.length === 0) {
             // 云端如果没有，则创建一个默认的
             const defaultNb = await notebookService.createNotebook(userId, '毛球日记');
@@ -50,7 +51,7 @@ export const useNotebookStore = create<NotebookState>()(
 
           // 如果没有选中当前日记本，或者选中的日记本已不存在，则重置为第一个
           const currentId = get().currentNotebookIdByUserId[userId];
-          if (!currentId || !notebooks.find(n => n._id === currentId)) {
+          if (!currentId || !notebooks.find((n) => n._id === currentId)) {
             get().setCurrentNotebook(userId, notebooks[0]._id);
           }
         } catch (error) {
@@ -70,14 +71,14 @@ export const useNotebookStore = create<NotebookState>()(
       getCurrentNotebook: (userId: string) => {
         const notebooks = get().getNotebooks(userId);
         const currentId = get().currentNotebookIdByUserId[userId] || 'default';
-        const notebook = notebooks.find(n => n._id === currentId);
+        const notebook = notebooks.find((n) => n._id === currentId);
         return notebook || notebooks[0];
       },
 
       addNotebook: async (userId: string, name: string) => {
         // 先调用云端
         const newNotebook = await notebookService.createNotebook(userId, name);
-        
+
         // 更新本地 store
         const notebooks = get().getNotebooks(userId);
         set((state) => ({
@@ -88,7 +89,7 @@ export const useNotebookStore = create<NotebookState>()(
           currentNotebookIdByUserId: {
             ...state.currentNotebookIdByUserId,
             [userId]: newNotebook._id, // 自动选中新日记本
-          }
+          },
         }));
         return newNotebook;
       },

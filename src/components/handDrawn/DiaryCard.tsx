@@ -1,6 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import { HandDrawnCard } from './HandDrawnCard';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
@@ -88,7 +88,10 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
           <View style={styles.imageWrapper}>
             <Image
               source={{
-                uri: coverImage.type === 'video' && coverImage.thumbnail ? coverImage.thumbnail : coverImage.uri,
+                uri:
+                  coverImage.type === 'video' && coverImage.thumbnail
+                    ? coverImage.thumbnail
+                    : coverImage.uri,
               }}
               style={styles.coverImage}
               resizeMode="cover"

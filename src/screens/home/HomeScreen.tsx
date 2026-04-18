@@ -75,11 +75,18 @@ const HomeScreen: React.FC = () => {
   const fetchNotebooks = useNotebookStore((state) => state.fetchNotebooks);
 
   // 监听当前用户的日记本数据和选中的日记本ID，以便在切换时触发重新渲染
-  const userNotebooks = useNotebookStore((state) => userId ? state.notebooksByUserId[userId] : undefined);
-  const currentNotebookId = useNotebookStore((state) => userId ? state.currentNotebookIdByUserId[userId] : undefined);
+  const userNotebooks = useNotebookStore((state) =>
+    userId ? state.notebooksByUserId[userId] : undefined
+  );
+  const currentNotebookId = useNotebookStore((state) =>
+    userId ? state.currentNotebookIdByUserId[userId] : undefined
+  );
 
-  const notebooks = userNotebooks && userNotebooks.length > 0 ? userNotebooks : (userId ? getNotebooks(userId) : []);
-  const currentNotebook = (userNotebooks && userNotebooks.find(n => n._id === currentNotebookId)) || (userId ? getCurrentNotebook(userId) : { _id: 'default', name: '毛球日记', createdAt: '' });
+  const notebooks =
+    userNotebooks && userNotebooks.length > 0 ? userNotebooks : userId ? getNotebooks(userId) : [];
+  const currentNotebook =
+    userNotebooks?.find((n) => n._id === currentNotebookId) ||
+    (userId ? getCurrentNotebook(userId) : { _id: 'default', name: '毛球日记', createdAt: '' });
 
   // 拉取用户的日记本数据
   useEffect(() => {
@@ -99,7 +106,7 @@ const HomeScreen: React.FC = () => {
     notebookId: currentNotebook._id,
     scenario: selectedScenario,
     keyword: debouncedSearchQuery || undefined,
-    userId: userId,
+    userId,
   });
 
   // 在首页挂载时获取最新的用户信息
@@ -241,7 +248,12 @@ const HomeScreen: React.FC = () => {
       <View style={[styles.fixedHeader, { paddingTop: insets.top + 16 }]}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity style={styles.titleRow} onPress={() => setIsNotebookModalVisible(true)}>
+            <TouchableOpacity
+              style={styles.titleRow}
+              onPress={() => {
+                setIsNotebookModalVisible(true);
+              }}
+            >
               <Text style={styles.title}>{currentNotebook.name}</Text>
               <Ionicons name="chevron-down" size={20} color="#333" />
             </TouchableOpacity>
@@ -267,7 +279,9 @@ const HomeScreen: React.FC = () => {
           </View>
           <TouchableOpacity
             style={[styles.filterButton, selectedScenario && styles.filterButtonActive]}
-            onPress={() => setIsFilterVisible(true)}
+            onPress={() => {
+              setIsFilterVisible(true);
+            }}
           >
             {selectedScenario ? (
               <Text style={{ fontSize: 20 }}>{SCENARIO_TEMPLATES[selectedScenario].icon}</Text>
@@ -281,17 +295,27 @@ const HomeScreen: React.FC = () => {
       {/* 场景筛选 Modal */}
       <Modal
         visible={isFilterVisible}
-        transparent={true}
+        transparent
         animationType="fade"
-        onRequestClose={() => setIsFilterVisible(false)}
+        onRequestClose={() => {
+          setIsFilterVisible(false);
+        }}
       >
-        <TouchableWithoutFeedback onPress={() => setIsFilterVisible(false)}>
+        <TouchableWithoutFeedback
+          onPress={() => {
+            setIsFilterVisible(false);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>筛选场景</Text>
-                  <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsFilterVisible(false);
+                    }}
+                  >
                     <Ionicons name="close" size={24} color="#666" />
                   </TouchableOpacity>
                 </View>
@@ -351,17 +375,27 @@ const HomeScreen: React.FC = () => {
       {/* 日记本切换 Modal */}
       <Modal
         visible={isNotebookModalVisible}
-        transparent={true}
+        transparent
         animationType="fade"
-        onRequestClose={() => setIsNotebookModalVisible(false)}
+        onRequestClose={() => {
+          setIsNotebookModalVisible(false);
+        }}
       >
-        <TouchableWithoutFeedback onPress={() => setIsNotebookModalVisible(false)}>
+        <TouchableWithoutFeedback
+          onPress={() => {
+            setIsNotebookModalVisible(false);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>我的日记本</Text>
-                  <TouchableOpacity onPress={() => setIsNotebookModalVisible(false)}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsNotebookModalVisible(false);
+                    }}
+                  >
                     <Ionicons name="close" size={24} color="#666" />
                   </TouchableOpacity>
                 </View>
@@ -381,15 +415,19 @@ const HomeScreen: React.FC = () => {
                         }
                       }}
                     >
-                      <Ionicons 
-                        name="book" 
-                        size={20} 
-                        color={currentNotebook._id === notebook._id ? HEALING_COLORS.pink[500] : '#666'} 
+                      <Ionicons
+                        name="book"
+                        size={20}
+                        color={
+                          currentNotebook._id === notebook._id ? HEALING_COLORS.pink[500] : '#666'
+                        }
                       />
-                      <Text style={[
-                        styles.notebookItemText,
-                        currentNotebook._id === notebook._id && styles.notebookItemTextActive,
-                      ]}>
+                      <Text
+                        style={[
+                          styles.notebookItemText,
+                          currentNotebook._id === notebook._id && styles.notebookItemTextActive,
+                        ]}
+                      >
                         {notebook.name}
                       </Text>
                       {currentNotebook._id === notebook._id && (
@@ -501,7 +539,9 @@ const HomeScreen: React.FC = () => {
             <TouchableOpacity
               key={year}
               style={styles.yearItem}
-              onPress={() => handleYearPress(year)}
+              onPress={() => {
+                handleYearPress(year);
+              }}
             >
               <Text style={[styles.yearText, activeYear === year && styles.activeYearText]}>
                 {year}

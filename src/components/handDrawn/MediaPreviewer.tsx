@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Video, ResizeMode } from 'expo-av';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Modal,
@@ -10,8 +12,7 @@ import {
   Image,
   Pressable,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Video, ResizeMode } from 'expo-av';
+
 import { MediaResource } from '../../types';
 
 const { width, height } = Dimensions.get('window');

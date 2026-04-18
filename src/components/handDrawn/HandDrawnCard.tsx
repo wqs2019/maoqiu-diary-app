@@ -53,10 +53,10 @@ export const HandDrawnCard: React.FC<HandDrawnCardProps> = ({
       return {
         borderWidth: 0,
         shadowColor: '#000000', // 增强阴影，改用深色阴影增加厚重感
-        shadowOpacity: 0.18,    // 调高不透明度
-        shadowRadius: 20,       // 增加阴影模糊半径
+        shadowOpacity: 0.18, // 调高不透明度
+        shadowRadius: 20, // 增加阴影模糊半径
         shadowOffset: { width: 0, height: 8 }, // 加大向下偏移
-        elevation: 12,          // Android 下加强投影
+        elevation: 12, // Android 下加强投影
       };
     }
     return {};

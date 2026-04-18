@@ -1,5 +1,5 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   View,
@@ -58,7 +58,12 @@ const NotebooksScreen: React.FC = () => {
           <Feather name="chevron-left" size={28} color={HEALING_COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>我的日记本</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => setIsAddModalVisible(true)}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            setIsAddModalVisible(true);
+          }}
+        >
           <Feather name="plus" size={24} color={HEALING_COLORS.pink[500]} />
         </TouchableOpacity>
       </View>
@@ -100,7 +105,12 @@ const NotebooksScreen: React.FC = () => {
                   </Text>
                 </View>
                 {isActive && (
-                  <Feather name="check" size={24} color={HEALING_COLORS.pink[500]} style={styles.checkIcon} />
+                  <Feather
+                    name="check"
+                    size={24}
+                    color={HEALING_COLORS.pink[500]}
+                    style={styles.checkIcon}
+                  />
                 )}
               </TouchableOpacity>
             );
@@ -111,11 +121,17 @@ const NotebooksScreen: React.FC = () => {
       {/* 新建日记本弹窗 */}
       <Modal
         visible={isAddModalVisible}
-        transparent={true}
+        transparent
         animationType="fade"
-        onRequestClose={() => setIsAddModalVisible(false)}
+        onRequestClose={() => {
+          setIsAddModalVisible(false);
+        }}
       >
-        <TouchableWithoutFeedback onPress={() => setIsAddModalVisible(false)}>
+        <TouchableWithoutFeedback
+          onPress={() => {
+            setIsAddModalVisible(false);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={[styles.modalContent, { borderRadius: themeStyle.borderRadius }]}>
@@ -131,13 +147,23 @@ const NotebooksScreen: React.FC = () => {
                 />
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton, { borderRadius: themeStyle.borderRadius }]}
-                    onPress={() => setIsAddModalVisible(false)}
+                    style={[
+                      styles.modalButton,
+                      styles.cancelButton,
+                      { borderRadius: themeStyle.borderRadius },
+                    ]}
+                    onPress={() => {
+                      setIsAddModalVisible(false);
+                    }}
                   >
                     <Text style={styles.cancelButtonText}>取消</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.confirmButton, { borderRadius: themeStyle.borderRadius }]}
+                    style={[
+                      styles.modalButton,
+                      styles.confirmButton,
+                      { borderRadius: themeStyle.borderRadius },
+                    ]}
                     onPress={handleAddNotebook}
                     disabled={isAdding || !newNotebookName.trim()}
                   >

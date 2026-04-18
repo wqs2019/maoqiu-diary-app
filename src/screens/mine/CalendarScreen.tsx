@@ -1,6 +1,6 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { getMoodConfig } from '../../config/statusConfig';
 import { useDiaryList, useDiaryStats } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
-import { getMoodConfig } from '../../config/statusConfig';
 
 const CalendarScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -80,10 +80,10 @@ const CalendarScreen: React.FC = () => {
   const calendarDays = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    
+
     const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0(周日) - 6(周六)
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+
     const days = [];
     // 填充前面的空白
     for (let i = 0; i < firstDayOfMonth; i++) {
@@ -104,7 +104,7 @@ const CalendarScreen: React.FC = () => {
   // 计算打卡统计
   const checkInStats = useMemo(() => {
     let totalCheckIns = 0;
-    
+
     // 计算本月打卡次数（使用当月的数据）
     if (diaryData?.list && diaryData.list.length > 0) {
       const sortedDates = Object.keys(diariesByDate).sort((a, b) => b.localeCompare(a));
@@ -119,7 +119,12 @@ const CalendarScreen: React.FC = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            navigation.goBack();
+          }}
+        >
           <Feather name="chevron-left" size={28} color={HEALING_COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>打卡日历</Text>
@@ -128,17 +133,19 @@ const CalendarScreen: React.FC = () => {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* 统计卡片 */}
-        <View style={[
-          styles.statsCard,
-          {
-            borderRadius: themeStyle.borderRadius,
-            shadowColor: themeStyle.shadowColor,
-            shadowOpacity: themeStyle.shadowOpacity,
-            shadowRadius: themeStyle.shadowRadius,
-            shadowOffset: themeStyle.shadowOffset,
-            elevation: 8,
-          }
-        ]}>
+        <View
+          style={[
+            styles.statsCard,
+            {
+              borderRadius: themeStyle.borderRadius,
+              shadowColor: themeStyle.shadowColor,
+              shadowOpacity: themeStyle.shadowOpacity,
+              shadowRadius: themeStyle.shadowRadius,
+              shadowOffset: themeStyle.shadowOffset,
+              elevation: 8,
+            },
+          ]}
+        >
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{checkInStats.currentStreak}</Text>
             <Text style={styles.statLabel}>连续打卡(天)</Text>
@@ -151,17 +158,19 @@ const CalendarScreen: React.FC = () => {
         </View>
 
         {/* 日历主体 */}
-        <View style={[
-          styles.calendarCard,
-          {
-            borderRadius: themeStyle.borderRadius,
-            shadowColor: themeStyle.shadowColor,
-            shadowOpacity: themeStyle.shadowOpacity * 0.5,
-            shadowRadius: 6,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 4,
-          }
-        ]}>
+        <View
+          style={[
+            styles.calendarCard,
+            {
+              borderRadius: themeStyle.borderRadius,
+              shadowColor: themeStyle.shadowColor,
+              shadowOpacity: themeStyle.shadowOpacity * 0.5,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 4,
+            },
+          ]}
+        >
           {/* 日历头部：切换月份 */}
           <View style={styles.calendarHeader}>
             <TouchableOpacity onPress={handlePrevMonth} style={styles.monthButton}>
@@ -197,19 +206,20 @@ const CalendarScreen: React.FC = () => {
                 }
 
                 const hasDiary = item.diaries.length > 0;
-                const isToday = 
-                  new Date().getDate() === item.day && 
-                  new Date().getMonth() === currentDate.getMonth() && 
+                const isToday =
+                  new Date().getDate() === item.day &&
+                  new Date().getMonth() === currentDate.getMonth() &&
                   new Date().getFullYear() === currentDate.getFullYear();
-                
+
                 // 如果有日记，展示第一篇的心情emoji
-                const moodEmoji = hasDiary && item.diaries[0].mood 
-                  ? getMoodConfig(item.diaries[0].mood).emoji 
-                  : '🐾';
+                const moodEmoji =
+                  hasDiary && item.diaries[0].mood
+                    ? getMoodConfig(item.diaries[0].mood).emoji
+                    : '🐾';
 
                 return (
-                  <TouchableOpacity 
-                    key={`day-${item.day}`} 
+                  <TouchableOpacity
+                    key={`day-${item.day}`}
                     style={styles.dayCell}
                     activeOpacity={hasDiary ? 0.7 : 1}
                     onPress={() => {
@@ -219,11 +229,13 @@ const CalendarScreen: React.FC = () => {
                       }
                     }}
                   >
-                    <View style={[
-                      styles.dayCircle,
-                      isToday && !hasDiary && styles.todayCircle,
-                      hasDiary && styles.checkedCircle
-                    ]}>
+                    <View
+                      style={[
+                        styles.dayCircle,
+                        isToday && !hasDiary && styles.todayCircle,
+                        hasDiary && styles.checkedCircle,
+                      ]}
+                    >
                       {hasDiary ? (
                         <Text style={styles.dayEmoji}>{moodEmoji}</Text>
                       ) : (
@@ -232,9 +244,7 @@ const CalendarScreen: React.FC = () => {
                         </Text>
                       )}
                     </View>
-                    {hasDiary && item.diaries.length > 1 && (
-                      <View style={styles.multiDot} />
-                    )}
+                    {hasDiary && item.diaries.length > 1 && <View style={styles.multiDot} />}
                   </TouchableOpacity>
                 );
               })}

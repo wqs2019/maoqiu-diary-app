@@ -1,15 +1,15 @@
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import * as SplashScreen from 'expo-splash-screen';
 
 import { initSentry, setUser, clearUser } from '@/config/sentry';
 import { Navigation } from '@/navigation';
 import { AppQueryProvider } from '@/providers/AppQueryProvider';
+import CustomSplashScreen from '@/screens/common/CustomSplashScreen';
 import LoadingScreen from '@/screens/common/LoadingScreen';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
-import CustomSplashScreen from '@/screens/common/CustomSplashScreen';
 
 // 保持原生 SplashScreen 阻止隐藏，直到我们的 CustomSplashScreen 准备就绪
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -58,7 +58,11 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       {showCustomSplash ? (
-        <CustomSplashScreen onFinish={() => setShowCustomSplash(false)} />
+        <CustomSplashScreen
+          onFinish={() => {
+            setShowCustomSplash(false);
+          }}
+        />
       ) : (
         <AppQueryProvider>
           <Navigation />

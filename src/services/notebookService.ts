@@ -22,11 +22,11 @@ export const getNotebookList = async (userId: string): Promise<Notebook[]> => {
   });
 
   const cloudFunctionResult = result.data;
-  
+
   if (cloudFunctionResult && Array.isArray(cloudFunctionResult.data)) {
     return cloudFunctionResult.data;
   }
-  
+
   if (cloudFunctionResult && Array.isArray((cloudFunctionResult as any).list)) {
     return (cloudFunctionResult as any).list;
   }
@@ -53,7 +53,7 @@ export const updateNotebook = async (_id: string, name: string): Promise<void> =
     data: { _id, name },
   });
 
-  if (!result.data || !result.data.success) {
+  if (!result.data?.success) {
     throw new Error(result.data?.message || '更新日记本失败');
   }
 };
@@ -64,7 +64,7 @@ export const deleteNotebook = async (_id: string): Promise<void> => {
     data: { _id },
   });
 
-  if (!result.data || !result.data.success) {
+  if (!result.data?.success) {
     throw new Error(result.data?.message || '删除日记本失败');
   }
 };

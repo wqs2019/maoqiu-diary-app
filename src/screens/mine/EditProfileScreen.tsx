@@ -125,7 +125,9 @@ const EditProfileScreen: React.FC = () => {
             borderColor: HEALING_COLORS.pink[300],
           },
         ]}
-        onPress={() => setGender(value)}
+        onPress={() => {
+          setGender(value);
+        }}
       >
         <Feather
           name={icon}
@@ -150,7 +152,12 @@ const EditProfileScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            navigation.goBack();
+          }}
+        >
           <Feather name="chevron-left" size={24} color={HEALING_COLORS.gray[800]} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>编辑个人资料</Text>
