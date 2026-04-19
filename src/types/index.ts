@@ -106,10 +106,11 @@ export interface Diary {
     avatar?: string;
   };
   comments?: Array<{
-    id: string;
+    _id: string;
     user: string;
+    userId: string;
     content: string;
-    time: string;
+    createTime: string;
     image?: string;
   }>;
 }

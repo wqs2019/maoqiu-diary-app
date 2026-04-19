@@ -220,7 +220,7 @@ const DiaryDetailScreen: React.FC = () => {
       <View style={styles.commentsSection}>
         <Text style={styles.commentsTitle}>全部评论 ({diary.comments?.length || 0})</Text>
         {(diary.comments || []).map((comment) => (
-          <View key={comment.id} style={styles.commentItem}>
+          <View key={comment._id} style={styles.commentItem}>
             <View style={styles.commentAvatar}>
               <Text style={styles.commentAvatarEmoji}>😸</Text>
             </View>
@@ -228,7 +228,7 @@ const DiaryDetailScreen: React.FC = () => {
               <View style={styles.commentHeader}>
                 <Text style={styles.commentUser}>{comment.user}</Text>
                 <Text style={styles.commentTime}>
-                  {comment.time ? FormatUtil.formatRelativeTime(comment.time) : ''}
+                  {comment.createTime ? FormatUtil.formatRelativeTime(comment.createTime) : ''}
                 </Text>
               </View>
               <Text style={styles.commentText}>{comment.content}</Text>
