@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,8 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
   Alert,
+  Dimensions,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -47,6 +47,9 @@ const CircleDetailScreen: React.FC = () => {
   const [comments, setComments] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const [replyToComment, setReplyToComment] = useState<any>(null);
+  const inputRef = useRef<TextInput>(null);
+
   useEffect(() => {
     if (diary) {
       setComments(diary.comments || []);
@@ -71,7 +74,7 @@ const CircleDetailScreen: React.FC = () => {
   const handleSendComment = () => {
     if (!commentText.trim() || !user) return;
 
-    const newComment = {
+    const newComment: any = {
       id: Date.now().toString(),
       user: user.nickname,
       userId: user._id,
@@ -80,12 +83,23 @@ const CircleDetailScreen: React.FC = () => {
       createTime: new Date().toISOString()
     };
 
+    if (replyToComment) {
+      newComment.parentId = replyToComment.parentId || replyToComment.id;
+      newComment.replyToUser = replyToComment.user;
+    }
+
     // 乐观更新（与服务端 push 行为保持一致，追加到末尾）
     setComments((prevComments) => [...prevComments, newComment]);
     setCommentText('');
+    setReplyToComment(null);
 
     // 调用接口
     commentMutation.mutate({ id: _id, comment: newComment });
+  };
+
+  const handleReplyPress = (comment: any) => {
+    setReplyToComment(comment);
+    inputRef.current?.focus();
   };
 
   const handleLike = () => {
@@ -180,6 +194,7 @@ const CircleDetailScreen: React.FC = () => {
         <CommentList 
           comments={comments} 
           authorId={diary.userId}
+          onReplyPress={handleReplyPress}
         />
       </ScrollView>
 
@@ -191,8 +206,9 @@ const CircleDetailScreen: React.FC = () => {
         <View style={styles.bottomBar}>
           <View style={styles.inputContainer}>
             <TextInput
+              ref={inputRef}
               style={styles.commentInput}
-              placeholder="说点什么吧..."
+              placeholder={replyToComment ? `回复 @${replyToComment.user}` : "说点什么吧..."}
               placeholderTextColor="#9CA3AF"
               value={commentText}
               onChangeText={setCommentText}

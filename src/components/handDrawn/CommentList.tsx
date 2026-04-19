@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 
 import { FormatUtil } from '@/utils/format';
 
-interface Comment {
+export interface Comment {
   id: string;
   user: string;
   userId?: string;
@@ -11,23 +11,51 @@ interface Comment {
   content: string;
   createTime?: string;
   time?: string; // 兼容旧数据
+  parentId?: string; // 新增：父评论 ID
+  replyToUser?: string; // 新增：回复的目标用户名称
+  replies?: Comment[];  // 新增：嵌套的回复列表
 }
 
 interface CommentListProps {
   comments: Comment[];
   emptyText?: string;
   authorId?: string;
+  onReplyPress?: (comment: Comment) => void; // 新增：点击回复事件回调
 }
 
 export const CommentList: React.FC<CommentListProps> = ({ 
   comments = [], 
   emptyText = '还没有评论哦，快来抢沙发~',
-  authorId
+  authorId,
+  onReplyPress
 }) => {
+  // 在组件内部将扁平的评论数组转换为树形结构
+  const commentTree = useMemo(() => {
+    const tree: Comment[] = [];
+    const replyMap: Record<string, Comment[]> = {};
+
+    comments.forEach((c) => {
+      if (c.parentId) {
+        if (!replyMap[c.parentId]) replyMap[c.parentId] = [];
+        replyMap[c.parentId].push(c);
+      } else {
+        tree.push({ ...c, replies: [] });
+      }
+    });
+
+    tree.forEach(t => {
+      if (replyMap[t.id]) {
+        t.replies = replyMap[t.id];
+      }
+    });
+
+    return tree;
+  }, [comments]);
+
   return (
     <View style={styles.commentsSection}>
       <Text style={styles.commentsTitle}>全部评论 ({comments.length})</Text>
-      {comments.map((comment) => (
+      {commentTree.map((comment) => (
         <View key={comment.id} style={styles.commentItem}>
           <View style={styles.commentAvatar}>
             {comment.avatar ? (
@@ -47,13 +75,43 @@ export const CommentList: React.FC<CommentListProps> = ({
                 )}
               </View>
               <Text style={styles.commentTime}>
-                {(comment.createTime || comment.time) ? FormatUtil.formatRelativeTime(comment.createTime || comment.time || '') : ''}
-              </Text>
-            </View>
-            <Text style={styles.commentText}>{comment.content}</Text>
+              {(comment.createTime || comment.time) ? FormatUtil.formatRelativeTime(comment.createTime || comment.time || '') : ''}
+            </Text>
           </View>
+          
+          {/* 主评论内容，点击触发回复 */}
+          <TouchableOpacity activeOpacity={0.7} onPress={() => onReplyPress?.(comment)}>
+            <Text style={styles.commentText}>{comment.content}</Text>
+          </TouchableOpacity>
+
+          {/* 嵌套回复区域 */}
+          {comment.replies && comment.replies.length > 0 && (
+            <View style={styles.repliesContainer}>
+              {comment.replies.map((reply) => (
+                <TouchableOpacity 
+                  key={reply.id} 
+                  activeOpacity={0.7} 
+                  onPress={() => onReplyPress?.(reply)}
+                  style={styles.replyItem}
+                >
+                  <Text style={styles.replyText}>
+                    <Text style={styles.replyUser}>{reply.user}</Text>
+                    {reply.replyToUser && (
+                      <>
+                        <Text style={styles.replyAction}> 回复 </Text>
+                        <Text style={styles.replyUser}>{reply.replyToUser}</Text>
+                      </>
+                    )}
+                    <Text style={styles.replyColon}>: </Text>
+                    {reply.content}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
-      ))}
+      </View>
+    ))}
       {comments.length === 0 && (
         <Text style={styles.emptyCommentText}>{emptyText}</Text>
       )}
@@ -138,5 +196,30 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontSize: 14,
     marginTop: 20,
+  },
+  repliesContainer: {
+    marginTop: 10,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 10,
+  },
+  replyItem: {
+    marginBottom: 6,
+  },
+  replyText: {
+    fontSize: 13,
+    color: '#4B5563',
+    lineHeight: 18,
+  },
+  replyUser: {
+    fontWeight: '600',
+    color: '#374151',
+  },
+  replyAction: {
+    color: '#9CA3AF',
+  },
+  replyColon: {
+    fontWeight: '600',
+    color: '#374151',
   },
 });

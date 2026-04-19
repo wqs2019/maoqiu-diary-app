@@ -75,19 +75,15 @@ const DiaryDetailScreen: React.FC = () => {
   };
 
   const handleDelete = () => {
-    Alert.alert('删除日记', '确定要删除这篇日记吗？此操作无法恢复。', [
+    Alert.alert('确认删除', '删除后无法恢复，是否继续？', [
       { text: '取消', style: 'cancel' },
-      {
-        text: '删除',
+      { 
+        text: '删除', 
         style: 'destructive',
         onPress: () => {
-          deleteMutation.mutate(_id, {
-            onSuccess: () => {
-              navigation.goBack();
-            },
-          });
-        },
-      },
+          deleteMutation.mutate(_id);
+        }
+      }
     ]);
   };
 
