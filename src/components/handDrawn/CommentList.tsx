@@ -66,8 +66,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 40,
-    borderTopWidth: 8,
-    borderTopColor: '#F9FAFB',
   },
   commentsTitle: {
     fontSize: 16,
