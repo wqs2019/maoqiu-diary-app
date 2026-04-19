@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 
 import { CommentList } from '../../components/handDrawn/CommentList';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
@@ -25,6 +25,16 @@ const DiaryDetailScreen: React.FC = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -110,7 +120,18 @@ const DiaryDetailScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[HEALING_COLORS.pink[400]]}
+          tintColor={HEALING_COLORS.pink[400]}
+        />
+      }
+    >
       {/* 头部场景信息 */}
       <View style={[styles.header, { backgroundColor: scenario.color + '15' }]}>
         <View style={styles.headerContent}>
@@ -217,7 +238,11 @@ const DiaryDetailScreen: React.FC = () => {
       )}
 
       {/* 评论区 */}
-      <CommentList comments={diary.comments || []} emptyText="还没有评论哦，快去圈子里和大家互动吧~" />
+      <CommentList 
+        comments={diary.comments || []} 
+        emptyText="还没有评论哦，快去圈子里和大家互动吧~" 
+        authorId={diary.userId}
+      />
 
       {/* 操作按钮 */}
       <View style={styles.actionSection}>

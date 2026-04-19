@@ -14,6 +14,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
 } from 'react-native';
 
 import { CommentList } from '@/components/handDrawn/CommentList';
@@ -44,6 +45,7 @@ const CircleDetailScreen: React.FC = () => {
 
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<any[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (diary) {
@@ -57,6 +59,15 @@ const CircleDetailScreen: React.FC = () => {
     }, [refetch])
   );
 
+  const onRefresh = React.useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch]);
+
   const handleSendComment = () => {
     if (!commentText.trim() || !user) return;
 
@@ -69,8 +80,8 @@ const CircleDetailScreen: React.FC = () => {
       createTime: new Date().toISOString()
     };
 
-    // 乐观更新
-    setComments((prevComments) => [newComment, ...prevComments]);
+    // 乐观更新（与服务端 push 行为保持一致，追加到末尾）
+    setComments((prevComments) => [...prevComments, newComment]);
     setCommentText('');
 
     // 调用接口
@@ -118,7 +129,18 @@ const CircleDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={HEALING_COLORS.pink[400]}
+            colors={[HEALING_COLORS.pink[400]]}
+          />
+        }
+      >
         {/* 用户信息 */}
         <View style={styles.authorSection}>
           <View style={styles.avatarPlaceholder}>
@@ -155,7 +177,10 @@ const CircleDetailScreen: React.FC = () => {
         )}
 
         {/* 评论区 */}
-        <CommentList comments={comments} />
+        <CommentList 
+          comments={comments} 
+          authorId={diary.userId}
+        />
       </ScrollView>
 
       {/* 底部互动与输入栏 */}

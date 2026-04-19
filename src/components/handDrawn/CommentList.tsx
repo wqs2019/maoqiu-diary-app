@@ -6,6 +6,7 @@ import { FormatUtil } from '@/utils/format';
 interface Comment {
   id: string;
   user: string;
+  userId?: string;
   avatar?: string;
   content: string;
   createTime?: string;
@@ -15,11 +16,13 @@ interface Comment {
 interface CommentListProps {
   comments: Comment[];
   emptyText?: string;
+  authorId?: string;
 }
 
 export const CommentList: React.FC<CommentListProps> = ({ 
   comments = [], 
-  emptyText = '还没有评论哦，快来抢沙发~' 
+  emptyText = '还没有评论哦，快来抢沙发~',
+  authorId
 }) => {
   return (
     <View style={styles.commentsSection}>
@@ -35,7 +38,14 @@ export const CommentList: React.FC<CommentListProps> = ({
           </View>
           <View style={styles.commentContent}>
             <View style={styles.commentHeader}>
-              <Text style={styles.commentUser}>{comment.user}</Text>
+              <View style={styles.userRow}>
+                <Text style={styles.commentUser}>{comment.user}</Text>
+                {authorId && comment.userId === authorId && (
+                  <View style={styles.authorTag}>
+                    <Text style={styles.authorTagText}>作者</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.commentTime}>
                 {(comment.createTime || comment.time) ? FormatUtil.formatRelativeTime(comment.createTime || comment.time || '') : ''}
               </Text>
@@ -94,6 +104,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  authorTag: {
+    backgroundColor: '#ffe5eb', // pink-200
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 6,
+  },
+  authorTagText: {
+    fontSize: 10,
+    color: '#f43a3a', // pink-700
+    fontWeight: 'bold',
   },
   commentUser: {
     fontSize: 14,
