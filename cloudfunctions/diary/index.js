@@ -7,6 +7,74 @@ const app = cloud.init({
 });
 const db = app.database();
 
+// 辅助函数：为日记列表填充最新的用户信息（头像、昵称）
+const populateUserInfo = async (diaries, db) => {
+  if (!diaries || diaries.length === 0) return diaries;
+
+  const userIds = new Set();
+  diaries.forEach(diary => {
+    if (diary.userId) userIds.add(diary.userId);
+    if (diary.comments && Array.isArray(diary.comments)) {
+      diary.comments.forEach(comment => {
+        if (comment.userId) userIds.add(comment.userId);
+      });
+    }
+  });
+
+  const uniqueUserIds = Array.from(userIds);
+  if (uniqueUserIds.length === 0) return diaries;
+
+  try {
+    const _ = db.command;
+    // 批量查询所有相关用户
+    const usersResult = await db.collection('users').where({
+      _id: _.in(uniqueUserIds)
+    }).get();
+
+    const userMap = {};
+    if (usersResult.data) {
+      usersResult.data.forEach(user => {
+        userMap[user._id] = {
+          nickname: user.nickname,
+          avatar: user.avatar
+        };
+      });
+    }
+
+    // 映射回日记和评论中
+    return diaries.map(diary => {
+      const newDiary = { ...diary };
+      
+      // 更新日记作者信息
+      if (newDiary.userId && userMap[newDiary.userId]) {
+        newDiary.authorInfo = {
+          nickname: userMap[newDiary.userId].nickname,
+          avatar: userMap[newDiary.userId].avatar
+        };
+      }
+
+      // 更新评论者信息
+      if (newDiary.comments && Array.isArray(newDiary.comments)) {
+        newDiary.comments = newDiary.comments.map(comment => {
+          if (comment.userId && userMap[comment.userId]) {
+            return {
+              ...comment,
+              user: userMap[comment.userId].nickname || comment.user,
+              avatar: userMap[comment.userId].avatar || comment.avatar
+            };
+          }
+          return comment;
+        });
+      }
+
+      return newDiary;
+    });
+  } catch (err) {
+    console.error('Error populating user info:', err);
+    return diaries; // 发生错误时回退到原始数据
+  }
+};
+
 // 创建日记
 const createDiary = async (data) => {
   try {
@@ -138,9 +206,13 @@ const getDiaryDetail = async (data) => {
       };
     }
 
+    // 动态填充用户信息（因为前端期望数组，这里保持外层是数组，或者如果result.data本身是数组就直接传）
+    const diaryData = Array.isArray(result.data) ? result.data : [result.data];
+    const populatedData = await populateUserInfo(diaryData, db);
+
     return {
       success: true,
-      data: result.data,
+      data: populatedData, // 确保返回的是数组格式以兼容前端的 [0]
     };
   } catch (error) {
     console.error('Get diary error:', error);
@@ -231,13 +303,16 @@ const getDiaryList = async (data) => {
       .limit(pageSize)
       .get();
 
+    // 动态填充用户信息
+    const populatedList = await populateUserInfo(result.data || [], db);
+
     // 获取总数
     const countResult = await db.collection('diaries').where(finalQuery).count();
 
     return {
       success: true,
       data: {
-        list: result.data,
+        list: populatedList,
         total: countResult.total,
         page,
         pageSize,
