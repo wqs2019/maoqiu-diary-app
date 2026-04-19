@@ -77,6 +77,7 @@ export interface MediaResource {
   mimeType?: string; // MIME 类型
   uploadStatus?: UploadStatus; // 上传状态
   uploadError?: string; // 上传错误信息（失败时显示）
+  livePhotoVideoUri?: string; // 实况视频的 URL（Live Photo 用）
 }
 
 // 日记接口

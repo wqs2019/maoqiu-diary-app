@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode, Audio } from 'expo-av';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Modal,
@@ -53,35 +53,31 @@ const LivePhotoItem = ({ item, isFocused }: { item: MediaResource; isFocused: bo
       onPressOut={handlePressOut}
       delayLongPress={200}
     >
-      {isPlaying && item.type === 'livePhoto' ? (
-        <View style={styles.fullScreen}>
+      <View style={styles.fullScreen}>
+        <Image
+          source={{ uri: item.thumbnail || item.uri }}
+          style={[styles.fullScreen, { opacity: isPlaying ? 0 : 1 }]}
+          resizeMode="contain"
+        />
+        
+        {item.type === 'livePhoto' && item.livePhotoVideoUri && (
           <Video
-            source={{ uri: item.uri }}
-            style={styles.fullScreen}
+            source={{ uri: item.livePhotoVideoUri }}
+            style={[styles.fullScreen, styles.videoOverlay, { opacity: isPlaying ? 1 : 0 }]}
             resizeMode={ResizeMode.CONTAIN}
-            shouldPlay
+            shouldPlay={isPlaying}
             isLooping
+            isMuted={false}
           />
+        )}
+
+        {item.type === 'livePhoto' && (
           <View style={styles.liveIndicator}>
-            <Ionicons name="radio-button-on" size={16} color="#FFF" />
-            <Text style={styles.liveText}>LIVE</Text>
+            <Ionicons name="aperture" size={16} color="#FFF" />
+            <Text style={styles.liveText}>实况</Text>
           </View>
-        </View>
-      ) : (
-        <View style={styles.fullScreen}>
-          <Image
-            source={{ uri: item.thumbnail || item.uri }}
-            style={styles.fullScreen}
-            resizeMode="contain"
-          />
-          {item.type === 'livePhoto' && (
-            <View style={styles.liveIndicator}>
-              <Ionicons name="radio-button-on" size={16} color="#FFF" />
-              <Text style={styles.liveText}>LIVE</Text>
-            </View>
-          )}
-        </View>
-      )}
+        )}
+      </View>
     </Pressable>
   );
 };
@@ -94,6 +90,23 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const flatListRef = useRef<FlatList>(null);
+
+  // Configure audio to play even if the device is in silent mode
+  useEffect(() => {
+    const configureAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          allowsRecordingIOS: false,
+          staysActiveInBackground: false,
+        });
+      } catch (e) {
+        console.warn('Failed to configure audio mode:', e);
+      }
+    };
+    
+    configureAudio();
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -205,6 +218,13 @@ const styles = StyleSheet.create({
   fullScreen: {
     width: '100%',
     height: '100%',
+  },
+  videoOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   liveIndicator: {
     position: 'absolute',

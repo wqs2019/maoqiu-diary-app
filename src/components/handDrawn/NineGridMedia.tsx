@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Dimensions, Text } from 'react-native';
 
 import { LoadableImage } from './PhotoWall';
 import { MediaResource } from '@/types';
@@ -33,11 +33,8 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
     if (mediaCount === 1) {
       return { columns: 1, itemWidth: containerWidth * 0.7 };
     }
-    if (mediaCount === 2) {
+    if (mediaCount === 2 || mediaCount === 4) {
       return { columns: 2, itemWidth: (containerWidth - IMAGE_MARGIN) / 2 };
-    }
-    if (mediaCount === 4) {
-      return { columns: 2, itemWidth: (containerWidth - IMAGE_MARGIN * 2) / 3 };
     }
     return { columns: 3, itemWidth: (containerWidth - IMAGE_MARGIN * 2) / 3 };
   };
@@ -45,7 +42,7 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
   const { columns, itemWidth } = getLayout();
 
   return (
-    <View style={[styles.mediaGrid, { width: columns === 2 && mediaCount === 4 ? itemWidth * 2 + IMAGE_MARGIN : containerWidth }]}>
+    <View style={[styles.mediaGrid, { width: containerWidth }]}>
       {media.map((mediaItem, index) => {
         const isLastInRow = (index + 1) % columns === 0;
         const isLastRow = Math.floor(index / columns) === Math.floor((mediaCount - 1) / columns);
@@ -73,6 +70,12 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
             {mediaItem.type === 'video' && (
               <View style={styles.playOverlay}>
                 <Ionicons name="play" size={Math.max(24, itemWidth * 0.3)} color="#FFF" />
+              </View>
+            )}
+            {mediaItem.type === 'livePhoto' && (
+              <View style={styles.liveBadge}>
+                <Ionicons name="aperture" size={12} color="#FFF" />
+                <Text style={styles.liveText}>实况</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -106,5 +109,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  liveBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  liveText: {
+    color: '#FFF',
+    fontSize: 10,
+    marginLeft: 2,
   },
 });

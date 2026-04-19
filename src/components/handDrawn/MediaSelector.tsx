@@ -64,35 +64,56 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       const uploadResult = await imageService.uploadImage(item.uri, cloudPath, item.mimeType);
 
       let thumbnailUrl = item.thumbnail;
-      if (item.type === 'video' && item.thumbnail?.startsWith('file://')) {
-        try {
-          const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
-          const thumbUploadResult = await imageService.uploadImage(
-            item.thumbnail,
-            thumbPathResult.data.cloudPath,
-            'image/jpeg'
-          );
-          if (thumbUploadResult.success && thumbUploadResult.data) {
-            thumbnailUrl = thumbUploadResult.data.url;
-          }
-        } catch (e) {
-          console.warn('Failed to upload video thumbnail on retry:', e);
-        }
-      }
+        let uploadedLivePhotoVideoUri = item.livePhotoVideoUri;
 
-      if (uploadResult.success && uploadResult.data) {
-        console.log(`[MediaUpload] Retry success: ${uploadResult.data.url}`);
-        // 更新成功的媒体
-        const successMedia = [...media];
-        successMedia[index] = {
-          ...item,
-          uri: uploadResult.data.url,
-          thumbnail: thumbnailUrl,
-          uploadStatus: 'success',
-          uploadError: undefined,
-        };
-        onMediaChange(successMedia);
-      } else {
+        // 如果是视频且有本地封面图，也需要上传封面图
+        if (item.type === 'video' && item.thumbnail?.startsWith('file://')) {
+          try {
+            const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
+            const thumbUploadResult = await imageService.uploadImage(
+              item.thumbnail,
+              thumbPathResult.data.cloudPath,
+              'image/jpeg'
+            );
+            if (thumbUploadResult.success && thumbUploadResult.data) {
+              thumbnailUrl = thumbUploadResult.data.url;
+            }
+          } catch (e) {
+            console.warn('Failed to upload video thumbnail on retry:', e);
+          }
+        }
+
+        // 如果是实况照片且包含本地视频路径，也需要上传对应的视频
+        if (item.type === 'livePhoto' && item.livePhotoVideoUri?.startsWith('file://')) {
+          try {
+            const videoPathResult = await imageService.generateCloudPath('mov', 'diary');
+            const videoUploadResult = await imageService.uploadImage(
+              item.livePhotoVideoUri,
+              videoPathResult.data.cloudPath,
+              'video/quicktime'
+            );
+            if (videoUploadResult.success && videoUploadResult.data) {
+              uploadedLivePhotoVideoUri = videoUploadResult.data.url;
+            }
+          } catch (e) {
+            console.warn('Failed to upload live photo video on retry:', e);
+          }
+        }
+
+        if (uploadResult.success && uploadResult.data) {
+          console.log(`[MediaUpload] Retry success: ${uploadResult.data.url}`);
+          // 更新成功的媒体
+          const successMedia = [...media];
+          successMedia[index] = {
+            ...item,
+            uri: uploadResult.data.url,
+            thumbnail: thumbnailUrl,
+            livePhotoVideoUri: uploadedLivePhotoVideoUri,
+            uploadStatus: 'success',
+            uploadError: undefined,
+          };
+          onMediaChange(successMedia);
+        } else {
         throw new Error(uploadResult.message || '上传失败');
       }
     } catch (error: any) {
@@ -139,6 +160,8 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         const uploadResult = await imageService.uploadImage(item.uri, cloudPath, item.mimeType);
 
         let thumbnailUrl = item.thumbnail;
+        let uploadedLivePhotoVideoUri = item.livePhotoVideoUri;
+
         // 如果是视频且有本地封面图，也需要上传封面图
         if (item.type === 'video' && item.thumbnail?.startsWith('file://')) {
           try {
@@ -156,11 +179,29 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           }
         }
 
+        // 如果是实况照片且包含本地视频路径，也需要上传对应的视频
+        if (item.type === 'livePhoto' && item.livePhotoVideoUri?.startsWith('file://')) {
+          try {
+            const videoPathResult = await imageService.generateCloudPath('mov', 'diary');
+            const videoUploadResult = await imageService.uploadImage(
+              item.livePhotoVideoUri,
+              videoPathResult.data.cloudPath,
+              'video/quicktime'
+            );
+            if (videoUploadResult.success && videoUploadResult.data) {
+              uploadedLivePhotoVideoUri = videoUploadResult.data.url;
+            }
+          } catch (e) {
+            console.warn('Failed to upload live photo video:', e);
+          }
+        }
+
         if (uploadResult.success && uploadResult.data) {
           return {
             ...item,
             uri: uploadResult.data.url,
             thumbnail: thumbnailUrl,
+            livePhotoVideoUri: uploadedLivePhotoVideoUri,
             uploadStatus: 'success',
             uploadError: undefined,
           };
@@ -210,20 +251,34 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     const remainingCount = maxCount - media.length;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images', 'livePhotos'],
       allowsMultipleSelection: true,
       selectionLimit: remainingCount,
       quality: 0.8,
+      // 必须开启此选项，ImagePicker 才会将 Live Photo 的视频部分抽离并返回 livePhotoVideoUri / pairedVideoAsset
+      allowsEditing: false, 
+      exif: false,
     });
 
     if (!result.canceled && result.assets) {
+      console.log('[MediaSelector] pickImages result assets:', JSON.stringify(result.assets, null, 2));
       // 先添加本地媒体（带 loading 状态）
-      const localMedia: MediaResource[] = result.assets.map((asset) => ({
-        type: 'image',
-        uri: asset.uri,
-        size: asset.fileSize ?? undefined,
-        mimeType: asset.mimeType ?? undefined,
-      }));
+      const localMedia: MediaResource[] = result.assets.map((asset) => {
+        // Expo ImagePicker 17.0+ 中，如果指定了 livePhotos 并且未经过 allowsEditing 处理，
+        // 会返回 `pairedVideoAsset` 包含对应的视频。
+        // 为了兼容不同的返回格式，我们同时检查 pairedVideoAsset 和 livePhotoVideoUri
+        const pairedVideo = (asset as any).pairedVideoAsset;
+        const liveVideoUri = pairedVideo?.uri || (asset as any).livePhotoVideoUri;
+        const isLivePhoto = !!liveVideoUri;
+        
+        return {
+          type: isLivePhoto ? 'livePhoto' : 'image',
+          uri: asset.uri,
+          size: asset.fileSize ?? undefined,
+          mimeType: asset.mimeType ?? undefined,
+          livePhotoVideoUri: liveVideoUri,
+        };
+      });
 
       // 合并到现有媒体
       const allMedia = [...media, ...localMedia];
@@ -346,15 +401,23 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           isUploading && styles.mediaItemUploading,
         ]}
       >
-        {item.type === 'image' ? (
-          <Image
-            source={{ uri: item.uri }}
-            style={[
-              styles.mediaThumbnail,
-              isFailed && styles.mediaThumbnailFailed,
-              isUploading && styles.mediaThumbnailUploading,
-            ]}
-          />
+        {item.type === 'image' || item.type === 'livePhoto' ? (
+          <View style={{ flex: 1 }}>
+            <Image
+              source={{ uri: item.uri }}
+              style={[
+                styles.mediaThumbnail,
+                isFailed && styles.mediaThumbnailFailed,
+                isUploading && styles.mediaThumbnailUploading,
+              ]}
+            />
+            {item.type === 'livePhoto' && (
+              <View style={styles.livePhotoBadge}>
+                <Ionicons name="aperture" size={12} color="#FFF" />
+                <Text style={styles.livePhotoText}>实况</Text>
+              </View>
+            )}
+          </View>
         ) : item.type === 'video' ? (
           <View style={styles.videoThumbnail}>
             <Image
@@ -622,6 +685,22 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   videoDurationText: {
+    fontSize: 10,
+    color: '#FFF',
+    marginLeft: 2,
+  },
+  livePhotoBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  livePhotoText: {
     fontSize: 10,
     color: '#FFF',
     marginLeft: 2,
