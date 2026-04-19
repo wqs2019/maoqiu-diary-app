@@ -3,13 +3,13 @@ import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navig
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 
+import { CommentList } from '../../components/handDrawn/CommentList';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 import { ShareCardModal } from '../../components/handDrawn/ShareCardModal';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useDiaryDetail, useDeleteDiary, useToggleFavorite } from '../../hooks/useDiaryQuery';
-import { FormatUtil } from '../../utils/format';
 
 type DiaryDetailRouteProp = RouteProp<{ params: { _id: string } }, 'params'>;
 
@@ -217,28 +217,7 @@ const DiaryDetailScreen: React.FC = () => {
       )}
 
       {/* 评论区 */}
-      <View style={styles.commentsSection}>
-        <Text style={styles.commentsTitle}>全部评论 ({diary.comments?.length || 0})</Text>
-        {(diary.comments || []).map((comment) => (
-          <View key={comment._id} style={styles.commentItem}>
-            <View style={styles.commentAvatar}>
-              <Text style={styles.commentAvatarEmoji}>😸</Text>
-            </View>
-            <View style={styles.commentContent}>
-              <View style={styles.commentHeader}>
-                <Text style={styles.commentUser}>{comment.user}</Text>
-                <Text style={styles.commentTime}>
-                  {comment.createTime ? FormatUtil.formatRelativeTime(comment.createTime) : ''}
-                </Text>
-              </View>
-              <Text style={styles.commentText}>{comment.content}</Text>
-            </View>
-          </View>
-        ))}
-        {(diary.comments?.length || 0) === 0 && (
-          <Text style={styles.emptyCommentText}>还没有评论哦，快去圈子里和大家互动吧~</Text>
-        )}
-      </View>
+      <CommentList comments={diary.comments || []} emptyText="还没有评论哦，快去圈子里和大家互动吧~" />
 
       {/* 操作按钮 */}
       <View style={styles.actionSection}>
@@ -441,64 +420,6 @@ const styles = StyleSheet.create({
   ratingStars: {
     flexDirection: 'row',
     marginTop: 8,
-  },
-  commentsSection: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    borderTopWidth: 8,
-    borderTopColor: '#F9FAFB',
-  },
-  commentsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  commentItem: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  commentAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  commentAvatarEmoji: {
-    fontSize: 18,
-  },
-  commentContent: {
-    flex: 1,
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  commentUser: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  commentTime: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  commentText: {
-    fontSize: 14,
-    color: '#4B5563',
-    lineHeight: 20,
-  },
-  emptyCommentText: {
-    textAlign: 'center',
-    color: '#9CA3AF',
-    fontSize: 14,
-    marginTop: 20,
   },
   actionSection: {
     paddingHorizontal: 20,

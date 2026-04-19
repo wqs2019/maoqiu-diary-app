@@ -16,6 +16,7 @@ import {
   Platform,
 } from 'react-native';
 
+import { CommentList } from '@/components/handDrawn/CommentList';
 import { MediaPreviewer } from '@/components/handDrawn/MediaPreviewer';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
 import { HEALING_COLORS } from '@/config/handDrawnTheme';
@@ -60,7 +61,7 @@ const CircleDetailScreen: React.FC = () => {
     if (!commentText.trim() || !user) return;
 
     const newComment = {
-      _id: Date.now().toString(),
+      id: Date.now().toString(),
       user: user.nickname,
       userId: user._id,
       avatar: user.avatar,
@@ -154,30 +155,7 @@ const CircleDetailScreen: React.FC = () => {
         )}
 
         {/* 评论区 */}
-        <View style={styles.commentsSection}>
-          <Text style={styles.commentsTitle}>全部评论 ({comments.length})</Text>
-          {comments.map((comment) => (
-            <View key={comment._id} style={styles.commentItem}>
-              <View style={styles.commentAvatar}>
-                {comment.avatar ? (
-                  <Image source={{ uri: comment.avatar }} style={{ width: 36, height: 36, borderRadius: 18 }} />
-                ) : (
-                  <Text style={styles.commentAvatarEmoji}>😸</Text>
-                )}
-              </View>
-              <View style={styles.commentContent}>
-                <View style={styles.commentHeader}>
-                  <Text style={styles.commentUser}>{comment.user}</Text>
-                  <Text style={styles.commentTime}>{comment.time ? FormatUtil.formatRelativeTime(comment.time) : ''}</Text>
-                </View>
-                <Text style={styles.commentText}>{comment.content}</Text>
-              </View>
-            </View>
-          ))}
-          {comments.length === 0 && (
-            <Text style={styles.emptyCommentText}>还没有评论哦，快来抢沙发~</Text>
-          )}
-        </View>
+        <CommentList comments={comments} />
       </ScrollView>
 
       {/* 底部互动与输入栏 */}
@@ -337,64 +315,6 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     marginLeft: 4,
     fontWeight: '500',
-  },
-  commentsSection: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 40,
-    borderTopWidth: 8,
-    borderTopColor: '#F9FAFB',
-  },
-  commentsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  commentItem: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  commentAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  commentAvatarEmoji: {
-    fontSize: 18,
-  },
-  commentContent: {
-    flex: 1,
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  commentUser: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  commentTime: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  commentText: {
-    fontSize: 14,
-    color: '#4B5563',
-    lineHeight: 20,
-  },
-  emptyCommentText: {
-    textAlign: 'center',
-    color: '#9CA3AF',
-    fontSize: 14,
-    marginTop: 20,
   },
   actionBtn: {
     flex: 1,

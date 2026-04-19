@@ -106,7 +106,7 @@ export interface Diary {
     avatar?: string;
   };
   comments?: Array<{
-    _id: string;
+    id: string;
     user: string;
     userId: string;
     content: string;

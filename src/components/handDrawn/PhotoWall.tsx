@@ -46,20 +46,34 @@ export const ImageSkeleton = () => {
 
 // Component to handle individual image loading state
 export const LoadableImage = ({ source, style, resizeMode }: any) => {
-  const [isLoading, setIsLoading] = useState(true);
+  const imageUri = typeof source === 'number' ? String(source) : source?.uri || '';
+  const [isLoading, setIsLoading] = useState(!!imageUri);
+
+  useEffect(() => {
+    setIsLoading(!!imageUri);
+    // 防御性处理：对于已缓存图片可能不触发 onload 事件的坑
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500); // 500ms 后强制结束 loading
+    return () => clearTimeout(timer);
+  }, [imageUri]);
 
   return (
     <View style={[style, { overflow: 'hidden', position: 'relative' }]}>
       {/* 始终渲染骨架图在底层，Image 渲染在上层 */}
-      <View style={StyleSheet.absoluteFill}>
-        {isLoading && <ImageSkeleton />}
-      </View>
+      {isLoading && (
+        <View style={StyleSheet.absoluteFill}>
+          <ImageSkeleton />
+        </View>
+      )}
       <Image
+        key={imageUri}
         source={source}
-        style={[StyleSheet.absoluteFill, { opacity: isLoading ? 0 : 1 }]}
+        style={StyleSheet.absoluteFill}
         resizeMode={resizeMode}
-        onLoadStart={() => setIsLoading(true)}
+        onLoad={() => setIsLoading(false)}
         onLoadEnd={() => setIsLoading(false)}
+        onError={() => setIsLoading(false)}
       />
     </View>
   );
