@@ -332,17 +332,13 @@ const commentDiary = async (data) => {
     if (!_id || !comment) {
       return { success: false, message: '日记 ID 或评论内容不能为空' };
     }
-    
-    const diaryRes = await db.collection('diaries').doc(_id).get();
-    const comments = diaryRes.data ? (diaryRes.data.comments || []) : [];
-    
-    const newComments = [...comments, comment];
-    
+
+    const _ = db.command;
     await db.collection('diaries').doc(_id).update({
-      comments: newComments,
+      comments: _.push([comment]),
       updatedAt: db.serverDate(),
     });
-    
+
     return { success: true, message: '评论成功' };
   } catch (error) {
     return { success: false, message: '评论失败', error: error.message };

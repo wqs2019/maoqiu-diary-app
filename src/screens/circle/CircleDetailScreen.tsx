@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -32,7 +32,7 @@ const CircleDetailScreen: React.FC = () => {
   const route = useRoute<CircleDetailRouteProp>();
   const { _id } = route.params;
 
-  const { data: diary, isLoading, error } = useDiaryDetail(_id);
+  const { data: diary, isLoading, error, refetch } = useDiaryDetail(_id);
   const user = useAuthStore((state) => state.user);
 
   const likeMutation = useLikeDiary();
@@ -50,19 +50,26 @@ const CircleDetailScreen: React.FC = () => {
     }
   }, [diary]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
   const handleSendComment = () => {
     if (!commentText.trim() || !user) return;
 
     const newComment = {
-      id: Date.now().toString(),
-      user: user.nickname || '某只毛球',
+      _id: Date.now().toString(),
+      user: user.nickname,
+      userId: user._id,
       avatar: user.avatar,
       content: commentText.trim(),
-      time: new Date().toISOString()
+      createTime: new Date().toISOString()
     };
 
     // 乐观更新
-    setComments([newComment, ...comments]);
+    setComments((prevComments) => [newComment, ...prevComments]);
     setCommentText('');
 
     // 调用接口
@@ -150,7 +157,7 @@ const CircleDetailScreen: React.FC = () => {
         <View style={styles.commentsSection}>
           <Text style={styles.commentsTitle}>全部评论 ({comments.length})</Text>
           {comments.map((comment) => (
-            <View key={comment.id} style={styles.commentItem}>
+            <View key={comment._id} style={styles.commentItem}>
               <View style={styles.commentAvatar}>
                 {comment.avatar ? (
                   <Image source={{ uri: comment.avatar }} style={{ width: 36, height: 36, borderRadius: 18 }} />
