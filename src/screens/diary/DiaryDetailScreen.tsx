@@ -8,6 +8,7 @@ import { CommentList } from '../../components/handDrawn/CommentList';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 import { NineGridMedia } from '../../components/handDrawn/NineGridMedia';
 import { ShareCardModal } from '../../components/handDrawn/ShareCardModal';
+import { useToast } from '../../components/common/Toast';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
@@ -23,6 +24,7 @@ const DiaryDetailScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<DiaryDetailRouteProp>();
   const { _id } = route.params;
+  const toast = useToast();
 
   const { data: diary, isLoading, error, refetch } = useDiaryDetail(_id);
   const deleteMutation = useDeleteDiary();
@@ -50,10 +52,20 @@ const DiaryDetailScreen: React.FC = () => {
 
   const handleToggleFavorite = async () => {
     if (!diary) return;
+    
+    // Optimistic UI updates feel better, but we'll show toast based on action
+    const isNowFavorite = !diary.isFavorite;
+    
     try {
       await toggleFavorite(_id, !!diary.isFavorite);
+      
+      if (isNowFavorite) {
+        toast.success('已加入收藏');
+      } else {
+        toast.info('已取消收藏');
+      }
     } catch (e) {
-      Alert.alert('提示', '操作失败，请重试');
+      toast.error('操作失败，请重试');
     }
   };
 
@@ -109,7 +121,7 @@ const DiaryDetailScreen: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+    <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -201,7 +213,7 @@ const DiaryDetailScreen: React.FC = () => {
       </ScrollView>
 
       {/* Floating Bottom Bar */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <TouchableOpacity style={styles.bottomBarAction} onPress={handleShare}>
           <Ionicons name="share-social-outline" size={24} color="#4B5563" />
           <Text style={styles.bottomBarActionText}>分享</Text>
