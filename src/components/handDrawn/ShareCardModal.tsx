@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,14 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
+import { getRandomQuote, Quote } from '../../services/quote';
 import { Diary } from '../../types';
 
 interface ShareCardModalProps {
@@ -30,6 +32,15 @@ const { width } = Dimensions.get('window');
 export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, onClose }) => {
   const viewShotRef = useRef<ViewShot>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [quoteData, setQuoteData] = useState<Quote | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      getRandomQuote().then(setQuoteData).catch(console.error);
+    } else {
+      setQuoteData(null);
+    }
+  }, [visible]);
 
   const scenario = SCENARIO_TEMPLATES[diary.scenario];
   const mood = getMoodConfig(diary.mood);
@@ -71,90 +82,43 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
     const media = diary.media;
     const count = media.length;
 
-    if (count === 1) {
-      return (
-        <Image
-          source={{ uri: media[0].thumbnail || media[0].uri }}
-          style={[styles.gridImageFull, { height: 200 }]}
-          resizeMode="cover"
-        />
-      );
-    }
+    // 根据数量决定列数
+    const getColumns = () => {
+      if (count === 1) return 1;
+      if (count === 2 || count === 4) return 2;
+      return 3;
+    };
 
-    if (count === 2) {
-      return (
-        <View style={styles.gridRow}>
-          <Image
-            source={{ uri: media[0].thumbnail || media[0].uri }}
-            style={styles.gridImageItem}
-            resizeMode="cover"
-          />
-          <Image
-            source={{ uri: media[1].thumbnail || media[1].uri }}
-            style={styles.gridImageItem}
-            resizeMode="cover"
-          />
-        </View>
-      );
-    }
+    const columns = getColumns();
 
-    if (count === 3) {
-      return (
-        <View style={styles.gridContainer}>
-          <Image
-            source={{ uri: media[0].thumbnail || media[0].uri }}
-            style={[styles.gridImageFull, { height: 160 }]}
-            resizeMode="cover"
-          />
-          <View style={styles.gridRow}>
-            <Image
-              source={{ uri: media[1].thumbnail || media[1].uri }}
-              style={styles.gridImageItem}
-              resizeMode="cover"
-            />
-            <Image
-              source={{ uri: media[2].thumbnail || media[2].uri }}
-              style={styles.gridImageItem}
-              resizeMode="cover"
-            />
-          </View>
-        </View>
-      );
-    }
-
-    // 4 张及以上图片
     return (
       <View style={styles.gridContainer}>
-        <View style={styles.gridRow}>
-          <Image
-            source={{ uri: media[0].thumbnail || media[0].uri }}
-            style={styles.gridImageItem}
-            resizeMode="cover"
-          />
-          <Image
-            source={{ uri: media[1].thumbnail || media[1].uri }}
-            style={styles.gridImageItem}
-            resizeMode="cover"
-          />
-        </View>
-        <View style={styles.gridRow}>
-          <Image
-            source={{ uri: media[2].thumbnail || media[2].uri }}
-            style={styles.gridImageItem}
-            resizeMode="cover"
-          />
-          <View style={styles.imageOverlayContainer}>
-            <Image
-              source={{ uri: media[3].thumbnail || media[3].uri }}
-              style={styles.gridImageItem}
-              resizeMode="cover"
-            />
-            {count > 4 && (
-              <View style={styles.overlayTextContainer}>
-                <Text style={styles.overlayText}>+{count - 4}</Text>
+        <View style={styles.mediaGrid}>
+          {media.map((item, index) => {
+            const isLastInRow = (index + 1) % columns === 0;
+            const isLastRow = Math.floor(index / columns) === Math.floor((count - 1) / columns);
+            
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.mediaWrapper,
+                  {
+                    width: columns === 1 ? '100%' : columns === 2 ? '48.5%' : '32%',
+                    aspectRatio: columns === 1 ? 4/3 : 1,
+                    marginRight: isLastInRow ? 0 : (columns === 2 ? '3%' : '2%'),
+                    marginBottom: isLastRow ? 0 : 8,
+                  },
+                ]}
+              >
+                <Image
+                  source={{ uri: item.thumbnail || item.uri }}
+                  style={styles.mediaImage}
+                  resizeMode="cover"
+                />
               </View>
-            )}
-          </View>
+            );
+          })}
         </View>
       </View>
     );
@@ -172,46 +136,65 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
             <View style={{ width: 36 }} />
           </View>
 
-          <View style={styles.cardWrapper}>
-            <ViewShot
-              ref={viewShotRef}
-              options={{ format: 'jpg', quality: 0.9 }}
-              style={styles.viewShotContainer}
-            >
-              <View style={styles.card}>
-                <View style={[styles.cardHeader, { backgroundColor: scenario?.color + '20' }]}>
-                  <Text style={styles.scenarioIcon}>{scenario?.icon}</Text>
-                  <View style={styles.dateWrap}>
-                    <Text style={styles.date}>{formattedDate}</Text>
-                    <Text style={styles.weather}>
-                      {weather?.emoji} {mood?.emoji}
+          <ScrollView 
+            style={{ flex: 1 }} 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.cardWrapper}>
+              <ViewShot
+                ref={viewShotRef}
+                options={{ format: 'jpg', quality: 0.9 }}
+                style={styles.viewShotContainer}
+              >
+                <View style={styles.card}>
+                  <View style={[styles.cardHeader, { backgroundColor: scenario?.color + '20' }]}>
+                    <Text style={styles.scenarioIcon}>{scenario?.icon}</Text>
+                    <View style={styles.dateWrap}>
+                      <Text style={styles.date}>{formattedDate}</Text>
+                      <Text style={styles.weather}>
+                        {weather?.emoji} {mood?.emoji}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.cardBody}>
+                    {diary.title ? <Text style={styles.diaryTitle}>{diary.title}</Text> : null}
+                    <Text style={styles.content} numberOfLines={8}>
+                      {diary.content}
                     </Text>
+
+                    {renderMediaGrid()}
+
+                    {quoteData && (
+                      <View style={styles.quoteContainer}>
+                        <Ionicons name="leaf" size={16} color="#CBD5E1" style={styles.quoteIcon} />
+                        <Text style={styles.quoteTextZh}>{quoteData.content.zh}</Text>
+                        {quoteData.content.en ? (
+                          <Text style={styles.quoteTextEn}>{quoteData.content.en}</Text>
+                        ) : null}
+                        <Text style={styles.quoteAuthor}>—— {quoteData.author.zh || quoteData.author.en || '佚名'}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.footer}>
+                    <Text style={styles.footerText}>—— 来自毛球日记 ——</Text>
                   </View>
                 </View>
+              </ViewShot>
+            </View>
+          </ScrollView>
 
-                <View style={styles.cardBody}>
-                  {diary.title ? <Text style={styles.diaryTitle}>{diary.title}</Text> : null}
-                  <Text style={styles.content} numberOfLines={8}>
-                    {diary.content}
-                  </Text>
-
-                  {renderMediaGrid()}
-                </View>
-
-                <View style={styles.footer}>
-                  <Text style={styles.footerText}>—— 来自毛球日记 ——</Text>
-                </View>
-              </View>
-            </ViewShot>
+          <View style={styles.bottomActionContainer}>
+            <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={isSharing}>
+              {isSharing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.shareBtnText}>保存 / 分享</Text>
+              )}
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={isSharing}>
-            {isSharing ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.shareBtnText}>保存 / 分享</Text>
-            )}
-          </TouchableOpacity>
         </SafeAreaView>
       </View>
     </Modal>
@@ -241,11 +224,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
   cardWrapper: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   viewShotContainer: {
     width: '100%',
@@ -265,72 +253,123 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: 'row',
-    padding: 20,
+    padding: 24,
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   scenarioIcon: {
-    fontSize: 44,
+    fontSize: 48,
     marginRight: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   dateWrap: {
     flex: 1,
   },
   date: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#2C3E50',
     marginBottom: 6,
+    letterSpacing: 0.5,
   },
   weather: {
     fontSize: 16,
   },
   cardBody: {
     padding: 24,
+    paddingBottom: 32,
   },
   diaryTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 12,
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#2C3E50',
+    marginBottom: 16,
+    lineHeight: 32,
   },
   content: {
     fontSize: 16,
-    color: '#555',
-    lineHeight: 26,
-    marginBottom: 20,
+    color: '#4A5568',
+    lineHeight: 28,
+    marginBottom: 24,
+    letterSpacing: 0.3,
   },
   gridContainer: {
-    gap: 8,
+    marginTop: 8,
   },
-  gridRow: {
+  mediaGrid: {
     flexDirection: 'row',
-    gap: 8,
+    flexWrap: 'wrap',
   },
-  gridImageFull: {
-    width: '100%',
-    borderRadius: 12,
-  },
-  gridImageItem: {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: 12,
-  },
-  imageOverlayContainer: {
-    flex: 1,
-    aspectRatio: 1,
+  mediaWrapper: {
     borderRadius: 12,
     overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  overlayTextContainer: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  mediaImage: {
+    width: '100%',
+    height: '100%',
+  },
+  playOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  overlayText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
+  liveBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  quoteContainer: {
+    marginTop: 24,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    position: 'relative',
+  },
+  quoteIcon: {
+    position: 'absolute',
+    top: 8,
+    left: -4,
+    opacity: 0.5,
+  },
+  quoteTextZh: {
+    fontSize: 15,
+    color: '#475569',
+    lineHeight: 24,
+    marginBottom: 6,
+    fontStyle: 'italic',
+    paddingLeft: 14,
+  },
+  quoteTextEn: {
+    fontSize: 12,
+    color: '#94A3B8',
+    lineHeight: 18,
+    marginBottom: 8,
+    paddingLeft: 14,
+  },
+  quoteAuthor: {
+    fontSize: 12,
+    color: '#94A3B8',
+    textAlign: 'right',
   },
   footer: {
     alignItems: 'center',
@@ -344,11 +383,15 @@ const styles = StyleSheet.create({
     color: '#aaa',
     letterSpacing: 2,
   },
+  bottomActionContainer: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 32,
+    backgroundColor: 'transparent',
+  },
   shareBtn: {
     backgroundColor: HEALING_COLORS.pink[500],
-    marginHorizontal: 32,
-    marginBottom: 32,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 30,
     alignItems: 'center',
     shadowColor: HEALING_COLORS.pink[500],
