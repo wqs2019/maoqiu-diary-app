@@ -29,7 +29,7 @@ const AboutScreen: React.FC = () => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.logoSection}>
           <View style={styles.logoContainer}>
-            <Image source={require('../../../assets/logo.jpg')} style={styles.logo} />
+            <Image source={require('../../../assets/logo.png')} style={styles.logo} />
           </View>
           <Text style={styles.appName}>毛球日记</Text>
           <Text style={styles.versionText}>Version 1.0.0</Text>

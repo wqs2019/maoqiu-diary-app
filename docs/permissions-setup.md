@@ -38,7 +38,7 @@ The app's Info.plist must contain an NSPhotoLibraryUsageDescription key...
 ```json
 "android": {
   "adaptiveIcon": {
-    "foregroundImage": "./assets/logo.jpg",
+    "foregroundImage": "./assets/logo.png",
     "backgroundColor": "#ffffff"
   },
   "edgeToEdgeEnabled": true,

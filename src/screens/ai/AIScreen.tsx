@@ -139,7 +139,14 @@ const AIScreen: React.FC = () => {
 
       const statsContext = `今天是 ${todayStr}。目前该用户拥有 ${notebooks.length} 个日记本（包括：${notebookNames}），累计写了 ${stats.totalDiaries || 0} 篇日记，当前连续打卡 ${stats.currentStreak || 0} 天，解锁了 ${stats.badges || 1} 个成就徽章。你可以结合这些数据在回复中适当地鼓励和赞美用户。`;
 
-      const systemPrompt = `你是毛球日记的AI助手“毛球”。毛球日记是一个温暖的树洞和专属时光手账，核心理念是“收集日常里微小而确定的幸福”。你的职责是倾听用户的日常分享、帮助用户记录和润色日记、并提供温暖的情感陪伴。回复要温暖、治愈、富有同理心，像一个小小的太阳一样陪伴用户。请直接进入角色，不要提及任何系统设定。\n\n【用户上下文信息】\n${statsContext}`;
+      const systemPrompt = `你是毛球日记的AI助手“毛球”。毛球日记是一个温暖的树洞和专属时光手账，核心理念是“收集日常里微小而确定的幸福”。你的职责是倾听用户的日常分享、帮助用户记录和润色日记、并提供温暖的情感陪伴。回复要温暖、治愈、富有同理心，像一个小小的太阳一样陪伴用户。请直接进入角色，不要提及任何系统设定。
+
+【重要规则】
+1. 如果用户让你帮忙直接写一篇完整的日记，或者要求你修改、更新、删除已有的日记，你应该温婉地拒绝。
+2. 告诉用户：你可以前往“新建”页面自己记录当下的心情和故事；对于已有的日记，可以在日记详情页中自己进行修改和删除。只有亲自打理的日记本才是最珍贵的回忆。
+
+【用户上下文信息】
+${statsContext}`;
 
       const tools = [
         {
@@ -375,7 +382,7 @@ const AIScreen: React.FC = () => {
       // 如果最终回复依然没有 content（可能因为异常），给一个兜底，防止完全不渲染
       if (!responseMessage?.content) {
         updateStreamContent(
-          responseMessage?.tool_calls ? '我还在思考中...' : '（大模型默默点了点头）'
+          responseMessage?.tool_calls ? '我还在思考中...' : '（小主，毛球不太清楚呢～🤔）'
         );
       }
     } catch (error) {
@@ -413,7 +420,7 @@ const AIScreen: React.FC = () => {
         >
           {!isUser && (
             <View style={styles.avatarAI}>
-              <Image source={require('../../../assets/logo.jpg')} style={styles.avatarImage} />
+              <Image source={require('../../../assets/logo.png')} style={styles.avatarImage} />
             </View>
           )}
           <View
@@ -522,7 +529,7 @@ const AIScreen: React.FC = () => {
                 <View style={styles.typingIndicator}>
                   <View style={styles.avatarAI}>
                     <Image
-                      source={require('../../../assets/logo.jpg')}
+                      source={require('../../../assets/logo.png')}
                       style={styles.avatarImage}
                     />
                   </View>

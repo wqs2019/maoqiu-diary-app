@@ -8,6 +8,7 @@ import { COLORS, FONT_SIZES, SPACING } from '@/config/constant';
 import { useZodForm } from '@/hooks/useZodForm';
 import { useAuthStore } from '@/store/authStore';
 import { loginFormSchema, LoginFormSchema } from '@/utils/validators';
+import { useToast } from './common/Toast';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -16,6 +17,7 @@ interface LoginFormProps {
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { login, sendCode, loading } = useAuthStore();
   const [countdown, setCountdown] = useState(0);
+  const toast = useToast();
 
   const {
     control,
@@ -38,14 +40,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const handleSendCode = async () => {
     const phone = control._formValues.phone;
     if (phone?.length !== 11) {
-      Alert.alert('提示', '请输入正确的手机号');
+      toast.error('请输入正确的手机号');
       return;
     }
 
     const success = await sendCode(phone);
     if (success) {
       setCountdown(60);
-      Alert.alert('提示', '验证码已发送 (测试：123456)');
+      toast.success('验证码已发送');
     }
   };
 
@@ -149,10 +151,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         <Text style={styles.loginButtonText}>{loading ? '登录中...' : '登录'}</Text>
         <Ionicons name="arrow-forward" size={20} color={COLORS.surface} />
       </TouchableOpacity>
-
-      {/* <View style={styles.testHint}>
-        <Text style={styles.testHintText}>测试模式：验证码输入 123456</Text>
-      </View> */}
     </View>
   );
 };
@@ -223,17 +221,5 @@ const styles = {
     fontSize: FONT_SIZES.large,
     fontWeight: '600' as const,
     marginRight: SPACING.small,
-  },
-  testHint: {
-    marginTop: SPACING.large,
-    alignItems: 'center' as const,
-  },
-  testHintText: {
-    fontSize: FONT_SIZES.small,
-    color: COLORS.textSecondary,
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: SPACING.medium,
-    paddingVertical: SPACING.small,
-    borderRadius: 12,
   },
 };

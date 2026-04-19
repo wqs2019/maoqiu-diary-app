@@ -64,8 +64,8 @@ maoqiu-diary-app/
 │   └── COMPONENTS_GUIDE.md    # 组件文档
 │
 └── 🎨 资源文件 (assets/)
-    ├── logo.jpg               # 应用图标
-    └── logo.jpg               # Logo
+    ├── logo.png               # 应用图标
+    └── logo.png               # Logo
 ```
 
 ## 🛠️ 技术栈
