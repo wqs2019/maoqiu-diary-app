@@ -25,9 +25,10 @@ import { ScenarioType, MediaResource } from '../../types';
 
 const { width } = Dimensions.get('window');
 const GRID_SPACING = 16;
-const GRID_ITEM_WIDTH = (width - GRID_SPACING * 4) / 3;
+// 减去 0.1 或使用 Math.floor 防止浮点数精度问题导致在某些大屏机型（如 iPhone 16 Pro Max）上换行
+const GRID_ITEM_WIDTH = Math.floor((width - GRID_SPACING * 4) / 3);
 const PHOTO_GRID_SPACING = 8;
-const PHOTO_SIZE = (width - GRID_SPACING * 2 - 24 - PHOTO_GRID_SPACING * 2) / 3;
+const PHOTO_SIZE = Math.floor((width - GRID_SPACING * 2 - 24 - PHOTO_GRID_SPACING * 2) / 3);
 
 const CategoryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
