@@ -102,6 +102,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       case 'loading':
         return <Ionicons name="sync" size={24} color="#3B82F6" style={styles.icon} />; // Could add rotation animation here
       case 'info':
+        return <Ionicons name="information-circle" size={24} color="#3B82F6" style={styles.icon} />;
       default:
         return null;
     }
@@ -120,7 +121,13 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     >
       {children}
       {visible && (
-        <View style={[styles.container, { top: Math.max(insets.top, 20) + 10 }]} pointerEvents="none">
+        <View
+          style={[
+            styles.container,
+            { top: Math.max(insets.top, 20) + 10 }
+          ]}
+          pointerEvents="none"
+        >
           <Animated.View
             style={[
               styles.toast,
@@ -146,8 +153,8 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9999,
-    elevation: 9999,
+    zIndex: 99999,
+    elevation: 99999,
   },
   toast: {
     flexDirection: 'row',

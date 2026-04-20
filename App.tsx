@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { initSentry, setUser, clearUser } from '@/config/sentry';
 import { Navigation } from '@/navigation';
 import { AppQueryProvider } from '@/providers/AppQueryProvider';
+import { PortalProvider } from '@/components/common/Portal';
 import { ToastProvider } from '@/components/common/Toast';
 import CustomSplashScreen from '@/screens/common/CustomSplashScreen';
 import LoadingScreen from '@/screens/common/LoadingScreen';
@@ -58,18 +59,20 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ToastProvider>
-        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        {showCustomSplash ? (
-          <CustomSplashScreen
-            onFinish={() => {
-              setShowCustomSplash(false);
-            }}
-          />
-        ) : (
-          <AppQueryProvider>
-            <Navigation />
-          </AppQueryProvider>
-        )}
+        <PortalProvider>
+          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+          {showCustomSplash ? (
+            <CustomSplashScreen
+              onFinish={() => {
+                setShowCustomSplash(false);
+              }}
+            />
+          ) : (
+            <AppQueryProvider>
+              <Navigation />
+            </AppQueryProvider>
+          )}
+        </PortalProvider>
       </ToastProvider>
     </SafeAreaProvider>
   );

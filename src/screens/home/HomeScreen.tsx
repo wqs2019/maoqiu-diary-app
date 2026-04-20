@@ -14,12 +14,13 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedBackgroundBlobs } from '../../components/common/AnimatedBackgroundBlobs';
+import { Modal } from '../../components/common/Modal';
+import { useToast } from '../../components/common/Toast';
 import { TimelineView } from '../../components/handDrawn/TimelineView';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
@@ -33,6 +34,7 @@ const { width, height } = Dimensions.get('window');
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
   const { fetchUserInfo } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -292,181 +294,172 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* 场景筛选 Modal */}
+      {/* 场景筛选 Overlay */}
       <Modal
         visible={isFilterVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
+        onClose={() => {
           setIsFilterVisible(false);
         }}
       >
-        <TouchableWithoutFeedback
-          onPress={() => {
-            setIsFilterVisible(false);
-          }}
-        >
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>筛选场景</Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setIsFilterVisible(false);
-                    }}
-                  >
-                    <Ionicons name="close" size={24} color="#666" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.filterGrid}>
-                  <TouchableOpacity
-                    style={[styles.filterChip, !selectedScenario && styles.filterChipActive]}
-                    onPress={() => {
-                      setSelectedScenario(undefined);
-                      setIsFilterVisible(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        !selectedScenario && styles.filterChipTextActive,
-                      ]}
-                    >
-                      全部
-                    </Text>
-                  </TouchableOpacity>
-
-                  {(Object.keys(SCENARIO_TEMPLATES) as ScenarioType[]).map((type) => {
-                    const template = SCENARIO_TEMPLATES[type];
-                    const isActive = selectedScenario === type;
-                    return (
-                      <TouchableOpacity
-                        key={type}
-                        style={[
-                          styles.filterChip,
-                          isActive && {
-                            backgroundColor: template.color,
-                            borderColor: template.color,
-                          },
-                        ]}
-                        onPress={() => {
-                          setSelectedScenario(isActive ? undefined : type);
-                          setIsFilterVisible(false);
-                        }}
-                      >
-                        <Text style={styles.filterChipEmoji}>{template.icon}</Text>
-                        <Text
-                          style={[styles.filterChipText, isActive && styles.filterChipTextActive]}
-                        >
-                          {template.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>筛选场景</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsFilterVisible(false);
+                  }}
+                >
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
               </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+
+              <View style={styles.filterGrid}>
+                <TouchableOpacity
+                  style={[styles.filterChip, !selectedScenario && styles.filterChipActive]}
+                  onPress={() => {
+                    setSelectedScenario(undefined);
+                    setIsFilterVisible(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      !selectedScenario && styles.filterChipTextActive,
+                    ]}
+                  >
+                    全部
+                  </Text>
+                </TouchableOpacity>
+
+                {(Object.keys(SCENARIO_TEMPLATES) as ScenarioType[]).map((type) => {
+                  const template = SCENARIO_TEMPLATES[type];
+                  const isActive = selectedScenario === type;
+                  return (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.filterChip,
+                        isActive && {
+                          backgroundColor: template.color,
+                          borderColor: template.color,
+                        },
+                      ]}
+                      onPress={() => {
+                        setSelectedScenario(isActive ? undefined : type);
+                        setIsFilterVisible(false);
+                      }}
+                    >
+                      <Text style={styles.filterChipEmoji}>{template.icon}</Text>
+                      <Text
+                        style={[styles.filterChipText, isActive && styles.filterChipTextActive]}
+                      >
+                        {template.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
       </Modal>
 
-      {/* 日记本切换 Modal */}
+      {/* 日记本切换 Overlay */}
       <Modal
         visible={isNotebookModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
+        onClose={() => {
           setIsNotebookModalVisible(false);
         }}
       >
-        <TouchableWithoutFeedback
-          onPress={() => {
-            setIsNotebookModalVisible(false);
-          }}
-        >
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>我的日记本</Text>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>我的日记本</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsNotebookModalVisible(false);
+                  }}
+                >
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={{ maxHeight: 300, marginBottom: 20 }}>
+                {notebooks.map((notebook, index) => (
                   <TouchableOpacity
+                    key={notebook._id || `notebook-${index}`}
+                    style={[
+                      styles.notebookItem,
+                      currentNotebook._id === notebook._id && styles.notebookItemActive,
+                    ]}
                     onPress={() => {
-                      setIsNotebookModalVisible(false);
-                    }}
-                  >
-                    <Ionicons name="close" size={24} color="#666" />
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView style={{ maxHeight: 300, marginBottom: 20 }}>
-                  {notebooks.map((notebook, index) => (
-                    <TouchableOpacity
-                      key={notebook._id || `notebook-${index}`}
-                      style={[
-                        styles.notebookItem,
-                        currentNotebook._id === notebook._id && styles.notebookItemActive,
-                      ]}
-                      onPress={() => {
-                        if (userId) {
-                          setCurrentNotebook(userId, notebook._id);
-                          setIsNotebookModalVisible(false);
-                        }
-                      }}
-                    >
-                      <Ionicons
-                        name="book"
-                        size={20}
-                        color={
-                          currentNotebook._id === notebook._id ? HEALING_COLORS.pink[500] : '#666'
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.notebookItemText,
-                          currentNotebook._id === notebook._id && styles.notebookItemTextActive,
-                        ]}
-                      >
-                        {notebook.name}
-                      </Text>
-                      {currentNotebook._id === notebook._id && (
-                        <Ionicons name="checkmark" size={20} color={HEALING_COLORS.pink[500]} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
-                <View style={styles.addNotebookContainer}>
-                  <TextInput
-                    style={styles.addNotebookInput}
-                    placeholder="新日记本名称..."
-                    value={newNotebookName}
-                    onChangeText={setNewNotebookName}
-                    maxLength={20}
-                  />
-                  <TouchableOpacity
-                    style={styles.addNotebookBtn}
-                    onPress={async () => {
-                      if (newNotebookName.trim() && userId) {
-                        try {
-                          const newNb = await addNotebook(userId, newNotebookName.trim());
-                          setCurrentNotebook(userId, newNb._id);
-                          setNewNotebookName('');
-                          setIsNotebookModalVisible(false);
-                        } catch (e) {
-                          console.error('新建日记本失败', e);
-                        }
+                      if (userId) {
+                        setCurrentNotebook(userId, notebook._id);
+                        setIsNotebookModalVisible(false);
                       }
                     }}
                   >
-                    <Text style={styles.addNotebookBtnText}>新建</Text>
+                    <Ionicons
+                      name="book"
+                      size={20}
+                      color={
+                        currentNotebook._id === notebook._id ? HEALING_COLORS.pink[500] : '#666'
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.notebookItemText,
+                        currentNotebook._id === notebook._id && styles.notebookItemTextActive,
+                      ]}
+                    >
+                      {notebook.name}
+                    </Text>
+                    {currentNotebook._id === notebook._id && (
+                      <Ionicons name="checkmark" size={20} color={HEALING_COLORS.pink[500]} />
+                    )}
                   </TouchableOpacity>
-                </View>
+                ))}
+              </ScrollView>
+
+              <View style={styles.addNotebookContainer}>
+                <TextInput
+                  style={styles.addNotebookInput}
+                  placeholder="新日记本名称..."
+                  value={newNotebookName}
+                  onChangeText={setNewNotebookName}
+                  maxLength={20}
+                />
+                <TouchableOpacity
+                  style={styles.addNotebookBtn}
+                  onPress={async () => {
+                    if (!newNotebookName.trim()) {
+                      toast.info('请输入日记本名称');
+                      return;
+                    }
+                    if (userId) {
+                      try {
+                        const newNb = await addNotebook(userId, newNotebookName.trim());
+                        setCurrentNotebook(userId, newNb._id);
+                        setNewNotebookName('');
+                        setIsNotebookModalVisible(false);
+                      } catch (e) {
+                        console.error('新建日记本失败', e);
+                        toast.error('新建日记本失败');
+                      }
+                    } else {
+                      toast.error('请先登录');
+                    }
+                  }}
+                >
+                  <Text style={styles.addNotebookBtnText}>新建</Text>
+                </TouchableOpacity>
               </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
       </Modal>
 
       <ScrollView
