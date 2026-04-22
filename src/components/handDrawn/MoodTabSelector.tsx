@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 import { MOODS } from '../../config/statusConfig';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { MoodType } from '../../types';
 
 interface MoodTabSelectorProps {
@@ -15,6 +16,8 @@ export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
   onSelectMood,
   label = '心情',
 }) => {
+  const { isDark } = useAppTheme();
+
   const handlePress = (mood: MoodType) => {
     if (selectedMood === mood) {
       onSelectMood(undefined as any);
@@ -25,7 +28,7 @@ export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: isDark ? '#AAA' : '#666' }]}>{label}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {MOODS.map((mood) => (
           <TouchableOpacity
@@ -38,8 +41,8 @@ export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
                     borderColor: mood.primary,
                   }
                 : {
-                    backgroundColor: mood.background,
-                    borderColor: mood.secondary,
+                    backgroundColor: isDark ? '#1E1E1E' : mood.background,
+                    borderColor: isDark ? '#333' : mood.secondary,
                   },
             ]}
             onPress={() => {
@@ -53,7 +56,7 @@ export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
                 styles.labelText,
                 selectedMood === mood.type
                   ? { color: '#FFFFFF', fontWeight: '700' }
-                  : { color: mood.primary },
+                  : { color: isDark ? '#AAA' : mood.primary },
               ]}
             >
               {mood.label}

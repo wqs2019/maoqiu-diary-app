@@ -13,6 +13,7 @@ import {
 
 import { COLORS, FONT_SIZES } from '@/config/constant';
 import { useAppStore } from '@/store/appStore';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -45,11 +46,10 @@ const SLIDES: Slide[] = [
 ];
 
 const OnboardingScreen: React.FC = () => {
-  const { setFirstLaunch, theme } = useAppStore();
+  const { setFirstLaunch } = useAppStore();
+  const { isDark } = useAppTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const slidesRef = useRef<FlatList>(null);
-
-  const isDark = theme === 'dark';
   const backgroundColor = isDark ? '#1C1C1E' : '#F2F2F7';
   const surfaceColor = isDark ? '#2C2C2E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#000000';

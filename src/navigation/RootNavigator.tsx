@@ -10,11 +10,11 @@ import AIScreen from '@/screens/ai/AIScreen';
 import LoginScreen from '@/screens/auth/LoginScreen';
 import CategoryScreen from '@/screens/category/CategoryScreen';
 import PhotoWallScreen from '@/screens/category/PhotoWallScreen';
+import CircleDetailScreen from '@/screens/circle/CircleDetailScreen';
+import CircleScreen from '@/screens/circle/CircleScreen';
 import DiaryDetailScreen from '@/screens/diary/DiaryDetailScreen';
 import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
 import HomeScreen from '@/screens/home/HomeScreen';
-import CircleDetailScreen from '@/screens/circle/CircleDetailScreen';
-import CircleScreen from '@/screens/circle/CircleScreen';
 import AboutScreen from '@/screens/mine/AboutScreen';
 import BadgesScreen from '@/screens/mine/BadgesScreen';
 import CalendarScreen from '@/screens/mine/CalendarScreen';
@@ -23,7 +23,9 @@ import FavoritesScreen from '@/screens/mine/FavoritesScreen';
 import FeedbackScreen from '@/screens/mine/FeedbackScreen';
 import MineScreen from '@/screens/mine/MineScreen';
 import NotebooksScreen from '@/screens/mine/NotebooksScreen';
+import SettingsScreen from '@/screens/mine/SettingsScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
 
@@ -43,6 +45,7 @@ export type RootStackParamList = {
   Calendar: undefined;
   Favorites: undefined;
   Notebooks: undefined;
+  Settings: undefined;
 };
 
 export type AuthStackParamList = {
@@ -68,7 +71,7 @@ const AuthNavigator = () => (
 );
 
 const MainNavigator = () => {
-  const { theme } = useAppStore();
+  const { themeName, colors } = useAppTheme();
 
   return (
     <MainTab.Navigator
@@ -93,11 +96,11 @@ const MainNavigator = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: theme === 'dark' ? COLORS.background : COLORS.surface,
-          borderTopColor: theme === 'dark' ? COLORS.border : COLORS.border,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
           elevation: 0,
           shadowOpacity: 0,
         },
@@ -122,6 +125,7 @@ const MainNavigator = () => {
 export const RootNavigator = () => {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isFirstLaunch = useAppStore((state) => state.isFirstLaunch);
+  const { colors } = useAppTheme();
 
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
@@ -137,9 +141,9 @@ export const RootNavigator = () => {
               title: '写日记',
               headerShown: true,
               headerStyle: {
-                backgroundColor: COLORS.surface,
+                backgroundColor: colors.surface,
               },
-              headerTintColor: COLORS.text,
+              headerTintColor: colors.text,
               headerBackTitle: '返回',
             }}
           />
@@ -150,9 +154,9 @@ export const RootNavigator = () => {
               title: '日记详情',
               headerShown: true,
               headerStyle: {
-                backgroundColor: COLORS.surface,
+                backgroundColor: colors.surface,
               },
-              headerTintColor: COLORS.text,
+              headerTintColor: colors.text,
               headerBackTitle: '返回',
             }}
           />
@@ -163,9 +167,9 @@ export const RootNavigator = () => {
               title: '圈子详情',
               headerShown: true,
               headerStyle: {
-                backgroundColor: COLORS.surface,
+                backgroundColor: colors.surface,
               },
-              headerTintColor: COLORS.text,
+              headerTintColor: colors.text,
               headerBackTitle: '返回',
             }}
           />
@@ -221,6 +225,13 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="Notebooks"
             component={NotebooksScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="Settings"
+            component={SettingsScreen}
             options={{
               headerShown: false,
             }}

@@ -25,6 +25,7 @@ import { TimelineView } from '../../components/handDrawn/TimelineView';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 import { ScenarioType, TimelineItem, Diary } from '../../types';
@@ -42,6 +43,8 @@ const HomeScreen: React.FC = () => {
   const [yearLayouts, setYearLayouts] = useState<Record<string, number>>({});
   const scrollViewRef = useRef<ScrollView>(null);
   const [activeYear, setActiveYear] = useState<string | null>(null);
+  
+  const { themeName, isDark } = useAppTheme();
 
   // 场景筛选状态
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | undefined>(undefined);
@@ -240,11 +243,11 @@ const HomeScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FFFFFF' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Background Blobs */}
-      <AnimatedBackgroundBlobs />
+      {!isDark && <AnimatedBackgroundBlobs />}
 
       {/* Fixed Header & Search */}
       <View style={[styles.fixedHeader, { paddingTop: insets.top + 16 }]}>
@@ -256,8 +259,8 @@ const HomeScreen: React.FC = () => {
                 setIsNotebookModalVisible(true);
               }}
             >
-              <Text style={styles.title}>{currentNotebook.name}</Text>
-              <Ionicons name="chevron-down" size={20} color="#333" />
+              <Text style={[styles.title, { color: isDark ? '#FFF' : '#333' }]}>{currentNotebook.name}</Text>
+              <Ionicons name="chevron-down" size={20} color={isDark ? '#FFF' : '#333'} />
             </TouchableOpacity>
             <Text style={styles.dateText}>{getFormattedDate()}</Text>
           </View>
@@ -268,9 +271,9 @@ const HomeScreen: React.FC = () => {
         </View>
 
         <View style={styles.searchContainer}>
-          <View style={styles.searchInputWrapper}>
+          <View style={[styles.searchInputWrapper, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#E5E5EA' }]}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: isDark ? '#FFF' : '#333' }]}
               placeholder="搜索你的回忆..."
               placeholderTextColor="#999"
               value={searchQuery}
@@ -280,7 +283,7 @@ const HomeScreen: React.FC = () => {
             />
           </View>
           <TouchableOpacity
-            style={[styles.filterButton, selectedScenario && styles.filterButtonActive]}
+            style={[styles.filterButton, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#E5E5EA' }, selectedScenario && styles.filterButtonActive]}
             onPress={() => {
               setIsFilterVisible(true);
             }}
@@ -288,7 +291,7 @@ const HomeScreen: React.FC = () => {
             {selectedScenario ? (
               <Text style={{ fontSize: 20 }}>{SCENARIO_TEMPLATES[selectedScenario].icon}</Text>
             ) : (
-              <Ionicons name="funnel-outline" size={20} color="#333" />
+              <Ionicons name="funnel-outline" size={20} color={isDark ? '#FFF' : '#333'} />
             )}
           </TouchableOpacity>
         </View>
@@ -303,9 +306,9 @@ const HomeScreen: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>筛选场景</Text>
+                <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>筛选场景</Text>
                 <TouchableOpacity
                   onPress={() => {
                     setIsFilterVisible(false);
@@ -375,9 +378,9 @@ const HomeScreen: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>我的日记本</Text>
+                <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>我的日记本</Text>
                 <TouchableOpacity
                   onPress={() => {
                     setIsNotebookModalVisible(false);
@@ -394,6 +397,7 @@ const HomeScreen: React.FC = () => {
                     style={[
                       styles.notebookItem,
                       currentNotebook._id === notebook._id && styles.notebookItemActive,
+                      { backgroundColor: isDark ? '#2C2C2C' : '#FFF', borderColor: isDark ? '#444' : '#F0F0F0' }
                     ]}
                     onPress={() => {
                       if (userId) {
@@ -406,12 +410,13 @@ const HomeScreen: React.FC = () => {
                       name="book"
                       size={20}
                       color={
-                        currentNotebook._id === notebook._id ? HEALING_COLORS.pink[500] : '#666'
+                        currentNotebook._id === notebook._id ? HEALING_COLORS.pink[500] : (isDark ? '#AAA' : '#666')
                       }
                     />
                     <Text
                       style={[
                         styles.notebookItemText,
+                        { color: isDark ? '#FFF' : '#333' },
                         currentNotebook._id === notebook._id && styles.notebookItemTextActive,
                       ]}
                     >
@@ -426,8 +431,9 @@ const HomeScreen: React.FC = () => {
 
               <View style={styles.addNotebookContainer}>
                 <TextInput
-                  style={styles.addNotebookInput}
+                  style={[styles.addNotebookInput, { color: isDark ? '#FFF' : '#333', backgroundColor: isDark ? '#2C2C2C' : '#F9F9F9', borderColor: isDark ? '#444' : '#E5E5EA' }]}
                   placeholder="新日记本名称..."
+                  placeholderTextColor={isDark ? '#888' : '#999'}
                   value={newNotebookName}
                   onChangeText={setNewNotebookName}
                   maxLength={20}
@@ -527,7 +533,7 @@ const HomeScreen: React.FC = () => {
 
       {/* Year Selector / Timeline Scrubber on the Right */}
       {availableYears.length > 0 && (
-        <View style={styles.yearSelectorContainer}>
+        <View style={[styles.yearSelectorContainer, { backgroundColor: isDark ? 'rgba(30,30,30,0.8)' : 'rgba(255,255,255,0.8)' }]}>
           {availableYears.map((year) => (
             <TouchableOpacity
               key={year}
@@ -536,7 +542,7 @@ const HomeScreen: React.FC = () => {
                 handleYearPress(year);
               }}
             >
-              <Text style={[styles.yearText, activeYear === year && styles.activeYearText]}>
+              <Text style={[styles.yearText, { color: isDark ? '#AAA' : '#999' }, activeYear === year && styles.activeYearText]}>
                 {year}
               </Text>
               {activeYear === year && <View style={styles.yearDot} />}

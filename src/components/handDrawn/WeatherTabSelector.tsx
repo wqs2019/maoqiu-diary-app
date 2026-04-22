@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 import { WEATHERS } from '../../config/statusConfig';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { WeatherType } from '../../types';
 
 interface WeatherTabSelectorProps {
@@ -15,6 +16,8 @@ export const WeatherTabSelector: React.FC<WeatherTabSelectorProps> = ({
   onSelectWeather,
   label = '天气',
 }) => {
+  const { isDark } = useAppTheme();
+
   const handlePress = (weather: WeatherType) => {
     if (selectedWeather === weather) {
       onSelectWeather(undefined as any);
@@ -25,7 +28,7 @@ export const WeatherTabSelector: React.FC<WeatherTabSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: isDark ? '#AAA' : '#666' }]}>{label}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {WEATHERS.map((weather) => (
           <TouchableOpacity
@@ -38,8 +41,8 @@ export const WeatherTabSelector: React.FC<WeatherTabSelectorProps> = ({
                     borderColor: weather.primary,
                   }
                 : {
-                    backgroundColor: weather.background,
-                    borderColor: weather.secondary,
+                    backgroundColor: isDark ? '#1E1E1E' : weather.background,
+                    borderColor: isDark ? '#333' : weather.secondary,
                   },
             ]}
             onPress={() => {
@@ -53,7 +56,7 @@ export const WeatherTabSelector: React.FC<WeatherTabSelectorProps> = ({
                 styles.labelText,
                 selectedWeather === weather.type
                   ? { color: '#FFFFFF', fontWeight: '700' }
-                  : { color: weather.primary },
+                  : { color: isDark ? '#AAA' : weather.primary },
               ]}
             >
               {weather.label}

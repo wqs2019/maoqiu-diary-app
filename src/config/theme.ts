@@ -1,6 +1,6 @@
 import { COLORS, DARK_COLORS, FONT_SIZES, SPACING } from './constant';
 
-export type ThemeType = 'light' | 'dark';
+export type ThemeType = 'light' | 'dark' | 'system';
 
 export const THEMES = {
   light: {

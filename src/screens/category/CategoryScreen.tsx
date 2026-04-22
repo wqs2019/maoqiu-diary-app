@@ -23,6 +23,8 @@ import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 import { ScenarioType, MediaResource } from '../../types';
 
+import { useAppTheme } from '../../hooks/useAppTheme';
+
 const { width } = Dimensions.get('window');
 const GRID_SPACING = 16;
 // 减去 0.1 或使用 Math.floor 防止浮点数精度问题导致在某些大屏机型（如 iPhone 16 Pro Max）上换行
@@ -34,6 +36,7 @@ const CategoryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | 'all'>('all');
+  const { isDark, colors } = useAppTheme();
 
   const user = useAuthStore((state) => state.user);
   const userId = user?._id;
@@ -75,23 +78,40 @@ const CategoryScreen: React.FC = () => {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <Text style={styles.headerTitle}>生活洞察</Text>
-      <Text style={styles.headerSubtitle}>按场景回顾你的美好生活</Text>
+      <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>生活洞察</Text>
+      <Text style={[styles.headerSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>按场景回顾你的美好生活</Text>
 
       {/* 分类网格 */}
       <View style={styles.gridContainer}>
         <TouchableOpacity
-          style={[styles.gridItem, selectedScenario === 'all' && styles.gridItemSelected]}
+          style={[
+            styles.gridItem,
+            { backgroundColor: isDark ? '#1E1E1E' : '#FFF' },
+            selectedScenario === 'all' && [
+              styles.gridItemSelected,
+              {
+                borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[400],
+                backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50],
+              },
+            ],
+          ]}
           onPress={() => {
             setSelectedScenario('all');
           }}
           activeOpacity={0.8}
         >
-          <View style={[styles.iconContainer, { backgroundColor: '#F3F4F6' }]}>
-            <Ionicons name="apps" size={28} color="#6B7280" />
+          <View style={[styles.iconContainer, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
+            <Ionicons name="apps" size={28} color={isDark ? '#AAA' : '#6B7280'} />
           </View>
           <Text
-            style={[styles.gridItemText, selectedScenario === 'all' && styles.gridItemTextSelected]}
+            style={[
+              styles.gridItemText,
+              { color: isDark ? '#AAA' : '#4B5563' },
+              selectedScenario === 'all' && [
+                styles.gridItemTextSelected,
+                { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] },
+              ],
+            ]}
           >
             全部
           </Text>
@@ -103,16 +123,35 @@ const CategoryScreen: React.FC = () => {
           return (
             <TouchableOpacity
               key={type}
-              style={[styles.gridItem, isSelected && styles.gridItemSelected]}
+              style={[
+                styles.gridItem,
+                { backgroundColor: isDark ? '#1E1E1E' : '#FFF' },
+                isSelected && [
+                  styles.gridItemSelected,
+                  {
+                    borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[400],
+                    backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50],
+                  },
+                ],
+              ]}
               onPress={() => {
                 setSelectedScenario(type);
               }}
               activeOpacity={0.8}
             >
-              <View style={[styles.iconContainer, { backgroundColor: scenario.color + '20' }]}>
+              <View style={[styles.iconContainer, { backgroundColor: scenario.color + (isDark ? '40' : '20') }]}>
                 <Text style={styles.scenarioIcon}>{scenario.icon}</Text>
               </View>
-              <Text style={[styles.gridItemText, isSelected && styles.gridItemTextSelected]}>
+              <Text
+                style={[
+                  styles.gridItemText,
+                  { color: isDark ? '#AAA' : '#4B5563' },
+                  isSelected && [
+                    styles.gridItemTextSelected,
+                    { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] },
+                  ],
+                ]}
+              >
                 {scenario.name}
               </Text>
             </TouchableOpacity>
@@ -124,18 +163,18 @@ const CategoryScreen: React.FC = () => {
 
   const renderStats = () => (
     <View style={styles.sectionContainer}>
-      <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>数据概览</Text>
+      <Text style={[styles.sectionTitle, { marginBottom: 12, color: isDark ? '#FFF' : '#111827' }]}>数据概览</Text>
       <View style={styles.statsRow}>
-        <View style={styles.statsCard}>
+        <View style={[styles.statsCard, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#F3F4F6' }]}>
           <Ionicons name="document-text" size={28} color={HEALING_COLORS.pink[400]} />
-          <Text style={styles.statsValue}>{totalCount}</Text>
-          <Text style={styles.statsLabel}>篇日记</Text>
+          <Text style={[styles.statsValue, { color: isDark ? '#FFF' : '#111827' }]}>{totalCount}</Text>
+          <Text style={[styles.statsLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>篇日记</Text>
         </View>
-        <View style={styles.statsCard}>
+        <View style={[styles.statsCard, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#F3F4F6' }]}>
           <Ionicons name="images" size={28} color={HEALING_COLORS.pink[400]} />
-          <Text style={styles.statsValue}>{allMedia.length}</Text>
+          <Text style={[styles.statsValue, { color: isDark ? '#FFF' : '#111827' }]}>{allMedia.length}</Text>
           <View style={styles.statsLabelRow}>
-            <Text style={styles.statsLabel}>图片/视频总数</Text>
+            <Text style={[styles.statsLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>图片/视频总数</Text>
           </View>
         </View>
       </View>
@@ -146,22 +185,22 @@ const CategoryScreen: React.FC = () => {
     if (moodStats.length === 0) return null;
     return (
       <View style={styles.sectionContainer}>
-        <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>心情晴雨表</Text>
-        <View style={styles.cardContainer}>
+        <Text style={[styles.sectionTitle, { marginBottom: 12, color: isDark ? '#FFF' : '#111827' }]}>心情晴雨表</Text>
+        <View style={[styles.cardContainer, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#F3F4F6' }]}>
           {moodStats.map(({ mood, count }, index) => {
             const config = getMoodConfig(mood);
             const percent = Math.round((count / diaries.length) * 100);
             return (
-              <View key={mood} style={[styles.moodRow, index !== 0 && styles.moodRowMargin]}>
+              <View key={mood} style={[styles.moodRow, index !== 0 && [styles.moodRowMargin, { borderTopColor: isDark ? '#333' : '#F3F4F6' }]]}>
                 <Text style={styles.moodEmoji}>{config.emoji}</Text>
                 <View style={styles.moodInfo}>
                   <View style={styles.moodTextRow}>
-                    <Text style={styles.moodLabel}>{config.label}</Text>
-                    <Text style={styles.moodCount}>
+                    <Text style={[styles.moodLabel, { color: isDark ? '#FFF' : '#374151' }]}>{config.label}</Text>
+                    <Text style={[styles.moodCount, { color: isDark ? '#AAA' : '#6B7280' }]}>
                       {count}次 ({percent}%)
                     </Text>
                   </View>
-                  <View style={styles.progressBarBg}>
+                  <View style={[styles.progressBarBg, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
                     <View
                       style={[
                         styles.progressBarFill,
@@ -183,17 +222,17 @@ const CategoryScreen: React.FC = () => {
     return (
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>时光相册</Text>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#FFF' : '#111827' }]}>时光相册</Text>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => navigation.navigate('PhotoWall', { scenario: selectedScenario })}
             style={styles.viewAllButton}
           >
-            <Text style={styles.viewAllText}>查看全部</Text>
-            <Ionicons name="chevron-forward" size={14} color="#6B7280" />
+            <Text style={[styles.viewAllText, { color: isDark ? '#AAA' : '#6B7280' }]}>查看全部</Text>
+            <Ionicons name="chevron-forward" size={14} color={isDark ? '#AAA' : '#6B7280'} />
           </TouchableOpacity>
         </View>
-        <View style={styles.photoGrid}>
+        <View style={[styles.photoGrid, { backgroundColor: isDark ? '#1E1E1E' : '#FFF' }]}>
           {allMedia.slice(0, 9).map((media, index) => (
             <TouchableOpacity
               key={index}
@@ -223,14 +262,14 @@ const CategoryScreen: React.FC = () => {
           ))}
         </View>
         {allMedia.length > 9 && (
-          <Text style={styles.morePhotosText}>只展示最近 9 个瞬间，更多请在日记中查看~</Text>
+          <Text style={[styles.morePhotosText, { color: isDark ? '#AAA' : '#9CA3AF' }]}>只展示最近 9 个瞬间，更多请在日记中查看~</Text>
         )}
       </View>
     );
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#F9FAFB' }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}

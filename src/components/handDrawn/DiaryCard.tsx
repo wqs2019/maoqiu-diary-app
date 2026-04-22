@@ -6,6 +6,7 @@ import { HandDrawnCard } from './HandDrawnCard';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { TimelineItem } from '../../types';
 
 interface DiaryCardProps {
@@ -14,6 +15,7 @@ interface DiaryCardProps {
 }
 
 export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
+  const { isDark } = useAppTheme();
   const scenario = item.scenario ? SCENARIO_TEMPLATES[item.scenario] : null;
   const mood = item.mood ? getMoodConfig(item.mood) : null;
   const weather = item.weather ? getWeatherConfig(item.weather) : null;
@@ -49,17 +51,17 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
       padding="medium"
       variant="minimal"
       onPress={() => onPress?.(item)}
-      backgroundColor="#FFFFFF" // 纯白背景色，避免透明度透出阴影杂色
+      backgroundColor={isDark ? '#1E1E1E' : '#FFFFFF'} // 纯白背景色，避免透明度透出阴影杂色
     >
       {/* 顶部状态栏：日期 & 场景标签 */}
       <View style={styles.topBar}>
         <View style={styles.dateContainer}>
-          <Ionicons name="time-outline" size={14} color={HEALING_COLORS.gray[400]} />
-          <Text style={styles.dateText}>{formatCardDate(item.date)}</Text>
+          <Ionicons name="time-outline" size={14} color={isDark ? '#AAA' : HEALING_COLORS.gray[400]} />
+          <Text style={[styles.dateText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[500] }]}>{formatCardDate(item.date)}</Text>
         </View>
 
         {scenario && (
-          <View style={[styles.scenarioTag, { backgroundColor: scenario.color + '15' }]}>
+          <View style={[styles.scenarioTag, { backgroundColor: scenario.color + (isDark ? '40' : '15') }]}>
             <Text style={styles.scenarioIcon}>{scenario.icon}</Text>
             <Text style={[styles.scenarioText, { color: scenario.color }]}>{scenario.name}</Text>
           </View>
@@ -70,14 +72,14 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
         <View style={styles.textContainer}>
           {/* 标题 */}
           {!!item.title && (
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={[styles.title, { color: isDark ? '#FFF' : '#2C2C2E' }]} numberOfLines={1}>
               {item.title}
             </Text>
           )}
 
           {/* 内容简述 */}
           {!!item.description && (
-            <Text style={styles.description} numberOfLines={2}>
+            <Text style={[styles.description, { color: isDark ? '#CCC' : '#666666' }]} numberOfLines={2}>
               {item.description}
             </Text>
           )}
@@ -85,7 +87,7 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
 
         {/* 封面图片：放置在右侧 */}
         {coverImage && (
-          <View style={styles.imageWrapper}>
+          <View style={[styles.imageWrapper, { backgroundColor: isDark ? '#333' : '#F5F5F5' }]}>
             <Image
               source={{
                 uri:
@@ -111,12 +113,12 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
       </View>
 
       {/* 底部信息：定位与心情天气 */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
         <View style={styles.locationContainer}>
           {!!item.location && (
             <>
-              <Ionicons name="location" size={14} color={HEALING_COLORS.pink[400]} />
-              <Text style={styles.locationText} numberOfLines={1}>
+              <Ionicons name="location" size={14} color={isDark ? '#AAA' : HEALING_COLORS.pink[400]} />
+              <Text style={[styles.locationText, { color: isDark ? '#AAA' : '#666' }]} numberOfLines={1}>
                 {item.location}
               </Text>
             </>
@@ -125,15 +127,15 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
 
         <View style={styles.statusContainer}>
           {weather && (
-            <View style={[styles.statusBadge, { backgroundColor: weather.background }]}>
+            <View style={[styles.statusBadge, { backgroundColor: isDark ? '#333' : weather.background }]}>
               <Text style={styles.statusEmoji}>{weather.emoji}</Text>
-              <Text style={[styles.statusLabel, { color: weather.primary }]}>{weather.label}</Text>
+              <Text style={[styles.statusLabel, { color: isDark ? '#FFF' : weather.primary }]}>{weather.label}</Text>
             </View>
           )}
           {mood && (
-            <View style={[styles.statusBadge, { backgroundColor: mood.background, marginLeft: 6 }]}>
+            <View style={[styles.statusBadge, { backgroundColor: isDark ? '#333' : mood.background, marginLeft: 6 }]}>
               <Text style={styles.statusEmoji}>{mood.emoji}</Text>
-              <Text style={[styles.statusLabel, { color: mood.primary }]}>{mood.label}</Text>
+              <Text style={[styles.statusLabel, { color: isDark ? '#FFF' : mood.primary }]}>{mood.label}</Text>
             </View>
           )}
         </View>

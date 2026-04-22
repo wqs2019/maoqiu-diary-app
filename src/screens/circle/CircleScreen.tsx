@@ -23,6 +23,8 @@ import { useAuthStore } from '@/store/authStore';
 import { Diary } from '@/types';
 import { FormatUtil } from '@/utils/format';
 
+import { useAppTheme } from '@/hooks/useAppTheme';
+
 const { width } = Dimensions.get('window');
 const CONTENT_WIDTH = width; // full width
 
@@ -30,6 +32,7 @@ const CircleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const user = useAuthStore((state) => state.user);
+  const { isDark, colors } = useAppTheme();
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
@@ -89,12 +92,12 @@ const CircleScreen: React.FC = () => {
     const hasLiked = user?._id ? (item.likedUserIds || []).includes(user._id) : false;
 
     return (
-      <View style={styles.diaryWrapper}>
+      <View style={[styles.diaryWrapper, { backgroundColor: isDark ? '#1E1E1E' : '#fff' }]}>
         <View style={styles.feedCard}>
           <TouchableOpacity activeOpacity={1} onPress={() => handleDiaryPress(item)}>
             {/* 顶部：头像、昵称、时间 */}
             <View style={styles.feedHeader}>
-              <View style={styles.avatarPlaceholder}>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
                 {item.authorInfo?.avatar ? (
                   <Image source={{ uri: item.authorInfo.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
                 ) : (
@@ -102,19 +105,19 @@ const CircleScreen: React.FC = () => {
                 )}
               </View>
               <View style={styles.headerInfo}>
-                <Text style={styles.nickname}>{item.authorInfo?.nickname || '某只毛球'}</Text>
-                <Text style={styles.time}>{FormatUtil.formatRelativeTime(item.createdAt || item.date)}</Text>
+                <Text style={[styles.nickname, { color: isDark ? '#FFF' : '#111827' }]}>{item.authorInfo?.nickname || '某只毛球'}</Text>
+                <Text style={[styles.time, { color: isDark ? '#AAA' : '#6B7280' }]}>{FormatUtil.formatRelativeTime(item.createdAt || item.date)}</Text>
               </View>
             </View>
 
             {/* 标题 */}
             {!!item.title && (
-              <Text style={styles.title}>{item.title}</Text>
+              <Text style={[styles.title, { color: isDark ? '#FFF' : '#111827' }]}>{item.title}</Text>
             )}
 
             {/* 内容 */}
             {!!item.content && (
-              <Text style={styles.content} numberOfLines={4}>
+              <Text style={[styles.content, { color: isDark ? '#CCC' : '#4B5563' }]} numberOfLines={4}>
                 {item.content}
               </Text>
             )}
@@ -132,14 +135,14 @@ const CircleScreen: React.FC = () => {
           </TouchableOpacity>
 
           {/* 底部操作栏：点赞和评论数量 */}
-          <View style={styles.actionBar}>
+          <View style={[styles.actionBar, { borderTopColor: isDark ? '#333' : '#F3F4F6' }]}>
             <TouchableOpacity style={styles.actionBtn} onPress={() => handleLike(item)}>
-              <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={22} color={hasLiked ? HEALING_COLORS.pink[500] : "#666"} />
-              <Text style={[styles.actionText, hasLiked && { color: HEALING_COLORS.pink[500] }]}>{item.likedUserIds?.length || 0}</Text>
+              <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={22} color={hasLiked ? HEALING_COLORS.pink[500] : (isDark ? '#AAA' : '#666')} />
+              <Text style={[styles.actionText, { color: isDark ? '#AAA' : '#6B7280' }, hasLiked && { color: HEALING_COLORS.pink[500] }]}>{item.likedUserIds?.length || 0}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn} onPress={() => handleDiaryPress(item)}>
-              <Ionicons name="chatbubble-outline" size={20} color="#666" />
-              <Text style={styles.actionText}>{item.comments?.length || 0}</Text>
+              <Ionicons name="chatbubble-outline" size={20} color={isDark ? '#AAA' : '#666'} />
+              <Text style={[styles.actionText, { color: isDark ? '#AAA' : '#6B7280' }]}>{item.comments?.length || 0}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -148,10 +151,10 @@ const CircleScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#F9FAFB' }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>圈子</Text>
-        <Text style={styles.headerSubtitle}>探索大家分享的美好瞬间</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>圈子</Text>
+        <Text style={[styles.headerSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>探索大家分享的美好瞬间</Text>
       </View>
 
       {isLoading ? (
@@ -175,8 +178,8 @@ const CircleScreen: React.FC = () => {
         />
       ) : (
         <View style={styles.centerContainer}>
-          <Ionicons name="globe-outline" size={48} color="#D1D5DB" />
-          <Text style={styles.emptyText}>
+          <Ionicons name="globe-outline" size={48} color={isDark ? '#555' : '#D1D5DB'} />
+          <Text style={[styles.emptyText, { color: isDark ? '#AAA' : '#6B7280' }]}>
             圈子里还没有人分享日记呢，快去成为第一个吧！
           </Text>
         </View>

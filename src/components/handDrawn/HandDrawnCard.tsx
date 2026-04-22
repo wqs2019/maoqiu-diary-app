@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, ViewStyle, TouchableOpacity } from 'react-native';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 interface HandDrawnCardProps {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ export const HandDrawnCard: React.FC<HandDrawnCardProps> = ({
   backgroundColor,
 }) => {
   const handDrawnStyle = HAND_DRAWN_STYLES[styleType];
+  const { isDark } = useAppTheme();
 
   const getPaddingStyle = (): number => {
     switch (padding) {
@@ -45,15 +47,15 @@ export const HandDrawnCard: React.FC<HandDrawnCardProps> = ({
     if (variant === 'highlight') {
       return {
         borderWidth: 3,
-        borderColor: HEALING_COLORS.pink[300],
-        backgroundColor: HEALING_COLORS.pink[50],
+        borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[300],
+        backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50],
       };
     }
     if (variant === 'minimal') {
       return {
         borderWidth: 0,
         shadowColor: '#000000', // 增强阴影，改用深色阴影增加厚重感
-        shadowOpacity: 0.18, // 调高不透明度
+        shadowOpacity: isDark ? 0.3 : 0.18, // 调高不透明度
         shadowRadius: 20, // 增加阴影模糊半径
         shadowOffset: { width: 0, height: 8 }, // 加大向下偏移
         elevation: 12, // Android 下加强投影
@@ -73,12 +75,12 @@ export const HandDrawnCard: React.FC<HandDrawnCardProps> = ({
         {
           borderRadius: handDrawnStyle.borderRadius,
           borderWidth: handDrawnStyle.borderWidth,
-          borderColor: handDrawnStyle.borderColor,
-          shadowColor: handDrawnStyle.shadowColor,
+          borderColor: isDark ? '#333' : handDrawnStyle.borderColor,
+          shadowColor: isDark ? '#000' : handDrawnStyle.shadowColor,
           shadowOpacity: handDrawnStyle.shadowOpacity,
           shadowRadius: handDrawnStyle.shadowRadius,
           shadowOffset: handDrawnStyle.shadowOffset,
-          backgroundColor: backgroundColor || '#FFFFFF',
+          backgroundColor: backgroundColor || (isDark ? '#1E1E1E' : '#FFFFFF'),
           padding: getPaddingStyle(),
         },
         getVariantStyle(),

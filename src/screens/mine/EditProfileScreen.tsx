@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { imageService } from '../../services/imageService';
 import { useAuthStore } from '../../store/authStore';
 
@@ -26,6 +27,7 @@ const EditProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { user, updateProfile } = useAuthStore();
   const themeStyle = HAND_DRAWN_STYLES.soft;
+  const { isDark } = useAppTheme();
 
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
@@ -120,9 +122,10 @@ const EditProfileScreen: React.FC = () => {
       <TouchableOpacity
         style={[
           styles.genderOption,
+          { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#FFF0F3' },
           isSelected && {
-            backgroundColor: HEALING_COLORS.pink[50],
-            borderColor: HEALING_COLORS.pink[300],
+            backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50],
+            borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[300],
           },
         ]}
         onPress={() => {
@@ -132,12 +135,13 @@ const EditProfileScreen: React.FC = () => {
         <Feather
           name={icon}
           size={20}
-          color={isSelected ? HEALING_COLORS.pink[500] : HEALING_COLORS.gray[400]}
+          color={isSelected ? HEALING_COLORS.pink[500] : (isDark ? '#AAA' : HEALING_COLORS.gray[400])}
         />
         <Text
           style={[
             styles.genderText,
-            isSelected && { color: HEALING_COLORS.pink[600], fontWeight: '600' },
+            { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] },
+            isSelected && { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600], fontWeight: '600' },
           ]}
         >
           {label}
@@ -148,26 +152,39 @@ const EditProfileScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: isDark ? '#121212' : '#FAFAFA', borderBottomColor: isDark ? '#333' : '#F0F0F0' }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => {
             navigation.goBack();
           }}
         >
-          <Feather name="chevron-left" size={24} color={HEALING_COLORS.gray[800]} />
+          <Feather name="chevron-left" size={24} color={isDark ? '#FFF' : HEALING_COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>编辑个人资料</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>编辑个人资料</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        indicatorStyle={isDark ? 'white' : 'black'}
+      >
         {/* 头像区域 */}
         <View style={styles.avatarSection}>
-          <TouchableOpacity onPress={handlePickAvatar} style={styles.avatarContainer}>
+          <TouchableOpacity 
+            onPress={handlePickAvatar} 
+            style={[
+              styles.avatarContainer, 
+              { 
+                borderColor: isDark ? '#333' : '#FFF',
+                shadowColor: isDark ? '#000' : HEALING_COLORS.pink[400]
+              }
+            ]}
+          >
             <Image
               source={
                 avatar
@@ -188,25 +205,26 @@ const EditProfileScreen: React.FC = () => {
               )}
             </View>
           </TouchableOpacity>
-          <Text style={styles.avatarHint}>点击更换头像</Text>
+          <Text style={[styles.avatarHint, { color: isDark ? '#AAA' : HEALING_COLORS.gray[500] }]}>点击更换头像</Text>
         </View>
 
         {/* 表单区域 */}
         <View style={styles.formSection}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>昵称</Text>
+            <Text style={[styles.label, { color: isDark ? '#FFF' : HEALING_COLORS.gray[700] }]}>昵称</Text>
             <TextInput
-              style={[styles.input, { borderRadius: themeStyle.borderRadius }]}
+              style={[styles.input, { borderRadius: themeStyle.borderRadius, backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#FFF0F3', color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
               value={nickname}
               onChangeText={setNickname}
               placeholder="请输入可爱的昵称"
-              placeholderTextColor={HEALING_COLORS.gray[400]}
+              placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
               maxLength={16}
+              keyboardAppearance={isDark ? 'dark' : 'light'}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>性别</Text>
+            <Text style={[styles.label, { color: isDark ? '#FFF' : HEALING_COLORS.gray[700] }]}>性别</Text>
             <View style={styles.genderContainer}>
               {renderGenderOption('female', '女生', 'user')}
               {renderGenderOption('male', '男生', 'user')}
@@ -215,15 +233,16 @@ const EditProfileScreen: React.FC = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>年龄</Text>
+            <Text style={[styles.label, { color: isDark ? '#FFF' : HEALING_COLORS.gray[700] }]}>年龄</Text>
             <TextInput
-              style={[styles.input, { borderRadius: themeStyle.borderRadius }]}
+              style={[styles.input, { borderRadius: themeStyle.borderRadius, backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#FFF0F3', color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
               value={age}
               onChangeText={setAge}
               placeholder="你今年多大啦？"
-              placeholderTextColor={HEALING_COLORS.gray[400]}
+              placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
               keyboardType="number-pad"
               maxLength={3}
+              keyboardAppearance={isDark ? 'dark' : 'light'}
             />
           </View>
         </View>
@@ -232,7 +251,7 @@ const EditProfileScreen: React.FC = () => {
         <TouchableOpacity
           style={[
             styles.saveButton,
-            { borderRadius: themeStyle.borderRadius },
+            { borderRadius: themeStyle.borderRadius, shadowColor: isDark ? '#000' : HEALING_COLORS.pink[500] },
             isSaving && { opacity: 0.7 },
           ]}
           onPress={handleSave}

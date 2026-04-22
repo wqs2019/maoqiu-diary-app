@@ -40,11 +40,13 @@ const DOUBAO_API_KEY = '837368c6-aa84-4ae8-920f-0474cae5709b';
 const DOUBAO_CHAT_MODEL_ID = 'doubao-seed-1-6-lite-251015';
 const DOUBAO_API_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
 
+import { useAppTheme } from '../../hooks/useAppTheme';
+
 const AIScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
-  const { theme } = useAppStore();
+  const navigation = useNavigation<any>();
   const { user } = useAuthStore();
+  const { isDark } = useAppTheme();
 
   // 获取用户的日记本和日记统计信息
   const getNotebooks = useNotebookStore((state) => state.getNotebooks);
@@ -98,7 +100,6 @@ const AIScreen: React.FC = () => {
     }
   }, [messages, user?._id]);
 
-  const isDark = theme === 'dark';
   const backgroundColor = isDark ? '#1C1C1E' : COLORS.background;
   const surfaceColor = isDark ? '#2C2C2E' : COLORS.surface;
   const textColor = isDark ? '#FFFFFF' : COLORS.text;

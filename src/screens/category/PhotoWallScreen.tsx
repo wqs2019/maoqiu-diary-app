@@ -17,6 +17,7 @@ import { LoadableImage } from '../../components/handDrawn/PhotoWall';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 import { ScenarioType, MediaResource } from '../../types';
@@ -42,6 +43,7 @@ const PhotoWallScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { scenario } = route.params || {};
+  const { isDark } = useAppTheme();
 
   const user = useAuthStore((state) => state.user);
   const userId = user?._id;
@@ -112,7 +114,10 @@ const PhotoWallScreen: React.FC = () => {
         onPress={() => {
           handlePreview(index);
         }}
-        style={[styles.mediaCard, { height }]}
+        style={[
+          styles.mediaCard, 
+          { height, backgroundColor: isDark ? '#1E1E1E' : '#FFF', shadowColor: isDark ? '#000' : '#000' }
+        ]}
       >
         <LoadableImage
           source={{ uri: item.thumbnail || item.uri }}
@@ -141,17 +146,18 @@ const PhotoWallScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F9FAFB' }]}>
+      <View style={[styles.header, { backgroundColor: isDark ? '#121212' : '#FFF', borderBottomColor: isDark ? '#333' : '#F3F4F6' }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color="#111827" />
+          <Ionicons name="chevron-back" size={24} color={isDark ? '#FFF' : '#111827'} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{scenarioName} - 时光相册</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>{scenarioName} - 时光相册</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        indicatorStyle={isDark ? 'white' : 'black'}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
@@ -172,8 +178,8 @@ const PhotoWallScreen: React.FC = () => {
           </View>
         ) : (
           <View style={styles.emptyContainer}>
-            <Ionicons name="images-outline" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyText}>这里空空如也，快去记录吧</Text>
+            <Ionicons name="images-outline" size={48} color={isDark ? '#444' : '#D1D5DB'} />
+            <Text style={[styles.emptyText, { color: isDark ? '#888' : '#9CA3AF' }]}>这里空空如也，快去记录吧</Text>
           </View>
         )}
       </ScrollView>

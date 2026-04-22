@@ -19,6 +19,8 @@ import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { imageService } from '../../services/imageService';
 import { MediaResource } from '../../types';
 
+import { useAppTheme } from '../../hooks/useAppTheme';
+
 interface MediaSelectorProps {
   media: MediaResource[];
   onMediaChange: (media: MediaResource[]) => void;
@@ -37,6 +39,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   const isUploading = useRef(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const { isDark } = useAppTheme();
 
   // 重试上传单个媒体
   const retryUpload = async (index: number) => {
@@ -512,10 +515,10 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       return (
         <View style={styles.gridItemContainer} key={item.key}>
           <View
-            style={[styles.addButton, isUploading.current && styles.addButtonDisabled]}
+            style={[styles.addButton, { backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5', borderColor: isDark ? '#333' : '#E5E5E5' }, isUploading.current && styles.addButtonDisabled]}
           >
-            <Ionicons name="add-circle-outline" size={32} color={HEALING_COLORS.pink[500]} />
-            <Text style={styles.addButtonText}>添加媒体</Text>
+            <Ionicons name="add-circle-outline" size={32} color={isDark ? '#AAA' : HEALING_COLORS.pink[500]} />
+            <Text style={[styles.addButtonText, { color: isDark ? '#AAA' : '#999' }]}>添加媒体</Text>
           </View>
         </View>
       );
@@ -528,16 +531,16 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
       {!hideHeader && (
         <View style={styles.header}>
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>媒体附件</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: isDark ? '#AAA' : '#666' }]}>媒体附件</Text>
+            <Text style={[styles.subtitle, { color: isDark ? '#888' : '#999' }]}>
               （最多{maxCount}个{draggable && media.length > 1 ? '，长按可拖动排序' : ''}）
             </Text>
           </View>
-          <Text style={styles.count}>
+          <Text style={[styles.count, { color: isDark ? '#888' : '#999' }]}>
             {media.length}/{maxCount}
           </Text>
         </View>

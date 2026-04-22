@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BADGES_CONFIG, BadgeConfig } from '../../config/badgesConfig';
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryStats } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 
@@ -25,6 +26,7 @@ const BadgesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const themeStyle = HAND_DRAWN_STYLES.soft;
+  const { isDark } = useAppTheme();
 
   // 获取解锁的徽章列表
   const { unlockedBadges, isLoading } = useDiaryStats(user?._id);
@@ -41,23 +43,23 @@ const BadgesScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
+      <View style={[styles.header, { borderBottomColor: isDark ? '#333' : '#F0F0F0', backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => {
             navigation.goBack();
           }}
         >
-          <Feather name="chevron-left" size={28} color={HEALING_COLORS.gray[800]} />
+          <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : HEALING_COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>我的徽章</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>我的徽章</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.summaryContainer}>
-          <Text style={styles.summaryText}>
+          <Text style={[styles.summaryText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}>
             已收集 <Text style={styles.summaryHighlight}>{unlockedBadges.length}</Text> /{' '}
             {BADGES_CONFIG.length} 枚徽章
           </Text>
@@ -75,7 +77,7 @@ const BadgesScreen: React.FC = () => {
                   {
                     borderRadius: themeStyle.borderRadius,
                   },
-                  isUnlocked ? styles.badgeUnlocked : styles.badgeLocked,
+                  isUnlocked ? [styles.badgeUnlocked, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3', shadowColor: isDark ? '#000' : themeStyle.shadowColor }] : [styles.badgeLocked, { backgroundColor: isDark ? '#121212' : '#F5F5F5', borderColor: isDark ? '#333' : '#EAEAEA' }],
                 ]}
                 activeOpacity={0.7}
                 onPress={() => {
@@ -85,7 +87,7 @@ const BadgesScreen: React.FC = () => {
                 <View
                   style={[
                     styles.iconContainer,
-                    isUnlocked ? { backgroundColor: badge.color + '20' } : styles.iconLocked,
+                    isUnlocked ? { backgroundColor: badge.color + (isDark ? '40' : '20') } : [styles.iconLocked, { backgroundColor: isDark ? '#333' : '#EEEEEE' }],
                   ]}
                 >
                   <Text style={[styles.badgeIcon, !isUnlocked && styles.badgeIconLocked]}>
@@ -96,8 +98,8 @@ const BadgesScreen: React.FC = () => {
                   style={[
                     styles.badgeName,
                     isUnlocked
-                      ? { color: HEALING_COLORS.gray[800] }
-                      : { color: HEALING_COLORS.gray[400] },
+                      ? { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }
+                      : { color: isDark ? '#888' : HEALING_COLORS.gray[400] },
                   ]}
                   numberOfLines={1}
                 >
@@ -117,19 +119,19 @@ const BadgesScreen: React.FC = () => {
         onRequestClose={closeBadgeModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
             {selectedBadge && (
               <>
                 <TouchableOpacity style={styles.modalCloseButton} onPress={closeBadgeModal}>
-                  <Feather name="x" size={24} color={HEALING_COLORS.gray[400]} />
+                  <Feather name="x" size={24} color={isDark ? '#AAA' : HEALING_COLORS.gray[400]} />
                 </TouchableOpacity>
 
                 <View
                   style={[
                     styles.modalIconContainer,
                     unlockedBadges.includes(selectedBadge.id)
-                      ? { backgroundColor: selectedBadge.color + '20' }
-                      : styles.iconLocked,
+                      ? { backgroundColor: selectedBadge.color + (isDark ? '40' : '20') }
+                      : [styles.iconLocked, { backgroundColor: isDark ? '#333' : '#EEEEEE' }],
                   ]}
                 >
                   <Text

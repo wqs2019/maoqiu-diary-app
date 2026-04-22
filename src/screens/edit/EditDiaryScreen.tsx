@@ -22,6 +22,7 @@ import { WeatherTabSelector } from '../../components/handDrawn/WeatherTabSelecto
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useCreateDiary, useUpdateDiary, useDiaryDetail } from '../../hooks/useDiaryQuery';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useQueryClient } from '../../hooks/useQuery';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
@@ -36,6 +37,7 @@ const EditDiaryScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<EditDiaryRouteProp>();
   const queryClient = useQueryClient();
+  const { isDark } = useAppTheme();
   const initialScenario = route.params?.scenario || 'daily';
   const diaryId = route.params?.diaryId;
   const isEditMode = !!diaryId;
@@ -158,13 +160,13 @@ const EditDiaryScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FFFFFF' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* 场景选择 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>选择场景</Text>
+        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>选择场景</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {(Object.keys(SCENARIO_TEMPLATES) as ScenarioType[]).map((type) => (
               <ScenarioChip
@@ -180,51 +182,51 @@ const EditDiaryScreen: React.FC = () => {
         </View>
 
         {/* 标题 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>标题</Text>
+        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>标题</Text>
           <TextInput
-            style={[styles.input, styles.titleInput]}
+            style={[styles.input, styles.titleInput, { color: isDark ? '#FFF' : '#333', backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5', borderColor: isDark ? '#333' : '#E5E5E5' }]}
             placeholder={template1.placeholder}
-            placeholderTextColor="#999"
+            placeholderTextColor={isDark ? '#888' : '#999'}
             value={title}
             onChangeText={setTitle}
           />
         </View>
 
         {/* 日期选择 */}
-        <View style={styles.section}>
+        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
           <DatePicker selectedDate={date} onDateChange={setDate} label="日期" />
         </View>
 
         {/* 地点 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>地点</Text>
+        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>地点</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: isDark ? '#FFF' : '#333', backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5', borderColor: isDark ? '#333' : '#E5E5E5' }]}
             placeholder="📍 添加地点（选填）"
-            placeholderTextColor="#999"
+            placeholderTextColor={isDark ? '#888' : '#999'}
             value={location}
             onChangeText={setLocation}
           />
         </View>
 
         {/* 心情选择 */}
-        <View style={styles.section}>
+        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
           <MoodTabSelector selectedMood={mood} onSelectMood={setMood} />
         </View>
 
         {/* 天气选择 */}
-        <View style={styles.section}>
+        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
           <WeatherTabSelector selectedWeather={weather} onSelectWeather={setWeather} />
         </View>
 
         {/* 内容 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>想法</Text>
+        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>想法</Text>
           <TextInput
-            style={[styles.input, styles.contentInput]}
+            style={[styles.input, styles.contentInput, { color: isDark ? '#FFF' : '#333', backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5', borderColor: isDark ? '#333' : '#E5E5E5' }]}
             placeholder="记录今天的故事..."
-            placeholderTextColor="#999"
+            placeholderTextColor={isDark ? '#888' : '#999'}
             value={content}
             onChangeText={setContent}
             multiline
@@ -236,15 +238,15 @@ const EditDiaryScreen: React.FC = () => {
         <MediaSelector media={media} onMediaChange={setMedia} maxCount={9} draggable />
 
         {/* 分享到圈子 */}
-        <View style={styles.switchSection}>
+        <View style={[styles.switchSection, { borderBottomColor: isDark ? '#333' : '#F0F0F0', backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
           <View style={styles.switchInfo}>
-            <Text style={styles.switchTitle}>🌍 分享到圈子</Text>
-            <Text style={styles.switchSubtitle}>让所有人都能看到这篇美好的日记</Text>
+            <Text style={[styles.switchTitle, { color: isDark ? '#FFF' : '#333' }]}>🌍 分享到圈子</Text>
+            <Text style={[styles.switchSubtitle, { color: isDark ? '#AAA' : '#999' }]}>让所有人都能看到这篇美好的日记</Text>
           </View>
           <Switch
             value={isPublic}
             onValueChange={setIsPublic}
-            trackColor={{ false: '#E5E5E5', true: HEALING_COLORS.pink[400] }}
+            trackColor={{ false: isDark ? '#555' : '#E5E5E5', true: HEALING_COLORS.pink[400] }}
             thumbColor={'#FFFFFF'}
           />
         </View>

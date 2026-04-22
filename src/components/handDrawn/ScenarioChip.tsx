@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 import { SCENARIO_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { ScenarioType } from '../../types';
 
 interface ScenarioChipProps {
@@ -20,31 +21,33 @@ export const ScenarioChip: React.FC<ScenarioChipProps> = ({
 }) => {
   const scenario = SCENARIO_COLORS[type];
   const template = SCENARIO_TEMPLATES[type];
+  const { isDark } = useAppTheme();
 
   return (
     <TouchableOpacity
       style={[
         styles.container,
+        { shadowColor: isDark ? '#000' : '#000', shadowOpacity: isDark ? 0.3 : 0.1 },
         selected
           ? {
-              backgroundColor: scenario.primary,
-              borderColor: scenario.primary,
+              backgroundColor: isDark ? scenario.primary : scenario.primary,
+              borderColor: isDark ? scenario.primary : scenario.primary,
             }
           : {
-              backgroundColor: scenario.background,
-              borderColor: scenario.secondary,
+              backgroundColor: isDark ? '#1E1E1E' : scenario.background,
+              borderColor: isDark ? '#333' : scenario.secondary,
             },
       ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <Text style={styles.icon}>{template.icon}</Text>
-      <Text style={[styles.text, selected ? { color: '#FFFFFF' } : { color: scenario.primary }]}>
+      <Text style={[styles.text, selected ? { color: '#FFFFFF' } : { color: isDark ? '#AAA' : scenario.primary }]}>
         {template.name}
       </Text>
       {count !== undefined && (
-        <View style={[styles.badge, { backgroundColor: selected ? '#FFFFFF' : scenario.primary }]}>
-          <Text style={[styles.badgeText, { color: scenario.primary }]}>{count}</Text>
+        <View style={[styles.badge, { backgroundColor: selected ? '#FFFFFF' : (isDark ? '#333' : scenario.primary) }]}>
+          <Text style={[styles.badgeText, { color: isDark && !selected ? '#AAA' : scenario.primary }]}>{count}</Text>
         </View>
       )}
     </TouchableOpacity>

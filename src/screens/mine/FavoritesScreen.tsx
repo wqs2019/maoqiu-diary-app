@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedBackgroundBlobs } from '../../components/common/AnimatedBackgroundBlobs';
 import { TimelineView } from '../../components/handDrawn/TimelineView';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 import { TimelineItem, Diary } from '../../types';
@@ -23,6 +24,7 @@ const FavoritesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const userId = user?._id;
+  const { isDark } = useAppTheme();
 
   const {
     data: diaryList,
@@ -57,21 +59,21 @@ const FavoritesScreen: React.FC = () => {
   const timelineItems: TimelineItem[] = diaryList?.list?.map(convertDiaryToTimelineItem) || [];
 
   return (
-    <View style={styles.container}>
-      <AnimatedBackgroundBlobs />
+    <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FFFFFF' }]}>
+      {!isDark && <AnimatedBackgroundBlobs />}
 
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={isDark ? '#FFF' : '#333'} />
         </TouchableOpacity>
-        <Text style={styles.title}>收藏夹</Text>
+        <Text style={[styles.title, { color: isDark ? '#FFF' : '#333' }]}>收藏夹</Text>
         <View style={styles.placeholder} />
       </View>
 
       {isLoading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={HEALING_COLORS.pink[400]} />
-          <Text style={styles.loadingText}>正在加载收藏...</Text>
+          <Text style={[styles.loadingText, { color: isDark ? '#AAA' : '#999' }]}>正在加载收藏...</Text>
         </View>
       ) : error ? (
         <View style={styles.centerContainer}>
@@ -80,8 +82,8 @@ const FavoritesScreen: React.FC = () => {
       ) : timelineItems.length === 0 ? (
         <View style={styles.emptyStateContainer}>
           <Text style={styles.ticketIcon}>🌟</Text>
-          <Text style={styles.emptyStateText}>还没有收藏的日记</Text>
-          <Text style={styles.emptyStateSubText}>去详情页点击右上角的星星收藏吧</Text>
+          <Text style={[styles.emptyStateText, { color: isDark ? '#AAA' : '#666' }]}>还没有收藏的日记</Text>
+          <Text style={[styles.emptyStateSubText, { color: isDark ? '#888' : '#999' }]}>去详情页点击右上角的星星收藏吧</Text>
         </View>
       ) : (
         <ScrollView

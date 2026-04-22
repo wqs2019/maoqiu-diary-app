@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
 import { getMoodConfig } from '../../config/statusConfig';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList, useDiaryStats } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 
@@ -21,6 +22,7 @@ const CalendarScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const themeStyle = HAND_DRAWN_STYLES.soft;
+  const { isDark } = useAppTheme();
 
   // 当前日历查看的年月
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -117,29 +119,31 @@ const CalendarScreen: React.FC = () => {
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
+      <View style={[styles.header, { backgroundColor: isDark ? '#121212' : '#FAFAFA', borderBottomColor: isDark ? '#333' : '#F0F0F0' }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => {
             navigation.goBack();
           }}
         >
-          <Feather name="chevron-left" size={28} color={HEALING_COLORS.gray[800]} />
+          <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : HEALING_COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>打卡日历</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>打卡日历</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} indicatorStyle={isDark ? 'white' : 'black'}>
         {/* 统计卡片 */}
         <View
           style={[
             styles.statsCard,
             {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              borderColor: isDark ? '#333' : '#FFF0F3',
               borderRadius: themeStyle.borderRadius,
-              shadowColor: themeStyle.shadowColor,
-              shadowOpacity: themeStyle.shadowOpacity,
+              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity,
               shadowRadius: themeStyle.shadowRadius,
               shadowOffset: themeStyle.shadowOffset,
               elevation: 8,
@@ -147,13 +151,13 @@ const CalendarScreen: React.FC = () => {
           ]}
         >
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{checkInStats.currentStreak}</Text>
-            <Text style={styles.statLabel}>连续打卡(天)</Text>
+            <Text style={[styles.statValue, { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] }]}>{checkInStats.currentStreak}</Text>
+            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}>连续打卡(天)</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{checkInStats.totalCheckIns}</Text>
-            <Text style={styles.statLabel}>本月打卡(次)</Text>
+            <Text style={[styles.statValue, { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] }]}>{checkInStats.totalCheckIns}</Text>
+            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}>本月打卡(次)</Text>
           </View>
         </View>
 
@@ -162,9 +166,11 @@ const CalendarScreen: React.FC = () => {
           style={[
             styles.calendarCard,
             {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              borderColor: isDark ? '#333' : '#FFF0F3',
               borderRadius: themeStyle.borderRadius,
-              shadowColor: themeStyle.shadowColor,
-              shadowOpacity: themeStyle.shadowOpacity * 0.5,
+              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
@@ -173,21 +179,21 @@ const CalendarScreen: React.FC = () => {
         >
           {/* 日历头部：切换月份 */}
           <View style={styles.calendarHeader}>
-            <TouchableOpacity onPress={handlePrevMonth} style={styles.monthButton}>
-              <Feather name="chevron-left" size={24} color={HEALING_COLORS.gray[600]} />
+            <TouchableOpacity onPress={handlePrevMonth} style={[styles.monthButton, { backgroundColor: isDark ? '#333' : '#FAFAFA' }]}>
+              <Feather name="chevron-left" size={24} color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[600]} />
             </TouchableOpacity>
-            <Text style={styles.monthTitle}>
+            <Text style={[styles.monthTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
               {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
             </Text>
-            <TouchableOpacity onPress={handleNextMonth} style={styles.monthButton}>
-              <Feather name="chevron-right" size={24} color={HEALING_COLORS.gray[600]} />
+            <TouchableOpacity onPress={handleNextMonth} style={[styles.monthButton, { backgroundColor: isDark ? '#333' : '#FAFAFA' }]}>
+              <Feather name="chevron-right" size={24} color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[600]} />
             </TouchableOpacity>
           </View>
 
           {/* 星期表头 */}
           <View style={styles.weekDaysContainer}>
             {weekDays.map((day, index) => (
-              <Text key={index} style={styles.weekDayText}>
+              <Text key={index} style={[styles.weekDayText, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[400] }]}>
                 {day}
               </Text>
             ))}
@@ -232,19 +238,19 @@ const CalendarScreen: React.FC = () => {
                     <View
                       style={[
                         styles.dayCircle,
-                        isToday && !hasDiary && styles.todayCircle,
-                        hasDiary && styles.checkedCircle,
+                        isToday && !hasDiary && [styles.todayCircle, { backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50], borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[300] }],
+                        hasDiary && [styles.checkedCircle, { backgroundColor: isDark ? '#2C1B24' : '#FFF0F3' }],
                       ]}
                     >
                       {hasDiary ? (
                         <Text style={styles.dayEmoji}>{moodEmoji}</Text>
                       ) : (
-                        <Text style={[styles.dayText, isToday && styles.todayText]}>
+                        <Text style={[styles.dayText, { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[700] }, isToday && [styles.todayText, { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] }]]}>
                           {item.day}
                         </Text>
                       )}
                     </View>
-                    {hasDiary && item.diaries.length > 1 && <View style={styles.multiDot} />}
+                    {hasDiary && item.diaries.length > 1 && <View style={[styles.multiDot, { backgroundColor: isDark ? HEALING_COLORS.pink[500] : HEALING_COLORS.pink[400] }]} />}
                   </TouchableOpacity>
                 );
               })}
@@ -253,7 +259,7 @@ const CalendarScreen: React.FC = () => {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>🐾 每天都要记得来看毛球哦</Text>
+          <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>🐾 每天都要记得来看毛球哦</Text>
         </View>
       </ScrollView>
     </View>

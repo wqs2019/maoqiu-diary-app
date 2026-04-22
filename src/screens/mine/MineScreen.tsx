@@ -5,8 +5,9 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useDiaryStats } from '../../hooks/useDiaryQuery';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
@@ -18,6 +19,8 @@ const MineScreen: React.FC = () => {
   const { user, logout, fetchUserInfo } = useAuthStore();
   const insets = useSafeAreaInsets();
   const themeStyle = HAND_DRAWN_STYLES.soft; // 使用柔和手绘风格
+  const { isDark, colors } = useAppTheme();
+  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   // 获取用户所有日记统计数据
   const stats = useDiaryStats(user?._id);
@@ -46,22 +49,22 @@ const MineScreen: React.FC = () => {
     onPress?: () => void
   ) => (
     <TouchableOpacity
-      style={[styles.menuItem, !isLast && styles.menuItemBorder]}
+      style={[styles.menuItem, !isLast && styles.menuItemBorder, { borderBottomColor: isDark ? '#333' : '#FFF0F3' }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={[styles.menuIconContainer, { backgroundColor: color + '15' }]}>
         <Feather name={iconName} size={20} color={color} />
       </View>
-      <Text style={styles.menuItemText}>{title}</Text>
-      <Feather name="chevron-right" size={20} color={HEALING_COLORS.gray[400]} />
+      <Text style={[styles.menuItemText, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>{title}</Text>
+      <Feather name="chevron-right" size={20} color={isDark ? '#6B7280' : currentHealingColors.gray[400]} />
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
       {/* 顶部背景装饰 */}
-      <View style={[styles.headerBackground, { height: 200 + insets.top }]} />
+      <View style={[styles.headerBackground, { height: 200 + insets.top, backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[100] }]} />
 
       <ScrollView
         style={styles.scrollView}
@@ -75,11 +78,13 @@ const MineScreen: React.FC = () => {
             { marginTop: insets.top + 20 },
             {
               borderRadius: themeStyle.borderRadius,
-              shadowColor: themeStyle.shadowColor,
+              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
               shadowOpacity: themeStyle.shadowOpacity,
               shadowRadius: themeStyle.shadowRadius,
               shadowOffset: themeStyle.shadowOffset,
               elevation: 8,
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              borderColor: isDark ? '#333' : '#FFF0F3',
             },
           ]}
         >
@@ -90,39 +95,42 @@ const MineScreen: React.FC = () => {
                 : { uri: 'https://api.dicebear.com/7.x/notionists/png?seed=Maoqiu' }
             }
             fadeDuration={0}
-            style={styles.avatar}
+            style={[styles.avatar, { borderColor: isDark ? '#1E1E1E' : '#FFFFFF', backgroundColor: isDark ? '#333' : HEALING_COLORS.pink[50] }]}
           />
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{user?.nickname || '毛球日记'}</Text>
-            <Text style={styles.userPhone}>{user?.phone || '点击登录 / 注册 ✨'}</Text>
+            <Text style={[styles.userName, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{user?.nickname || '毛球日记'}</Text>
+            <Text style={[styles.userPhone, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>{user?.phone || '点击登录 / 注册 ✨'}</Text>
           </View>
           <TouchableOpacity
-            style={styles.editButton}
+            style={[
+              styles.editButton,
+              { backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50] }
+            ]}
             onPress={() => {
               navigation.navigate('EditProfile');
             }}
           >
-            <Feather name="edit-2" size={16} color={HEALING_COLORS.pink[500]} />
+            <Feather name="edit-2" size={16} color={isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[500]} />
           </TouchableOpacity>
         </View>
 
         {/* 统计数据区 */}
-        <View style={styles.statsContainer}>
+        <View style={[styles.statsContainer, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3' }]}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{notebookCount}</Text>
-            <Text style={styles.statLabel}>日记本</Text>
+            <Text style={[styles.statNumber, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{notebookCount}</Text>
+            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>日记本</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : HEALING_COLORS.gray[100] }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{stats.totalDiaries}</Text>
-            <Text style={styles.statLabel}>日记</Text>
+            <Text style={[styles.statNumber, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{stats.totalDiaries}</Text>
+            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>日记</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : HEALING_COLORS.gray[100] }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{stats.currentStreak}</Text>
-            <Text style={styles.statLabel}>打卡(天)</Text>
+            <Text style={[styles.statNumber, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{stats.currentStreak}</Text>
+            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>打卡(天)</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : HEALING_COLORS.gray[100] }]} />
           <TouchableOpacity
             style={styles.statItem}
             activeOpacity={0.7}
@@ -130,8 +138,8 @@ const MineScreen: React.FC = () => {
               navigation.navigate('Badges' as any);
             }}
           >
-            <Text style={styles.statNumber}>{stats.badges}</Text>
-            <Text style={styles.statLabel}>徽章</Text>
+            <Text style={[styles.statNumber, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{stats.badges}</Text>
+            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>徽章</Text>
           </TouchableOpacity>
         </View>
 
@@ -141,21 +149,23 @@ const MineScreen: React.FC = () => {
             styles.menuSection,
             {
               borderRadius: themeStyle.borderRadius,
-              shadowColor: themeStyle.shadowColor,
+              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
               shadowOpacity: themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              borderColor: isDark ? '#333' : '#FFF0F3',
             },
           ]}
         >
-          {renderMenuItem('book-open', '我的日记本', HEALING_COLORS.blue[500], false, () => {
+          {renderMenuItem('book-open', '我的日记本', isDark ? currentHealingColors.blue[600] : currentHealingColors.blue[500], false, () => {
             navigation.navigate('Notebooks' as any);
           })}
-          {renderMenuItem('star', '收藏夹', HEALING_COLORS.yellow[500], false, () => {
+          {renderMenuItem('star', '收藏夹', isDark ? currentHealingColors.yellow[300] : currentHealingColors.yellow[500], false, () => {
             navigation.navigate('Favorites' as any);
           })}
-          {renderMenuItem('calendar', '打卡日历', HEALING_COLORS.green[500], true, () => {
+          {renderMenuItem('calendar', '打卡日历', isDark ? currentHealingColors.green[300] : currentHealingColors.green[500], true, () => {
             navigation.navigate('Calendar' as any);
           })}
         </View>
@@ -166,20 +176,24 @@ const MineScreen: React.FC = () => {
             styles.menuSection,
             {
               borderRadius: themeStyle.borderRadius,
-              shadowColor: themeStyle.shadowColor,
+              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
               shadowOpacity: themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              borderColor: isDark ? '#333' : '#FFF0F3',
             },
           ]}
         >
-          {renderMenuItem('settings', '应用设置', HEALING_COLORS.gray[600], false, () => {})}
-          {renderMenuItem('info', '关于毛球', HEALING_COLORS.pink[400], false, () => {
-            navigation.navigate('About' as any);
+          {renderMenuItem('settings', '应用设置', isDark ? '#D1D5DB' : currentHealingColors.gray[500], false, () => {
+            navigation.navigate('Settings');
           })}
-          {renderMenuItem('help-circle', '帮助与反馈', HEALING_COLORS.blue[400], true, () => {
-            navigation.navigate('Feedback' as any);
+          {renderMenuItem('info', '关于毛球', isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[400], false, () => {
+            navigation.navigate('About');
+          })}
+          {renderMenuItem('help-circle', '帮助与反馈', isDark ? currentHealingColors.blue[500] : currentHealingColors.blue[400], true, () => {
+            navigation.navigate('Feedback');
           })}
         </View>
 
@@ -190,11 +204,12 @@ const MineScreen: React.FC = () => {
               styles.logoutButton,
               {
                 borderRadius: themeStyle.borderRadius,
+                backgroundColor: isDark ? '#2C1B24' : '#FFF0F3',
               },
             ]}
             onPress={handleLogout}
           >
-            <Text style={styles.logoutButtonText}>退出登录</Text>
+            <Text style={[styles.logoutButtonText, { color: currentHealingColors.pink[600] }]}>退出登录</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

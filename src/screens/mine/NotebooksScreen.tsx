@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 
@@ -23,6 +24,7 @@ const NotebooksScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const user = useAuthStore((state) => state.user);
+  const { isDark } = useAppTheme();
 
   const getNotebooks = useNotebookStore((state) => state.getNotebooks);
   const getCurrentNotebook = useNotebookStore((state) => state.getCurrentNotebook);
@@ -52,12 +54,12 @@ const NotebooksScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
+      <View style={[styles.header, { paddingTop: insets.top, borderBottomColor: isDark ? '#333' : '#F0F0F0', backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Feather name="chevron-left" size={28} color={HEALING_COLORS.gray[800]} />
+          <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : HEALING_COLORS.gray[800]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>我的日记本</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>我的日记本</Text>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => {
@@ -77,8 +79,8 @@ const NotebooksScreen: React.FC = () => {
                 key={notebook._id}
                 style={[
                   styles.notebookItem,
-                  { borderRadius: themeStyle.borderRadius },
-                  isActive && styles.notebookItemActive,
+                  { borderRadius: themeStyle.borderRadius, backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3' },
+                  isActive && [styles.notebookItemActive, { backgroundColor: isDark ? '#2C1B24' : '#FFF0F3', borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[200] }],
                 ]}
                 onPress={() => {
                   if (user?._id) {
@@ -89,18 +91,18 @@ const NotebooksScreen: React.FC = () => {
                 }}
                 activeOpacity={0.7}
               >
-                <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
+                <View style={[styles.iconContainer, { backgroundColor: isDark ? '#333' : '#F5F5F5' }, isActive && [styles.iconContainerActive, { backgroundColor: HEALING_COLORS.pink[500] }]]}>
                   <Ionicons
                     name="book"
                     size={24}
-                    color={isActive ? '#FFFFFF' : HEALING_COLORS.gray[400]}
+                    color={isActive ? '#FFFFFF' : (isDark ? '#AAA' : HEALING_COLORS.gray[400])}
                   />
                 </View>
                 <View style={styles.notebookInfo}>
-                  <Text style={[styles.notebookName, isActive && styles.notebookNameActive]}>
+                  <Text style={[styles.notebookName, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }, isActive && [styles.notebookNameActive, { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] }]]}>
                     {notebook.name}
                   </Text>
-                  <Text style={styles.notebookDate}>
+                  <Text style={[styles.notebookDate, { color: isDark ? '#888' : HEALING_COLORS.gray[500] }]}>
                     创建于 {new Date(notebook.createdAt).toLocaleDateString()}
                   </Text>
                 </View>
@@ -134,12 +136,12 @@ const NotebooksScreen: React.FC = () => {
         >
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
-              <View style={[styles.modalContent, { borderRadius: themeStyle.borderRadius }]}>
-                <Text style={styles.modalTitle}>新建日记本</Text>
+              <View style={[styles.modalContent, { borderRadius: themeStyle.borderRadius, backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+                <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>新建日记本</Text>
                 <TextInput
-                  style={[styles.input, { borderRadius: themeStyle.borderRadius }]}
+                  style={[styles.input, { borderRadius: themeStyle.borderRadius, backgroundColor: isDark ? '#121212' : '#FAFAFA', color: isDark ? '#FFF' : '#333' }]}
                   placeholder="给日记本起个名字吧..."
-                  placeholderTextColor={HEALING_COLORS.gray[400]}
+                  placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
                   value={newNotebookName}
                   onChangeText={setNewNotebookName}
                   maxLength={20}

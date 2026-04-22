@@ -16,14 +16,16 @@ export interface AppState {
   setLoading: (loading: boolean) => void;
   setFirstLaunch: (isFirst: boolean) => Promise<void>;
   initFirstLaunch: () => Promise<void>;
+  initTheme: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  theme: 'light',
+  theme: 'system',
   language: 'zh-CN',
   isLoading: false,
   isFirstLaunch: true, // Default to true until checked
-  setTheme: (theme) => {
+  setTheme: async (theme) => {
+    await StorageUtil.set('theme', theme);
     set({ theme });
   },
   setLanguage: (language) => {
@@ -43,6 +45,12 @@ export const useAppStore = create<AppState>((set) => ({
       set({ isFirstLaunch: true });
     } else {
       set({ isFirstLaunch: isFirst });
+    }
+  },
+  initTheme: async () => {
+    const savedTheme = await StorageUtil.get<ThemeType>('theme');
+    if (savedTheme) {
+      set({ theme: savedTheme });
     }
   },
 }));

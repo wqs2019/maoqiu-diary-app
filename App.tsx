@@ -1,6 +1,7 @@
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
+import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initSentry, setUser, clearUser } from '@/config/sentry';
@@ -25,11 +26,13 @@ export default function App() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const user = useAuthStore((state) => state.user);
   const theme = useAppStore((state) => state.theme);
+  const initTheme = useAppStore((state) => state.initTheme);
   const [appLoading, setAppLoading] = useState(true);
   const [showCustomSplash, setShowCustomSplash] = useState(true);
 
   useEffect(() => {
     const initApp = async () => {
+      await initTheme();
       await useAppStore.getState().initFirstLaunch();
       await checkAuth();
       setAppLoading(false);
@@ -52,6 +55,9 @@ export default function App() {
     }
   }, [user]);
 
+  const systemColorScheme = useColorScheme();
+  const actualTheme = theme === 'system' ? (systemColorScheme || 'light') : theme;
+
   if (appLoading) {
     return <LoadingScreen />;
   }
@@ -60,7 +66,7 @@ export default function App() {
     <SafeAreaProvider>
       <ToastProvider>
         <PortalProvider>
-          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+          <StatusBar style={actualTheme === 'dark' ? 'light' : 'dark'} />
           {showCustomSplash ? (
             <CustomSplashScreen
               onFinish={() => {
