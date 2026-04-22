@@ -11,12 +11,15 @@ export interface AppState {
   language: I18nLangType;
   isLoading: boolean;
   isFirstLaunch: boolean;
+  notificationsEnabled: boolean;
   setTheme: (theme: ThemeType) => void;
   setLanguage: (language: I18nLangType) => void;
   setLoading: (loading: boolean) => void;
+  setNotificationsEnabled: (enabled: boolean) => Promise<void>;
   setFirstLaunch: (isFirst: boolean) => Promise<void>;
   initFirstLaunch: () => Promise<void>;
   initTheme: () => Promise<void>;
+  initNotifications: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -24,6 +27,7 @@ export const useAppStore = create<AppState>((set) => ({
   language: 'zh-CN',
   isLoading: false,
   isFirstLaunch: true, // Default to true until checked
+  notificationsEnabled: false,
   setTheme: async (theme) => {
     await StorageUtil.set('theme', theme);
     set({ theme });
@@ -33,6 +37,10 @@ export const useAppStore = create<AppState>((set) => ({
   },
   setLoading: (loading) => {
     set({ isLoading: loading });
+  },
+  setNotificationsEnabled: async (enabled) => {
+    await StorageUtil.set('notificationsEnabled', enabled);
+    set({ notificationsEnabled: enabled });
   },
   setFirstLaunch: async (isFirst) => {
     await StorageUtil.set('isFirstLaunch', isFirst);
@@ -51,6 +59,12 @@ export const useAppStore = create<AppState>((set) => ({
     const savedTheme = await StorageUtil.get<ThemeType>('theme');
     if (savedTheme) {
       set({ theme: savedTheme });
+    }
+  },
+  initNotifications: async () => {
+    const saved = await StorageUtil.get<boolean>('notificationsEnabled');
+    if (saved !== null) {
+      set({ notificationsEnabled: saved });
     }
   },
 }));

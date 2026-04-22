@@ -23,6 +23,7 @@ import {
 } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useAppStore } from '../../store/appStore';
+import { scheduleDailyReminder, cancelDailyReminder } from '../../utils/notifications';
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -36,13 +37,27 @@ const SettingsScreen: React.FC = () => {
 
   const themeStyle = HAND_DRAWN_STYLES.soft;
 
-  const { theme, setTheme } = useAppStore();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const { theme, setTheme, notificationsEnabled, setNotificationsEnabled } = useAppStore();
   const [cacheSize, setCacheSize] = useState('计算中...');
 
   useEffect(() => {
     calculateCacheSize();
   }, []);
+
+  const handleToggleNotifications = async (enabled: boolean) => {
+    if (enabled) {
+      const success = await scheduleDailyReminder();
+      if (success) {
+        await setNotificationsEnabled(true);
+        Alert.alert('提示', '已开启每日 22:00 提醒写日记功能');
+      } else {
+        Alert.alert('提示', '请在系统设置中允许应用发送通知');
+      }
+    } else {
+      await cancelDailyReminder();
+      await setNotificationsEnabled(false);
+    }
+  };
 
   const handleThemePress = () => {
     if (Platform.OS === 'ios') {
@@ -298,7 +313,7 @@ const SettingsScreen: React.FC = () => {
             currentHealingColors.yellow[500],
             <Switch
               value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              onValueChange={handleToggleNotifications}
               trackColor={{
                 false: isDark ? '#333' : currentHealingColors.gray[200],
                 true: currentHealingColors.pink[400],

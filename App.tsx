@@ -34,6 +34,7 @@ export default function App() {
     const initApp = async () => {
       await initTheme();
       await useAppStore.getState().initFirstLaunch();
+      await useAppStore.getState().initNotifications();
       await checkAuth();
       setAppLoading(false);
       // 数据准备完毕后，隐藏原生启动屏，此时界面由 CustomSplashScreen 接管
