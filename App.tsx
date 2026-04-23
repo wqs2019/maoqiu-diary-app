@@ -17,12 +17,12 @@ import { useAuthStore } from '@/store/authStore';
 // 保持原生 SplashScreen 阻止隐藏，直到我们的 CustomSplashScreen 准备就绪
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// 初始化 Sentry（仅生产环境）
-if (!__DEV__) {
-  initSentry();
-}
+// 初始化 Sentry
+initSentry();
 
-export default function App() {
+import { AppLockOverlay } from './src/components/AppLockOverlay';
+
+function App() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const user = useAuthStore((state) => state.user);
   const theme = useAppStore((state) => state.theme);
@@ -35,6 +35,7 @@ export default function App() {
       await initTheme();
       await useAppStore.getState().initFirstLaunch();
       await useAppStore.getState().initNotifications();
+      await useAppStore.getState().initAppLock();
       await checkAuth();
       setAppLoading(false);
       // 数据准备完毕后，隐藏原生启动屏，此时界面由 CustomSplashScreen 接管
@@ -77,6 +78,7 @@ export default function App() {
           ) : (
             <AppQueryProvider>
               <Navigation />
+              <AppLockOverlay />
             </AppQueryProvider>
           )}
         </PortalProvider>
@@ -84,3 +86,8 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+import * as Sentry from '@sentry/react-native';
+
+// 将 App 用 Sentry 包裹以捕获渲染层面的错误 (Error Boundary)
+export default Sentry.wrap(App);

@@ -3,32 +3,35 @@
 
 import * as Sentry from '@sentry/react-native';
 
+// 创建一个可以在外部引用的导航集成实例
+export const routingInstrumentation = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: true,
+});
+
 // Sentry 配置
 const SENTRY_CONFIG = {
-  dsn: '', // 填入你的 Sentry DSN，生产环境使用
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
 };
 
 // Sentry 初始化配置
 export const initSentry = () => {
-  // 仅在生产环境启用 Sentry
-  if (!__DEV__ && SENTRY_CONFIG.dsn) {
+  // 我们建议不仅在生产环境，在测试环境也开启部分上报
+  if (SENTRY_CONFIG.dsn) {
     Sentry.init({
       dsn: SENTRY_CONFIG.dsn,
       enableAutoSessionTracking: true,
       sessionTrackingIntervalMillis: 30000,
-      tracesSampleRate: 1.0,
-      profilesSampleRate: 1.0,
-      environment: 'production',
+      tracesSampleRate: __DEV__ ? 1.0 : 0.2, // 生产环境采样率建议调低
+      profilesSampleRate: __DEV__ ? 1.0 : 0.2,
+      environment: __DEV__ ? 'development' : 'production',
       attachStacktrace: true,
       enableNativeCrashHandling: true,
       enableAutoPerformanceTracing: true,
       enableUserInteractionTracing: true,
       enableAppStartTracking: true,
-    });
-
-    // 设置用户上下文
-    Sentry.setUser({
-      ip_address: '{{auto}}',
+      integrations: [
+        routingInstrumentation,
+      ],
     });
   }
 };

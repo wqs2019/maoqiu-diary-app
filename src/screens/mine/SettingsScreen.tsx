@@ -276,17 +276,7 @@ const SettingsScreen: React.FC = () => {
             <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
             false,
             () => {
-              Alert.alert('提示', '功能开发中');
-            }
-          )}
-          {renderSettingItem(
-            'eye-off',
-            '隐私设置',
-            currentHealingColors.green[500],
-            <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
-            true,
-            () => {
-              Alert.alert('提示', '功能开发中');
+              navigation.navigate('AppLockSetting' as never);
             }
           )}
         </View>
