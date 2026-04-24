@@ -15,6 +15,7 @@ export interface UserInfo {
   gender?: 'male' | 'female' | 'secret';
   age?: number;
   birthday?: string;
+  unlockedBadges?: Record<string, number>;
 }
 
 export interface TokenInfo {

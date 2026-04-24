@@ -150,6 +150,7 @@ const BadgesScreen: React.FC = () => {
                   {unlockedBadges.includes(selectedBadge.id) ? (
                     <Text style={[styles.modalStatusText, { color: HEALING_COLORS.green[500] }]}>
                       ✨ 已获得
+                      {user?.unlockedBadges?.[selectedBadge.id] && ` (${new Date(user.unlockedBadges[selectedBadge.id]).toLocaleDateString()})`}
                     </Text>
                   ) : (
                     <Text style={[styles.modalStatusText, { color: HEALING_COLORS.gray[400] }]}>

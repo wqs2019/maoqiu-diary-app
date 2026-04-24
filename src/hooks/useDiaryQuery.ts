@@ -4,6 +4,7 @@ import React from 'react';
 import { useAppQuery, useAppMutation, useQueryClient, useIsMutating } from '../hooks/useQuery';
 import * as diaryApi from '../services/diaryService';
 import type { DiaryListParams } from '../services/diaryService';
+import { useAuthStore } from '../store/authStore';
 
 /**
  * 获取日记列表 - 使用 React Query 管理服务端状态
@@ -62,9 +63,13 @@ export const useDiaryStats = (userId?: string) => {
     userId,
   });
 
+  const user = useAuthStore((state) => state.user);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
+
   const stats = React.useMemo(() => {
     let totalDiaries = 0;
     let currentStreak = 0;
+    let maxStreak = 0;
     let badges = 1;
     let unlockedBadges: string[] = [];
 
@@ -90,8 +95,30 @@ export const useDiaryStats = (userId?: string) => {
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 
+      let tempStreak = 0;
+      let lastDateForStreak: Date | null = null;
+
       sortedDiaries.forEach((diary: any) => {
         const d = new Date(diary.date);
+        // Normalize time to midnight for streak calculation
+        const currentDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+        if (!lastDateForStreak) {
+          tempStreak = 1;
+        } else {
+          const diffTime = Math.abs(currentDate.getTime() - lastDateForStreak.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays === 1) {
+            tempStreak++;
+          } else if (diffDays > 1) {
+            tempStreak = 1;
+          }
+        }
+        lastDateForStreak = currentDate;
+        if (tempStreak > maxStreak) {
+          maxStreak = tempStreak;
+        }
+
         const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
           d.getDate()
         ).padStart(2, '0')}`;
@@ -155,33 +182,20 @@ export const useDiaryStats = (userId?: string) => {
       });
 
       // 计算完美的周末：连续 4 个周末（六日均有）
+      // 注：不再回溯全部历史，只检查当前的连续状态，历史解锁的徽章已通过云端同步保留
       let hasPerfectWeekends = false;
       if (weekendDates.size >= 8) {
-        // 将所有周末日期转为时间戳并排序
-        const weekendTimes = Array.from(weekendDates)
-          .map((dateStr) => new Date(dateStr).getTime())
-          .sort();
         let consecutivePerfectWeekends = 0;
-
-        // 简单判断逻辑：检查近期的周末
-        // 这里采用一个简化的判定：从最近的周末开始往前推
-        // 如果遇到一个周日，检查是否有前一天的周六，如果有，则为一个完美周末
-        // 然后再检查上个周日（相隔 7 天），以此类推
         const today = new Date();
         const checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-        // 找到最近的一个周日或周六作为起点
-        while (checkDate.getDay() !== 0 && checkDate.getDay() !== 6) {
-          checkDate.setDate(checkDate.getDate() - 1);
+        // 调整到最近的一个周日
+        if (checkDate.getDay() !== 0) {
+          checkDate.setDate(checkDate.getDate() - checkDate.getDay());
         }
 
-        // 如果起点是周六，把它调整为同一周的周日以便统一计算
-        if (checkDate.getDay() === 6) {
-          checkDate.setDate(checkDate.getDate() + 1);
-        }
-
-        // 往回查最多 10 个星期
-        for (let i = 0; i < 10; i++) {
+        // 往前查最近的几个周末（只要当前连续达到 4 个即可）
+        for (let i = 0; i < 5; i++) {
           const sundayStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
 
           const saturday = new Date(checkDate);
@@ -195,7 +209,11 @@ export const useDiaryStats = (userId?: string) => {
               break;
             }
           } else {
-            consecutivePerfectWeekends = 0;
+            // 如果是本周（i === 0）且还没打卡，允许继续往前看上一周
+            // 否则一旦断了就说明当前没有连续
+            if (i > 0) {
+              break;
+            }
           }
 
           // 往前推一周
@@ -237,11 +255,11 @@ export const useDiaryStats = (userId?: string) => {
       if (totalDiaries >= 100) unlockedBadges.push('badge_4');
 
       // 5. 连续打卡：3天
-      if (currentStreak >= 3) unlockedBadges.push('badge_5');
+      if (maxStreak >= 3 || currentStreak >= 3) unlockedBadges.push('badge_5');
       // 6. 连续打卡：7天
-      if (currentStreak >= 7) unlockedBadges.push('badge_6');
+      if (maxStreak >= 7 || currentStreak >= 7) unlockedBadges.push('badge_6');
       // 7. 连续打卡：21天
-      if (currentStreak >= 21) unlockedBadges.push('badge_7');
+      if (maxStreak >= 21 || currentStreak >= 21) unlockedBadges.push('badge_7');
 
       // 8. 情绪大师：收集满 7 种不同心情
       if (uniqueMoods.size >= 7) unlockedBadges.push('badge_8');
@@ -265,10 +283,43 @@ export const useDiaryStats = (userId?: string) => {
       badges = 1;
     }
 
-    return { totalDiaries, currentStreak, badges, unlockedBadges };
+    return { totalDiaries, currentStreak, maxStreak, badges, unlockedBadges };
   }, [allDiaryData]);
 
-  return { ...stats, isLoading };
+  React.useEffect(() => {
+    if (!user || !user._id || !stats.unlockedBadges.length || user._id !== userId) return;
+
+    const userBadges = user.unlockedBadges || {};
+    let hasNew = false;
+    const newBadges = { ...userBadges };
+    const now = Date.now();
+
+    stats.unlockedBadges.forEach((badgeId) => {
+      if (!newBadges[badgeId]) {
+        newBadges[badgeId] = now;
+        hasNew = true;
+      }
+    });
+
+    if (hasNew) {
+      updateProfile(user._id, { unlockedBadges: newBadges }).catch((err) => {
+        console.error('Failed to sync badges:', err);
+      });
+    }
+  }, [stats.unlockedBadges.join(','), user]);
+
+  const finalUnlockedBadges = React.useMemo(() => {
+    // If checking current user's stats, merge with persistent badges
+    if (user && user._id === userId) {
+      const userBadges = user.unlockedBadges || {};
+      const localBadges = stats.unlockedBadges;
+      const merged = new Set([...Object.keys(userBadges), ...localBadges]);
+      return Array.from(merged);
+    }
+    return stats.unlockedBadges;
+  }, [user?.unlockedBadges, stats.unlockedBadges, user?._id, userId]);
+
+  return { ...stats, unlockedBadges: finalUnlockedBadges, isLoading };
 };
 
 /**
