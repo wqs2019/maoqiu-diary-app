@@ -533,7 +533,7 @@ const HomeScreen: React.FC = () => {
 
       {/* Year Selector / Timeline Scrubber on the Right */}
       {availableYears.length > 0 && (
-        <View style={[styles.yearSelectorContainer, { backgroundColor: isDark ? 'rgba(30,30,30,0.8)' : 'rgba(255,255,255,0.8)' }]}>
+        <View style={[styles.yearSelectorContainer, { backgroundColor: 'transparent' }]}>
           {availableYears.map((year) => (
             <TouchableOpacity
               key={year}
@@ -562,7 +562,14 @@ const HomeScreen: React.FC = () => {
         {...panResponder.panHandlers}
       >
         <TouchableOpacity
-          style={styles.fab}
+          style={[
+            styles.fab,
+            isDark && {
+              borderColor: '#121212',
+              backgroundColor: HEALING_COLORS.pink[500],
+              shadowColor: HEALING_COLORS.pink[500],
+            }
+          ]}
           onPress={() => {
             handleCreateDiary();
           }}
