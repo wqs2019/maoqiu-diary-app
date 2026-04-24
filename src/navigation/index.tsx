@@ -1,10 +1,31 @@
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import * as Linking from 'expo-linking';
 import * as Sentry from '@sentry/react-native';
 import React from 'react';
 
-import { RootNavigator } from './RootNavigator';
+import { RootNavigator, RootStackParamList } from './RootNavigator';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { routingInstrumentation } from '../config/sentry';
+import { LinkingOptions } from '@react-navigation/native';
+
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: [Linking.createURL('/'), 'maoqiudiary://'],
+  config: {
+    screens: {
+      Main: {
+        screens: {
+          Home: 'home',
+          Circle: 'circle',
+          Category: 'category',
+          AI: 'ai',
+          Mine: 'mine',
+        },
+      },
+      CircleDetail: 'circle/:_id',
+      DiaryDetail: 'diary/:_id',
+    },
+  },
+};
 
 export const Navigation = () => {
   const { isDark, colors } = useAppTheme();
@@ -28,7 +49,7 @@ export const Navigation = () => {
   };
 
   return (
-    <NavigationContainer ref={navigationRef} theme={appTheme}>
+    <NavigationContainer ref={navigationRef} theme={appTheme} linking={linking}>
       <RootNavigator />
     </NavigationContainer>
   );

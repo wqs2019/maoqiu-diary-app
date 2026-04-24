@@ -24,6 +24,7 @@ import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useDiaryDetail, useLikeDiary, useCommentDiary } from '@/hooks/useDiaryQuery';
 import { useAuthStore } from '@/store/authStore';
 import { FormatUtil } from '@/utils/format';
+import * as Clipboard from 'expo-clipboard';
 
 const { width } = Dimensions.get('window');
 
@@ -114,12 +115,20 @@ const CircleDetailScreen: React.FC = () => {
   const isMyDiary = user?._id === diary?.userId;
   const hasLiked = user?._id ? (diary?.likedUserIds || []).includes(user._id) : false;
 
-  const handleAction = (type: string) => {
-    if (type === '点赞') {
+  const handleAction = async (type: 'like' | 'share') => {
+    if (type === 'like') {
       if (likeMutation.isGlobalMutating) return;
       handleLike();
     } else {
-      Alert.alert('提示', `“${type}”功能开发中，敬请期待！`);
+      const shareUrl = `maoqiudiary://circle/${_id}`;
+      await Clipboard.setStringAsync(shareUrl);
+      Alert.alert(
+        '分享链接已复制',
+        `可以把链接发给朋友，他们点击后就能直接打开这条内容啦！`,
+        [
+          { text: '好的', style: 'default' }
+        ]
+      );
     }
   };
 
@@ -222,13 +231,13 @@ const CircleDetailScreen: React.FC = () => {
             )}
           </View>
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('点赞')}>
+            <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('like')}>
               <View style={styles.actionIconWithText}>
                 <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={28} color={hasLiked ? HEALING_COLORS.pink[500] : "#4B5563"} />
                 <Text style={[styles.actionIconText, hasLiked && { color: HEALING_COLORS.pink[500] }]}>{diary.likedUserIds?.length || 0}</Text>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('分享')}>
+            <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('share')}>
               <Ionicons name="share-social-outline" size={26} color="#4B5563" />
             </TouchableOpacity>
           </View>

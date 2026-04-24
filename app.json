@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
+    "scheme": "maoqiudiary",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
