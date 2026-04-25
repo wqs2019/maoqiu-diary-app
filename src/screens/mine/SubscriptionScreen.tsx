@@ -8,9 +8,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
-  Image,
   Alert,
+  Linking,
 } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +19,7 @@ import { HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useAuthStore } from '../../store/authStore';
+import { useToast } from '@/components/common/Toast';
 
 type SubscriptionScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Subscription'>;
 
@@ -30,6 +30,7 @@ const SubscriptionScreen: React.FC = () => {
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   const insets = useSafeAreaInsets();
+  const toast = useToast();
 
   const [selectedPlan, setSelectedPlan] = useState<string>('com.maoqiu.diary.yearly');
   const [loading, setLoading] = useState<boolean>(false);
@@ -128,12 +129,42 @@ const SubscriptionScreen: React.FC = () => {
 
     purchaseErrorSubscription = RNIap.purchaseErrorListener((error) => {
       console.error('IAP: purchaseErrorListener 收到错误', error);
+      
+      const errorCode = String(error.code);
+      let errorMessage = '购买过程中发生未知错误';
+      
+      switch (errorCode) {
+        case 'user-cancelled':
+        case 'E_USER_CANCELLED':
+        case 'PROMISE_BUY_ITEM':
+          errorMessage = '您已取消购买';
+          break;
+        case 'E_ALREADY_OWNED':
+          errorMessage = '您已经订阅过该商品';
+          break;
+        case 'E_ITEM_UNAVAILABLE':
+          errorMessage = '当前商品不可用，请稍后再试';
+          break;
+        case 'E_NETWORK_ERROR':
+          errorMessage = '网络连接失败，请检查网络设置';
+          break;
+        case 'E_SERVICE_ERROR':
+          errorMessage = '苹果支付服务异常，请稍后再试';
+          break;
+        case 'E_RECEIPT_FAILED':
+        case 'E_RECEIPT_FINISHED_FAILED':
+          errorMessage = '验证购买凭证失败，请联系客服';
+          break;
+        default:
+          errorMessage = error.message || errorMessage;
+      }
+      
+      toast.error(errorMessage);
       setLoading(false);
       isPurchasing.current = false;
       // 增加 E_USER_CANCELLED 的容错处理，有时它是作为字符串传递的
-      const errorCode = String(error.code);
       if (errorCode !== 'user-cancelled' && errorCode !== 'E_USER_CANCELLED' && errorCode !== 'PROMISE_BUY_ITEM') {
-        Alert.alert('购买失败', error.message);
+        Alert.alert('购买失败', errorMessage);
       }
     });
 
@@ -227,7 +258,7 @@ const SubscriptionScreen: React.FC = () => {
           <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : currentHealingColors.gray[800]} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
-          开通 VIP
+          {isActiveVIP ? '会员中心' : '开通 VIP'}
         </Text>
         {!isActiveVIP ? (
           <TouchableOpacity style={styles.headerRight} onPress={handleRestore}>
@@ -244,25 +275,29 @@ const SubscriptionScreen: React.FC = () => {
           <View
             style={[
               styles.vipCard,
-              {
-                backgroundColor: isDark ? '#2C1B24' : (isActiveVIP ? '#F59E0B' : currentHealingColors.pink[500]), // 已经是VIP时变为金色
-                shadowColor: isDark ? '#000' : (isActiveVIP ? '#F59E0B' : currentHealingColors.pink[500]),
-              }
+              isActiveVIP
+                ? { backgroundColor: '#2C2C2C', shadowColor: '#000' } // 尊贵的黑金风格
+                : {
+                    backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[500],
+                    shadowColor: isDark ? '#000' : currentHealingColors.pink[500],
+                  }
             ]}
           >
             <View style={styles.vipCardHeader}>
-              <Text style={styles.vipCardTitle}>毛球日记 高级会员</Text>
-              <Feather name="award" size={24} color="#FFF" />
+              <Text style={[styles.vipCardTitle, isActiveVIP && { color: '#FBBF24' }]}>
+                {isActiveVIP ? '毛球日记 尊贵会员' : '毛球日记 高级会员'}
+              </Text>
+              <Feather name="award" size={24} color={isActiveVIP ? '#FBBF24' : '#FFF'} />
             </View>
-            <Text style={styles.vipCardSubtitle}>
+            <Text style={[styles.vipCardSubtitle, isActiveVIP && { color: '#D1D5DB' }]}>
               {isActiveVIP ? '已解锁所有功能，感谢您的支持' : '解锁所有功能，记录美好生活'}
             </Text>
             <View style={styles.vipCardFooter}>
-              <Text style={styles.vipCardStatus}>
+              <Text style={[styles.vipCardStatus, isActiveVIP && { backgroundColor: 'rgba(251, 191, 36, 0.2)', color: '#FBBF24' }]}>
                 {isActiveVIP ? '当前已开通' : '当前未开通'}
               </Text>
               {isActiveVIP && user?.isVip?.expiresAt && (
-                <Text style={styles.vipCardExpire}>
+                <Text style={[styles.vipCardExpire, isActiveVIP && { color: '#9CA3AF' }]}>
                   {new Date(user.isVip.expiresAt).toLocaleDateString('zh-CN')} 到期
                 </Text>
               )}
@@ -273,7 +308,7 @@ const SubscriptionScreen: React.FC = () => {
         {/* 特权列表 */}
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>
-            会员专属特权
+            {isActiveVIP ? '您已解锁以下特权' : '会员专属特权'}
           </Text>
           <View style={styles.featuresGrid}>
             {features.map((feature, index) => (
@@ -289,72 +324,76 @@ const SubscriptionScreen: React.FC = () => {
         </View>
 
         {/* 订阅选项 */}
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>
-            选择订阅方案
-          </Text>
-          <View style={styles.plansContainer}>
-            {plans.map((plan) => {
-              const isSelected = selectedPlan === plan.id;
-              return (
-                <TouchableOpacity
-                  key={plan.id}
-                  style={[
-                    styles.planCard,
-                    {
-                      backgroundColor: isDark ? '#1E1E1E' : '#FFF',
-                      borderColor: isSelected
-                        ? currentHealingColors.pink[500]
-                        : isDark
-                        ? '#333'
-                        : '#F3F4F6',
-                    },
-                  ]}
-                  activeOpacity={0.8}
-                  onPress={() => setSelectedPlan(plan.id)}
-                >
-                  {plan.isHot && (
-                    <View style={[styles.hotTag, { backgroundColor: currentHealingColors.pink[600] }]}>
-                      <Text style={styles.hotTagText}>强烈推荐</Text>
+        {!isActiveVIP && (
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>
+              选择订阅方案
+            </Text>
+            <View style={styles.plansContainer}>
+              {plans.map((plan) => {
+                const isSelected = selectedPlan === plan.id;
+                return (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={[
+                      styles.planCard,
+                      {
+                        backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+                        borderColor: isSelected
+                          ? currentHealingColors.pink[500]
+                          : isDark
+                          ? '#333'
+                          : '#F3F4F6',
+                      },
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedPlan(plan.id)}
+                  >
+                    {plan.isHot && (
+                      <View style={[styles.hotTag, { backgroundColor: currentHealingColors.pink[600] }]}>
+                        <Text style={styles.hotTagText}>强烈推荐</Text>
+                      </View>
+                    )}
+                    <Text style={[styles.planTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>
+                      {plan.title}
+                    </Text>
+                    <View style={styles.priceContainer}>
+                      <Text style={[styles.planPrice, { color: isSelected ? currentHealingColors.pink[500] : isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
+                        {plan.price}
+                      </Text>
                     </View>
-                  )}
-                  <Text style={[styles.planTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>
-                    {plan.title}
-                  </Text>
-                  <View style={styles.priceContainer}>
-                    <Text style={[styles.planPrice, { color: isSelected ? currentHealingColors.pink[500] : isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
-                      {plan.price}
+                    <Text style={[styles.planOriginalPrice, { color: isDark ? '#6B7280' : currentHealingColors.gray[400] }]}>
+                      原价 {plan.originalPrice}
                     </Text>
-                  </View>
-                  <Text style={[styles.planOriginalPrice, { color: isDark ? '#6B7280' : currentHealingColors.gray[400] }]}>
-                    原价 {plan.originalPrice}
-                  </Text>
-                  <View style={[styles.planLabelWrap, { backgroundColor: isSelected ? currentHealingColors.pink[50] : isDark ? '#374151' : '#F3F4F6' }]}>
-                    <Text style={[styles.planLabel, { color: isSelected ? currentHealingColors.pink[600] : isDark ? '#D1D5DB' : currentHealingColors.gray[600] }]}>
-                      {plan.label}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                    <View style={[styles.planLabelWrap, { backgroundColor: isSelected ? currentHealingColors.pink[50] : isDark ? '#374151' : '#F3F4F6' }]}>
+                      <Text style={[styles.planLabel, { color: isSelected ? currentHealingColors.pink[600] : isDark ? '#D1D5DB' : currentHealingColors.gray[600] }]}>
+                        {plan.label}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* 底部购买说明 */}
-        <View style={styles.footerContainer}>
-          <Text style={[styles.footerText, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>
-            确认购买后，将从您的 iTunes 账户扣费。订阅会自动续期，除非在当前订阅期结束前至少 24 小时关闭自动续期。
-          </Text>
-          <View style={styles.footerLinks}>
-            <TouchableOpacity onPress={() => navigation.navigate('Web' as any, { url: 'https://maoqiu.com/terms', title: '用户协议' })}>
-              <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>用户协议</Text>
-            </TouchableOpacity>
-            <Text style={[styles.linkDot, { color: isDark ? '#6B7280' : currentHealingColors.gray[400] }]}>・</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Web' as any, { url: 'https://maoqiu.com/privacy', title: '隐私政策' })}>
-              <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>隐私政策</Text>
-            </TouchableOpacity>
+        {!isActiveVIP && (
+          <View style={styles.footerContainer}>
+            <Text style={[styles.footerText, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>
+              确认购买后，将从您的 iTunes 账户扣费。订阅会自动续期，除非在当前订阅期结束前至少 24 小时关闭自动续期。
+            </Text>
+            <View style={styles.footerLinks}>
+              <TouchableOpacity onPress={() => navigation.navigate('Web' as any, { url: 'https://maoqiu.com/terms', title: '用户协议' })}>
+                <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>用户协议</Text>
+              </TouchableOpacity>
+              <Text style={[styles.linkDot, { color: isDark ? '#6B7280' : currentHealingColors.gray[400] }]}>・</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Web' as any, { url: 'https://maoqiu.com/privacy', title: '隐私政策' })}>
+                <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>隐私政策</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
 
       {/* 底部悬浮按钮 */}
@@ -362,13 +401,13 @@ const SubscriptionScreen: React.FC = () => {
         <TouchableOpacity
           style={[
             styles.subscribeButton, 
-            { backgroundColor: isActiveVIP ? '#9CA3AF' : currentHealingColors.pink[500] } // 已经是VIP时置灰
+            { backgroundColor: isActiveVIP ? '#2C2C2C' : currentHealingColors.pink[500] } // 已经是VIP时变为黑金风格
           ]}
           activeOpacity={0.8}
-          onPress={isActiveVIP ? () => Alert.alert('提示', '您已经是尊贵的 VIP 会员了') : handleSubscribe}
+          onPress={isActiveVIP ? () => Linking.openURL('https://apps.apple.com/account/subscriptions') : handleSubscribe}
         >
-          <Text style={styles.subscribeButtonText}>
-            {isActiveVIP ? '已开通 VIP' : '立即开通'}
+          <Text style={[styles.subscribeButtonText, isActiveVIP && { color: '#FBBF24' }]}>
+            {isActiveVIP ? '管理订阅' : '立即开通'}
           </Text>
         </TouchableOpacity>
       </View>
