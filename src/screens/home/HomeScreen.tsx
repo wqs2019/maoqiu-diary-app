@@ -50,7 +50,8 @@ const HomeScreen: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | undefined>(undefined);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [isNotebookModalVisible, setIsNotebookModalVisible] = useState(false);
-  const [newNotebookName, setNewNotebookName] = useState('');
+  const newNotebookNameRef = useRef('');
+  const newNotebookInputRef = useRef<TextInput>(null);
 
   // 记录是否是代码触发的滚动，避免 onScroll 冲突
   const isProgrammaticScroll = useRef(false);
@@ -89,9 +90,12 @@ const HomeScreen: React.FC = () => {
 
   const notebooks =
     userNotebooks && userNotebooks.length > 0 ? userNotebooks : userId ? getNotebooks(userId) : [];
+  
+  // 确保在 currentNotebookId 改变时能够获取到最新的 notebook
   const currentNotebook =
-    userNotebooks?.find((n) => n._id === currentNotebookId) ||
-    (userId ? getCurrentNotebook(userId) : { _id: 'default', name: '毛球日记', createdAt: '' });
+    notebooks.find((n) => n._id === currentNotebookId) ||
+    notebooks[0] ||
+    { _id: 'default', name: '毛球日记', createdAt: '' };
 
   // 拉取用户的日记本数据
   useEffect(() => {
@@ -431,25 +435,35 @@ const HomeScreen: React.FC = () => {
 
               <View style={styles.addNotebookContainer}>
                 <TextInput
+                  ref={newNotebookInputRef}
                   style={[styles.addNotebookInput, { color: isDark ? '#FFF' : '#333', backgroundColor: isDark ? '#2C2C2C' : '#F9F9F9', borderColor: isDark ? '#444' : '#E5E5EA' }]}
                   placeholder="新日记本名称..."
                   placeholderTextColor={isDark ? '#888' : '#999'}
-                  value={newNotebookName}
-                  onChangeText={setNewNotebookName}
+                  defaultValue=""
+                  onChangeText={(text) => {
+                    newNotebookNameRef.current = text;
+                  }}
                   maxLength={20}
                 />
                 <TouchableOpacity
                   style={styles.addNotebookBtn}
                   onPress={async () => {
-                    if (!newNotebookName.trim()) {
+                    if (!user?.isVip?.value) {
+                      setIsNotebookModalVisible(false);
+                      (navigation as any).navigate('Subscription');
+                      return;
+                    }
+                    const name = newNotebookNameRef.current.trim();
+                    if (!name) {
                       toast.info('请输入日记本名称');
                       return;
                     }
                     if (userId) {
                       try {
-                        const newNb = await addNotebook(userId, newNotebookName.trim());
+                        const newNb = await addNotebook(userId, name);
                         setCurrentNotebook(userId, newNb._id);
-                        setNewNotebookName('');
+                        newNotebookNameRef.current = '';
+                        newNotebookInputRef.current?.clear();
                         setIsNotebookModalVisible(false);
                       } catch (e) {
                         console.error('新建日记本失败', e);
