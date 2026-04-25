@@ -81,7 +81,15 @@ const DiaryDetailScreen: React.FC = () => {
         text: '删除', 
         style: 'destructive',
         onPress: () => {
-          deleteMutation.mutate(_id);
+          deleteMutation.mutate(_id, {
+            onSuccess: () => {
+              toast.success('删除成功');
+              navigation.goBack();
+            },
+            onError: () => {
+              toast.error('删除失败，请稍后重试');
+            }
+          });
         }
       }
     ]);

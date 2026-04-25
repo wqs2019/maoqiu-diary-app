@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,11 +47,11 @@ const SubscriptionScreen: React.FC = () => {
 
   const features = [
     { icon: 'cloud', title: '云端同步', desc: '多设备无缝同步，日记永不丢失' },
-    { icon: 'image', title: '无限图片', desc: '每篇日记可上传更多高清图片' },
+    { icon: 'image', title: '更多图片', desc: '日记可上传9张高清图片/视频' },
     { icon: 'cpu', title: 'AI 智能问答', desc: '解锁无限制 AI 聊天与情感分析' },
     { icon: 'shield', title: '专属应用锁', desc: '更高强度的隐私保护功能' },
     { icon: 'star', title: '专属徽章', desc: '点亮 VIP 专属标识与主题色' },
-    { icon: 'layout', title: '丰富手账本', desc: '海量专属贴纸、手绘模板免费用' },
+    { icon: 'layout', title: '丰富主题', desc: '更多专属主题免费用' },
   ];
 
   useEffect(() => {
@@ -114,7 +115,7 @@ const SubscriptionScreen: React.FC = () => {
           }
 
           if (isPurchasing.current) {
-            Alert.alert('购买成功', '请等待系统同步 VIP 状态。');
+            toast.success('购买成功，已为您开通 VIP');
             isPurchasing.current = false;
           } else {
             console.log('IAP: 自动恢复/处理了之前的遗留订单，静默完成');
@@ -401,14 +402,20 @@ const SubscriptionScreen: React.FC = () => {
         <TouchableOpacity
           style={[
             styles.subscribeButton, 
-            { backgroundColor: isActiveVIP ? '#2C2C2C' : currentHealingColors.pink[500] } // 已经是VIP时变为黑金风格
+            { backgroundColor: isActiveVIP ? '#2C2C2C' : currentHealingColors.pink[500] }, // 已经是VIP时变为黑金风格
+            loading && { opacity: 0.7 }
           ]}
           activeOpacity={0.8}
+          disabled={loading}
           onPress={isActiveVIP ? () => Linking.openURL('https://apps.apple.com/account/subscriptions') : handleSubscribe}
         >
-          <Text style={[styles.subscribeButtonText, isActiveVIP && { color: '#FBBF24' }]}>
-            {isActiveVIP ? '管理订阅' : '立即开通'}
-          </Text>
+          {loading ? (
+            <ActivityIndicator color={isActiveVIP ? '#FBBF24' : '#FFF'} />
+          ) : (
+            <Text style={[styles.subscribeButtonText, isActiveVIP && { color: '#FBBF24' }]}>
+              {isActiveVIP ? '管理订阅' : '立即开通'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

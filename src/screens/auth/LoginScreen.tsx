@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -72,7 +73,13 @@ const LoginScreen: React.FC = () => {
       style={[styles.container, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <View style={styles.content}>
         {/* 装饰元素 */}
         <View style={styles.decoration}>
           <Ionicons name="heart" size={24} color={COLORS.primary} style={styles.decorationIcon} />
@@ -180,6 +187,7 @@ const LoginScreen: React.FC = () => {
           )}
         </View>
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -188,6 +196,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF5F8',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   content: {
     flex: 1,
