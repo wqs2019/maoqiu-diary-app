@@ -7,6 +7,12 @@ import { TOKEN_EXPIRE_DAYS } from '../config/constant';
 const TOKEN_KEY = 'user_token';
 const USER_INFO_KEY = 'user_info';
 
+export interface VipInfo {
+  value: boolean;
+  type?: string; // 例如 'com.maoqiu.diary.quarterly'
+  expiresAt?: number; // 过期时间的时间戳
+}
+
 export interface UserInfo {
   _id: string;
   phone: string;
@@ -16,6 +22,7 @@ export interface UserInfo {
   age?: number;
   birthday?: string;
   unlockedBadges?: Record<string, number>;
+  isVip?: VipInfo;
 }
 
 export interface TokenInfo {

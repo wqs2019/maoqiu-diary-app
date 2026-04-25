@@ -127,6 +127,38 @@ const MineScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {/* VIP 开通入口 */}
+        <TouchableOpacity
+          style={[
+            styles.vipBanner,
+            {
+              backgroundColor: isDark ? '#2C1B24' : (user?.isVip?.value ? '#FEF3C7' : currentHealingColors.pink[50]),
+              borderColor: isDark ? '#333' : (user?.isVip?.value ? '#FDE68A' : '#FFF0F3'),
+            }
+          ]}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Subscription' as any)}
+        >
+          <View style={styles.vipBannerLeft}>
+            <View style={[styles.vipIconWrap, { backgroundColor: isDark ? '#374151' : '#FFF' }]}>
+              <Feather name="award" size={20} color={user?.isVip?.value ? '#F59E0B' : currentHealingColors.pink[500]} />
+            </View>
+            <View style={styles.vipBannerTextContainer}>
+              <Text style={[styles.vipBannerTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
+                {user?.isVip?.value ? '毛球日记 尊贵会员' : '毛球日记 高级会员'}
+              </Text>
+              <Text style={[styles.vipBannerSubtitle, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>
+                {user?.isVip?.value ? (
+                  user.isVip.expiresAt ? `${new Date(user.isVip.expiresAt).toLocaleDateString('zh-CN')} 到期` : '已解锁所有专属特权'
+                ) : '解锁云同步、无限图片与专属贴纸'}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.vipBannerButton, { backgroundColor: user?.isVip?.value ? '#F59E0B' : currentHealingColors.pink[500] }]}>
+            <Text style={styles.vipBannerButtonText}>{user?.isVip?.value ? '会员中心' : '立即开通'}</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* 统计数据区 */}
         <View style={[styles.statsContainer, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3' }]}>
           <View style={styles.statItem}>
@@ -298,6 +330,51 @@ const styles = StyleSheet.create({
     backgroundColor: HEALING_COLORS.pink[50],
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  vipBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 2,
+  },
+  vipBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  vipIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  vipBannerTextContainer: {
+    flex: 1,
+  },
+  vipBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  vipBannerSubtitle: {
+    fontSize: 11,
+  },
+  vipBannerButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  vipBannerButtonText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   statsContainer: {
     flexDirection: 'row',
