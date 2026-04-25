@@ -103,7 +103,9 @@ const MineScreen: React.FC = () => {
           />
           <View style={styles.userDetails}>
             <Text style={[styles.userName, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{user?.nickname || '毛球日记'}</Text>
-            <Text style={[styles.userPhone, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>{user?.phone || '点击登录 / 注册 ✨'}</Text>
+            <Text style={[styles.userPhone, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>
+              {user?.phone ? user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '点击登录 / 注册 ✨'}
+            </Text>
             {user && (
               <View style={[styles.joinDaysTag, { backgroundColor: isDark ? '#374151' : currentHealingColors.pink[50] }]}>
                 <Text style={[styles.joinDaysText, { color: isDark ? '#D1D5DB' : currentHealingColors.pink[500] }]}>

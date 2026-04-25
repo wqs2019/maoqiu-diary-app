@@ -8,19 +8,21 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
 import { useAuthStore } from '../../store/authStore';
+import { useToast } from '@/components/common/Toast';
 
 const LoginScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [countdown, setCountdown] = useState(0);
-  const { login, loginWithWechat, sendCode, loading, error } = useAuthStore();
+  const { login, loginWithWechat, sendCode, loading } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -36,26 +38,33 @@ const LoginScreen: React.FC = () => {
 
   const handleSendCode = async () => {
     if (phone?.length !== 11) {
-      Alert.alert('提示', '请输入正确的手机号');
+      toast.error('请输入正确的手机号');
       return;
     }
     const success = await sendCode(phone);
     if (success) {
       setCountdown(60);
-      Alert.alert('提示', '验证码已发送');
+      toast.success('验证码已发送');
+    } else {
+      const currentError = useAuthStore.getState().error;
+      if (currentError) toast.error(currentError);
     }
   };
 
   const handleLogin = async () => {
     if (phone?.length !== 11) {
-      Alert.alert('提示', '请输入正确的手机号');
+      toast.error('请输入正确的手机号');
       return;
     }
     if (code?.length !== 6) {
-      Alert.alert('提示', '请输入6位验证码');
+      toast.error('请输入6位验证码');
       return;
     }
     await login(phone, code);
+    const currentError = useAuthStore.getState().error;
+    if (currentError) {
+      toast.error(currentError);
+    }
   };
 
   return (
@@ -83,6 +92,7 @@ const LoginScreen: React.FC = () => {
 
         {/* 标题部分 */}
         <View style={styles.header}>
+          <Image source={require('../../../assets/logo.png')} style={styles.logo} />
           <Text style={styles.title}>欢迎回来！</Text>
           <Text style={styles.subtitle}>登录后开始记录你的美好生活</Text>
         </View>
@@ -135,8 +145,6 @@ const LoginScreen: React.FC = () => {
             </View>
           </View>
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
-
           {/* 登录按钮 */}
           <TouchableOpacity
             style={[styles.loginButton, loading && styles.loginButtonDisabled]}
@@ -158,7 +166,11 @@ const LoginScreen: React.FC = () => {
 
               <TouchableOpacity
                 style={styles.wechatButton}
-                onPress={loginWithWechat}
+                onPress={async () => {
+                  await loginWithWechat();
+                  const currentError = useAuthStore.getState().error;
+                  if (currentError) toast.error(currentError);
+                }}
                 disabled={loading}
               >
                 <Ionicons name="logo-wechat" size={24} color="#07C160" />
@@ -180,7 +192,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: SPACING.large,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 80, // 将内容整体往上提
     position: 'relative',
   },
   decoration: {
@@ -198,6 +211,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: SPACING.xlarge * 2,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: SPACING.large,
   },
   title: {
     fontSize: FONT_SIZES.xxlarge + 4,
@@ -263,12 +281,6 @@ const styles = StyleSheet.create({
   },
   codeButtonTextDisabled: {
     color: COLORS.textSecondary,
-  },
-  errorText: {
-    color: COLORS.error,
-    fontSize: FONT_SIZES.small,
-    marginBottom: SPACING.medium,
-    textAlign: 'center',
   },
   loginButton: {
     backgroundColor: COLORS.primary,
