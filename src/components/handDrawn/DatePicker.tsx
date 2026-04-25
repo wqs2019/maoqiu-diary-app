@@ -102,7 +102,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={handleConfirm}
               >
-                <Text style={[styles.confirmButtonText, { color: HEALING_COLORS.pink[500] }]}>确定</Text>
+                <Text style={styles.confirmButtonText}>确定</Text>
               </TouchableOpacity>
             </View>
           </View>

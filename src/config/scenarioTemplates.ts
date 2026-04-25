@@ -35,7 +35,7 @@ export const SCENARIO_TEMPLATES: Record<ScenarioType, ScenarioTemplate> = {
     name: '旅行记录',
     icon: '✈️',
     color: '#5AC8FA',
-    placeholder: '这次旅行去了哪里？有什么难忘的经历？',
+    placeholder: '这次旅行去了哪里？',
     prompts: [
       '目的地是哪里？',
       '和谁一起去的？',

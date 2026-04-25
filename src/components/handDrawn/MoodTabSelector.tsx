@@ -70,29 +70,29 @@ export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   label: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#666',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   tab: {
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 14,
     borderWidth: 2,
-    marginRight: 12,
-    minWidth: 70,
+    marginRight: 10,
+    minWidth: 56,
   },
   emoji: {
-    fontSize: 32,
-    marginBottom: 4,
+    fontSize: 24,
+    marginBottom: 2,
   },
   labelText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#666',
     textAlign: 'center',
   },

@@ -531,7 +531,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   };
 
   return (
-    <View style={[styles.container, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
+    <View style={styles.container}>
       {!hideHeader && (
         <View style={styles.header}>
           <View style={styles.titleContainer}>
@@ -550,7 +550,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         numColumns={3}
         data={gridData}
         renderItem={renderGridItem}
-        itemHeight={120}
+        itemHeight={110}
         delayLongPress={200}
         onItemPress={(item: any) => {
           if (item.isAddButton) {
@@ -597,10 +597,8 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   header: {
     flexDirection: 'row',
@@ -613,7 +611,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   title: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#666',
   },
@@ -635,11 +633,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   mediaItem: {
-    width: 115,
-    height: 115,
+    width: 105,
+    height: 105,
     borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
@@ -779,8 +777,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   addButton: {
-    width: 115,
-    height: 115,
+    width: 105,
+    height: 105,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: HEALING_COLORS.pink[300],

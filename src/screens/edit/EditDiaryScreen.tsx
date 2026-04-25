@@ -11,13 +11,13 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
+  TouchableOpacity,
 } from 'react-native';
 
 import { DatePicker } from '../../components/handDrawn/DatePicker';
 import { HandDrawnButton } from '../../components/handDrawn/HandDrawnButton';
 import { MediaSelector } from '../../components/handDrawn/MediaSelector';
 import { MoodTabSelector } from '../../components/handDrawn/MoodTabSelector';
-import { ScenarioChip } from '../../components/handDrawn/ScenarioChip';
 import { WeatherTabSelector } from '../../components/handDrawn/WeatherTabSelector';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
@@ -63,8 +63,8 @@ const EditDiaryScreen: React.FC = () => {
       setLocation(existingDiary.location || '');
       setMood(existingDiary.mood);
       setWeather(existingDiary.weather);
-      setTitle(existingDiary.title);
-      setContent(existingDiary.content);
+      setTitle(existingDiary.title || '');
+      setContent(existingDiary.content || '');
       setMedia(existingDiary.media || []);
       setIsPublic(!!existingDiary.isPublic);
     }
@@ -160,85 +160,105 @@ const EditDiaryScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FFFFFF' }]}
+      style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F7F8FA' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 场景选择 */}
-        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
-          <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>选择场景</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {(Object.keys(SCENARIO_TEMPLATES) as ScenarioType[]).map((type) => (
-              <ScenarioChip
-                key={type}
-                type={type}
-                selected={type === scenario}
-                onPress={() => {
-                  setScenario(type);
-                }}
-              />
-            ))}
-          </ScrollView>
+        <View style={styles.scenarioWrapper}>
+          <View style={styles.scenarioGrid}>
+            {(Object.keys(SCENARIO_TEMPLATES) as ScenarioType[]).map((type) => {
+              const template = SCENARIO_TEMPLATES[type];
+              const isSelected = type === scenario;
+              // 简短的名称，去掉"记录"或"时刻"以节省空间
+              const shortName = template.name.replace('记录', '').replace('时刻', '');
+              
+              return (
+                <TouchableOpacity
+                  key={type}
+                  style={styles.compactChip}
+                  onPress={() => setScenario(type)}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.compactIconWrapper,
+                      { backgroundColor: isDark ? '#1E1E1E' : '#F0F0F0' },
+                      isSelected && { backgroundColor: template.color, shadowColor: template.color, shadowOpacity: 0.3, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+                    ]}
+                  >
+                    <Text style={styles.compactIcon}>{template.icon}</Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.compactName,
+                      { color: isDark ? '#AAA' : '#666' },
+                      isSelected && { color: template.color, fontWeight: 'bold' },
+                    ]}
+                  >
+                    {shortName}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
-        {/* 标题 */}
-        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
-          <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>标题</Text>
+        {/* 编辑器卡片 */}
+        <View style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
           <TextInput
-            style={[styles.input, styles.titleInput, { color: isDark ? '#FFF' : '#333', backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5', borderColor: isDark ? '#333' : '#E5E5E5' }]}
+            style={[styles.titleInput, { color: isDark ? '#FFF' : '#333' }]}
             placeholder={template1.placeholder}
-            placeholderTextColor={isDark ? '#888' : '#999'}
+            placeholderTextColor={isDark ? '#888' : '#CCC'}
             value={title}
             onChangeText={setTitle}
           />
-        </View>
-
-        {/* 日期选择 */}
-        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
-          <DatePicker selectedDate={date} onDateChange={setDate} label="日期" />
-        </View>
-
-        {/* 地点 */}
-        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
-          <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>地点</Text>
+          <View style={[styles.divider, { borderBottomColor: isDark ? '#333' : '#F0F0F0' }]} />
           <TextInput
-            style={[styles.input, { color: isDark ? '#FFF' : '#333', backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5', borderColor: isDark ? '#333' : '#E5E5E5' }]}
-            placeholder="📍 添加地点（选填）"
-            placeholderTextColor={isDark ? '#888' : '#999'}
-            value={location}
-            onChangeText={setLocation}
-          />
-        </View>
-
-        {/* 心情选择 */}
-        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
-          <MoodTabSelector selectedMood={mood} onSelectMood={setMood} />
-        </View>
-
-        {/* 天气选择 */}
-        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
-          <WeatherTabSelector selectedWeather={weather} onSelectWeather={setWeather} />
-        </View>
-
-        {/* 内容 */}
-        <View style={[styles.section, { borderBottomColor: isDark ? '#333' : '#F5F5F5' }]}>
-          <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>想法</Text>
-          <TextInput
-            style={[styles.input, styles.contentInput, { color: isDark ? '#FFF' : '#333', backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5', borderColor: isDark ? '#333' : '#E5E5E5' }]}
+            style={[styles.contentInput, { color: isDark ? '#FFF' : '#444' }]}
             placeholder="记录今天的故事..."
-            placeholderTextColor={isDark ? '#888' : '#999'}
+            placeholderTextColor={isDark ? '#888' : '#CCC'}
             value={content}
             onChangeText={setContent}
             multiline
             textAlignVertical="top"
+            maxLength={3000}
           />
+          <Text style={[styles.charCount, { color: isDark ? '#888' : '#CCC' }]}>
+            {content.length}/3000
+          </Text>
         </View>
 
-        {/* 媒体附件选择 */}
-        <MediaSelector media={media} onMediaChange={setMedia} maxCount={9} draggable />
+        {/* 媒体附件模块 */}
+        <View style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }, styles.mediaCard]}>
+          <MediaSelector media={media} onMediaChange={setMedia} maxCount={9} draggable />
+        </View>
 
-        {/* 分享到圈子 */}
-        <View style={[styles.switchSection, { borderBottomColor: isDark ? '#333' : '#F0F0F0', backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+        {/* 属性卡片 (日期、地点、心情、天气) */}
+        <View style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+          <DatePicker selectedDate={date} onDateChange={setDate} label="日期" />
+          <View style={[styles.divider, { borderBottomColor: isDark ? '#333' : '#F0F0F0', marginVertical: 8 }]} />
+          
+          <View style={styles.locationRow}>
+            <Text style={[styles.metadataLabel, { color: isDark ? '#AAA' : '#666' }]}>地点</Text>
+            <TextInput
+              style={[styles.locationInput, { color: isDark ? '#FFF' : '#333' }]}
+              placeholder="📍 添加地点（选填）"
+              placeholderTextColor={isDark ? '#888' : '#CCC'}
+              value={location}
+              onChangeText={setLocation}
+            />
+          </View>
+          <View style={[styles.divider, { borderBottomColor: isDark ? '#333' : '#F0F0F0', marginVertical: 8 }]} />
+          
+          <MoodTabSelector selectedMood={mood} onSelectMood={setMood} />
+          <View style={[styles.divider, { borderBottomColor: isDark ? '#333' : '#F0F0F0', marginVertical: 8 }]} />
+          
+          <WeatherTabSelector selectedWeather={weather} onSelectWeather={setWeather} />
+        </View>
+
+        {/* 权限设置卡片 */}
+        <View style={[styles.card, styles.switchCard, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
           <View style={styles.switchInfo}>
             <Text style={[styles.switchTitle, { color: isDark ? '#FFF' : '#333' }]}>🌍 分享到圈子</Text>
             <Text style={[styles.switchSubtitle, { color: isDark ? '#AAA' : '#999' }]}>让所有人都能看到这篇美好的日记</Text>
@@ -275,82 +295,96 @@ const EditDiaryScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    fontSize: 18,
-    color: '#666',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
   },
   scrollView: {
     flex: 1,
   },
-  section: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+  scrollContent: {
+    paddingVertical: 20,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+  scenarioWrapper: {
+    paddingHorizontal: 20,
     marginBottom: 8,
   },
-  input: {
-    fontSize: 16,
-    color: '#333',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#F5F5F5',
-    borderWidth: 2,
-    borderColor: '#E5E5E5',
-  },
-  titleInput: {
-    fontWeight: '600',
-  },
-  contentInput: {
-    minHeight: 150,
-    lineHeight: 24,
-  },
-  saveButtonContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+  scenarioGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  fullWidthButton: {
     width: '100%',
   },
-  switchSection: {
+  compactChip: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 48,
+  },
+  compactIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  compactIcon: {
+    fontSize: 20,
+  },
+  compactName: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  card: {
+    borderRadius: 24,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  titleInput: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    paddingVertical: 10,
+  },
+  divider: {
+    borderBottomWidth: 1,
+  },
+  contentInput: {
+    fontSize: 17,
+    minHeight: 200,
+    lineHeight: 28,
+    paddingVertical: 20,
+  },
+  charCount: {
+    fontSize: 12,
+    textAlign: 'right',
+    marginTop: 8,
+  },
+  mediaCard: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
+  metadataLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    width: 60,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  locationInput: {
+    flex: 1,
+    fontSize: 15,
+  },
+  switchCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+    paddingVertical: 24,
   },
   switchInfo: {
     flex: 1,
@@ -358,12 +392,18 @@ const styles = StyleSheet.create({
   switchTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   switchSubtitle: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 13,
+  },
+  saveButtonContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  fullWidthButton: {
+    width: '100%',
   },
 });
 
