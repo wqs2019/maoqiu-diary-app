@@ -24,6 +24,7 @@ import FeedbackScreen from '@/screens/mine/FeedbackScreen';
 import MineScreen from '@/screens/mine/MineScreen';
 import NotebooksScreen from '@/screens/mine/NotebooksScreen';
 import SettingsScreen from '@/screens/mine/SettingsScreen';
+import WebScreen from '@/screens/mine/WebScreen';
 import AppLockSettingScreen from '@/screens/mine/AppLockSettingScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   Notebooks: undefined;
   Settings: undefined;
   AppLockSetting: undefined;
+  Web: { url: string; title?: string };
 };
 
 export type AuthStackParamList = {
@@ -234,6 +236,13 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="Settings"
             component={SettingsScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="Web"
+            component={WebScreen}
             options={{
               headerShown: false,
             }}

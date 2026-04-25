@@ -82,11 +82,17 @@ const AboutScreen: React.FC = () => {
             <Text style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>✨ 去应用市场给毛球好评</Text>
             <Feather name="chevron-right" size={20} color={isDark ? '#888' : HEALING_COLORS.gray[400]} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.menuItem, styles.menuItemBorder, { borderBottomColor: isDark ? '#333' : HEALING_COLORS.gray[100] }]}>
+          <TouchableOpacity 
+            style={[styles.menuItem, styles.menuItemBorder, { borderBottomColor: isDark ? '#333' : HEALING_COLORS.gray[100] }]}
+            onPress={() => (navigation as any).navigate('Web', { url: 'https://www.xieyimao.com/doc/detailzh/token/1772109293_4012', title: '用户服务协议' })}
+          >
             <Text style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>📄 用户服务协议</Text>
             <Feather name="chevron-right" size={20} color={isDark ? '#888' : HEALING_COLORS.gray[400]} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => (navigation as any).navigate('Web', { url: 'https://www.xieyimao.com/doc/detailzh/token/1772108718_2251', title: '隐私保护政策' })}
+          >
             <Text style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>🔒 隐私保护政策</Text>
             <Feather name="chevron-right" size={20} color={isDark ? '#888' : HEALING_COLORS.gray[400]} />
           </TouchableOpacity>
