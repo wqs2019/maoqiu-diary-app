@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useDiaryStats } from '../../hooks/useDiaryQuery';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { useJoinDays } from '../../hooks/useJoinDays';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
@@ -27,6 +28,9 @@ const MineScreen: React.FC = () => {
   const getNotebooks = useNotebookStore((state) => state.getNotebooks);
   const fetchNotebooks = useNotebookStore((state) => state.fetchNotebooks);
   const notebookCount = user?._id ? getNotebooks(user._id).length : 0;
+
+  // 使用 hook 计算加入天数
+  const joinDays = useJoinDays(user);
 
   useEffect(() => {
     // 仅在没有用户信息时才主动获取，避免重复获取导致页面闪烁
@@ -100,6 +104,13 @@ const MineScreen: React.FC = () => {
           <View style={styles.userDetails}>
             <Text style={[styles.userName, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{user?.nickname || '毛球日记'}</Text>
             <Text style={[styles.userPhone, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>{user?.phone || '点击登录 / 注册 ✨'}</Text>
+            {user && (
+              <View style={[styles.joinDaysTag, { backgroundColor: isDark ? '#374151' : currentHealingColors.pink[50] }]}>
+                <Text style={[styles.joinDaysText, { color: isDark ? '#D1D5DB' : currentHealingColors.pink[500] }]}>
+                  来毛球日记的第 {joinDays} 天
+                </Text>
+              </View>
+            )}
           </View>
           <TouchableOpacity
             style={[
@@ -128,7 +139,7 @@ const MineScreen: React.FC = () => {
           <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : HEALING_COLORS.gray[100] }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{stats.currentStreak}</Text>
-            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>打卡(天)</Text>
+            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>连续打卡(天)</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : HEALING_COLORS.gray[100] }]} />
           <TouchableOpacity
@@ -266,6 +277,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: HEALING_COLORS.gray[500],
     fontWeight: '500',
+  },
+  joinDaysTag: {
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  joinDaysText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   editButton: {
     width: 36,
