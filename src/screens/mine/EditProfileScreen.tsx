@@ -210,9 +210,7 @@ const EditProfileScreen: React.FC = () => {
               source={
                 avatar
                   ? { uri: avatar }
-                  : {
-                      uri: `https://api.dicebear.com/7.x/notionists/png?seed=${nickname || 'Maoqiu'}`,
-                    }
+                  : require('../../../assets/logo_bg.png')
               }
               fadeDuration={0}
               style={styles.avatarImage}

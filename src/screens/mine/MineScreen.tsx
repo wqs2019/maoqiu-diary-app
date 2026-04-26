@@ -125,7 +125,7 @@ const MineScreen: React.FC = () => {
             source={
               user?.avatar
                 ? { uri: user.avatar }
-                : { uri: 'https://api.dicebear.com/7.x/notionists/png?seed=Maoqiu' }
+                : require('../../../assets/logo_bg.png')
             }
             fadeDuration={0}
             style={[

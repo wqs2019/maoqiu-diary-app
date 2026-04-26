@@ -110,7 +110,7 @@ const CircleScreen: React.FC = () => {
                     style={{ width: 40, height: 40, borderRadius: 20 }}
                   />
                 ) : (
-                  <Text style={styles.avatarEmoji}>🧶</Text>
+                  <Image source={require('../../../assets/logo_bg.png')} style={{ width: '100%', height: '100%', borderRadius: 18 }} />
                 )}
               </View>
               <View style={styles.headerInfo}>
