@@ -10,17 +10,44 @@ import {
   DARK_HEALING_COLORS,
 } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { useVipGuard } from '../../hooks/useVipGuard';
 import { CloudService } from '../../services/tcb';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
+import { Modal } from '../../components/common/Modal';
+import { useState, useEffect } from 'react';
 
 const AccountSecurityScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
+  const { checkVipPermission } = useVipGuard();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const toast = useToast();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteCountdown, setDeleteCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showDeleteModal) {
+      setDeleteCountdown(10);
+      timer = setInterval(() => {
+        setDeleteCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setDeleteCountdown(0);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [showDeleteModal]);
 
   const currentHealingColors = isDark
     ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS }
@@ -33,12 +60,10 @@ const AccountSecurityScreen: React.FC = () => {
     return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
   };
 
-  const handleDevelopTip = () => {
-    Alert.alert('提示', '功能开发中，敬请期待');
-  };
-
   const handleDeleteAccount = async () => {
     if (!user?._id) return;
+    
+    toast.loading('正在注销账号...');
     
     try {
       // 1. 标记用户的日记本为已注销
@@ -60,10 +85,12 @@ const AccountSecurityScreen: React.FC = () => {
       }
 
       // 3. 退出登录
+      toast.hide();
       toast.success('账号已成功注销');
       await logout();
     } catch (error) {
       console.error('Delete account error:', error);
+      toast.hide();
       toast.error('注销账号失败，请稍后重试');
     }
   };
@@ -192,7 +219,9 @@ const AccountSecurityScreen: React.FC = () => {
             </View>,
             true,
             () => {
-              navigation.navigate('AppLockSetting' as never);
+              if (checkVipPermission('appLock')) {
+                navigation.navigate('AppLockSetting' as never);
+              }
             }
           )}
         </View>
@@ -237,19 +266,51 @@ const AccountSecurityScreen: React.FC = () => {
             currentHealingColors.pink[600],
             <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
             true,
-            () => {
-              Alert.alert('注销账号', '确定要注销账号吗？注销后数据将无法恢复。', [
-                { text: '取消', style: 'cancel' },
-                {
-                  text: '确定',
-                  style: 'destructive',
-                  onPress: handleDeleteAccount,
-                },
-              ]);
-            }
+            () => setShowDeleteModal(true)
           )}
         </View>
       </ScrollView>
+
+      <Modal visible={showDeleteModal} onClose={() => setShowDeleteModal(false)} transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF' }]}>
+            <Text style={[styles.modalTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+              真的要离开吗？🥺
+            </Text>
+            <Text style={[styles.modalText, { color: currentHealingColors.gray[600] }]}>
+              注销账号后，您在毛球日记记录的<Text style={{ fontWeight: 'bold', color: currentHealingColors.pink[500] }}>所有日记、相册以及心情数据将永远消失，无法找回</Text>。
+            </Text>
+            <Text style={[styles.modalText, { color: currentHealingColors.gray[600], marginTop: 12, marginBottom: 24 }]}>
+              毛球会很想念您的，希望能有机会再听您分享每一天的喜怒哀乐。
+            </Text>
+            
+            <View style={styles.modalButtonGroup}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: currentHealingColors.gray[100] }]}
+                onPress={() => setShowDeleteModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: currentHealingColors.gray[700] }]}>我再想想</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.modalButton, 
+                  { backgroundColor: deleteCountdown > 0 ? currentHealingColors.gray[400] : currentHealingColors.pink[500] }
+                ]}
+                disabled={deleteCountdown > 0}
+                onPress={() => {
+                  setShowDeleteModal(false);
+                  handleDeleteAccount();
+                }}
+              >
+                <Text style={[styles.modalButtonText, { color: 'white' }]}>
+                  {deleteCountdown > 0 ? `残忍离开 (${deleteCountdown}s)` : '残忍离开'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -317,6 +378,42 @@ const styles = StyleSheet.create({
   },
   valueText: {
     fontSize: 14,
+  },
+  modalText: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  modalContent: {
+    width: '80%',
+    padding: 24,
+    borderRadius: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalButtonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 24,
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import {
   View,
   Text,
@@ -10,13 +11,95 @@ import {
   Platform,
   Image,
   ScrollView,
+  Dimensions,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
 import { useAuthStore } from '../../store/authStore';
 
 import { useToast } from '@/components/common/Toast';
+
+const { width } = Dimensions.get('window');
+
+// 动画背景组件
+const FloatingBlob = ({ 
+  color, 
+  size, 
+  initialTop, 
+  initialLeft, 
+  animationDuration,
+  scaleRange = [0.9, 1.1],
+  translateYRange = [-15, 15]
+}: { 
+  color: string; 
+  size: number; 
+  initialTop: number; 
+  initialLeft: number;
+  animationDuration: number;
+  scaleRange?: [number, number];
+  translateYRange?: [number, number];
+}) => {
+  const scale = useSharedValue(1);
+  const translateY = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(scaleRange[0], { duration: animationDuration, easing: Easing.inOut(Easing.ease) }),
+        withTiming(scaleRange[1], { duration: animationDuration, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      true
+    );
+    translateY.value = withRepeat(
+      withSequence(
+        withTiming(translateYRange[0], { duration: animationDuration * 1.2, easing: Easing.inOut(Easing.ease) }),
+        withTiming(translateYRange[1], { duration: animationDuration * 1.2, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { translateY: translateY.value }
+    ],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          top: initialTop,
+          left: initialLeft,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          opacity: 0.65, // 降低透明度让颜色显得更浅更柔和
+          filter: 'blur(30px)', // 在支持的平台上产生高斯模糊效果，或者使用阴影模拟
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.5,
+          shadowRadius: 30,
+        },
+        animatedStyle,
+      ]}
+    />
+  );
+};
 
 const LoginScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
@@ -71,31 +154,51 @@ const LoginScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top }]}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
         <View style={styles.content}>
-          {/* 装饰元素 */}
+          {/* 装饰元素 - 动态模糊渐变光晕背景 */}
           <View style={styles.decoration}>
-            <Ionicons name="heart" size={24} color={COLORS.primary} style={styles.decorationIcon} />
-            <Ionicons
-              name="star"
-              size={16}
-              color={COLORS.secondary}
-              style={[styles.decorationIcon, { top: 10, right: 40 }]}
+            <FloatingBlob
+              color="#FFE4E8" // 极其浅的淡粉色
+              size={width * 0.6}
+              initialTop={-width * 0.1}
+              initialLeft={-width * 0.1}
+              animationDuration={4000}
+              translateYRange={[-20, 20]}
             />
-            <Ionicons
-              name="flower"
-              size={20}
-              color={COLORS.primary}
-              style={[styles.decorationIcon, { bottom: 20, left: 20 }]}
+            <FloatingBlob
+              color="#F6F0FA" // 淡淡的薰衣草紫白
+              size={width * 0.7}
+              initialTop={width * 0.2}
+              initialLeft={width * 0.3}
+              animationDuration={5000}
+              scaleRange={[-0.8, 1.2]}
             />
+            <FloatingBlob
+              color="#FFF0F5" // 极浅的迷雾粉白
+              size={width * 0.5}
+              initialTop={width * 0.6}
+              initialLeft={-width * 0.1}
+              animationDuration={6000}
+              translateYRange={[-30, 10]}
+            />
+            
+            {/* 增加一点小点缀 */}
+            <Animated.View style={[styles.decorationIcon, { top: 80, right: 50, opacity: 0.5 }]}>
+              <Ionicons name="sparkles" size={24} color="#FFE066" />
+            </Animated.View>
+            <Animated.View style={[styles.decorationIcon, { bottom: 180, left: 40, opacity: 0.3 }]}>
+              <Ionicons name="heart" size={18} color="#FFB6C1" />
+            </Animated.View>
           </View>
 
           {/* 标题部分 */}

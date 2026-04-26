@@ -39,7 +39,7 @@ const DiaryDetailScreen: React.FC = () => {
   const { data: diary, isLoading, error, refetch } = useDiaryDetail(_id);
   const deleteMutation = useDeleteDiary();
   const toggleFavorite = useToggleFavorite();
-  const { checkCanWriteDiary } = useVipGuard();
+  const { checkVipPermission } = useVipGuard();
 
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -86,7 +86,7 @@ const DiaryDetailScreen: React.FC = () => {
   };
 
   const handleDelete = () => {
-    if (!checkCanWriteDiary()) {
+    if (!checkVipPermission('writeDiary')) {
       return;
     }
     Alert.alert('确认删除', '删除后无法恢复，是否继续？', [
@@ -247,7 +247,7 @@ const DiaryDetailScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.bottomBarAction}
           onPress={() => {
-            if (checkCanWriteDiary()) {
+            if (checkVipPermission('writeDiary')) {
               navigation.navigate('EditDiary', { diaryId: _id });
             }
           }}

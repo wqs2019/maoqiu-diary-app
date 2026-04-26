@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,7 +37,22 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-20)).current;
+  const rotateValue = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (visible && options.type === 'loading') {
+      Animated.loop(
+        Animated.timing(rotateValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      rotateValue.setValue(0);
+    }
+  }, [visible, options.type, rotateValue]);
 
   const hide = useCallback(() => {
     if (timerRef.current) {
@@ -104,7 +119,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       case 'error':
         return <Ionicons name="close-circle" size={24} color="#EF4444" style={styles.icon} />;
       case 'loading':
-        return <Ionicons name="sync" size={24} color="#3B82F6" style={styles.icon} />; // Could add rotation animation here
+        const spin = rotateValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '360deg'],
+        });
+        return (
+          <Animated.View style={[styles.icon, { transform: [{ rotate: spin }] }]}>
+            <Ionicons name="sync" size={24} color="#3B82F6" />
+          </Animated.View>
+        );
       case 'info':
         return <Ionicons name="information-circle" size={24} color="#3B82F6" style={styles.icon} />;
       default:

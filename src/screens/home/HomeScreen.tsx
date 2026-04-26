@@ -131,7 +131,7 @@ const HomeScreen: React.FC = () => {
   const minTranslateY = -(height * 0.65); // 向上最多滑动区域
   const maxTranslateY = 0; // 向下最多滑动区域
 
-  const { checkCanWriteDiary, checkCanCreateNotebook } = useVipGuard();
+  const { checkVipPermission } = useVipGuard();
 
   const panResponder = useRef(
     PanResponder.create({
@@ -192,7 +192,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleCreateDiary = (scenario?: ScenarioType) => {
-    if (!checkCanWriteDiary()) {
+    if (!checkVipPermission('writeDiary')) {
       return;
     }
     (navigation as any).navigate('EditDiary', { scenario: scenario || 'daily' });
@@ -503,7 +503,7 @@ const HomeScreen: React.FC = () => {
                 <TouchableOpacity
                   style={styles.addNotebookBtn}
                   onPress={async () => {
-                    if (!checkCanCreateNotebook(()=>{
+                    if (!checkVipPermission('createNotebook', ()=>{
                       setIsNotebookModalVisible(false);
                     })) {
                       return;

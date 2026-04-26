@@ -78,7 +78,7 @@ const EditDiaryScreen: React.FC = () => {
   const updateDiaryMutation = useUpdateDiary();
   const user = useAuthStore((state) => state.user);
   const getCurrentNotebook = useNotebookStore((state) => state.getCurrentNotebook);
-  const { checkCanWriteDiary } = useVipGuard();
+  const { checkVipPermission } = useVipGuard();
 
   const handleSave = () => {
     if (!title.trim() && !content.trim()) {
@@ -86,7 +86,7 @@ const EditDiaryScreen: React.FC = () => {
       return;
     }
 
-    if (!checkCanWriteDiary()) {
+    if (!checkVipPermission('writeDiary')) {
       return;
     }
 

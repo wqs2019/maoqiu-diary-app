@@ -30,7 +30,7 @@ const NotebooksScreen: React.FC = () => {
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const user = useAuthStore((state) => state.user);
   const { isDark } = useAppTheme();
-  const { checkCanCreateNotebook, checkCanManageNotebook } = useVipGuard();
+  const { checkVipPermission } = useVipGuard();
 
   const setCurrentNotebook = useNotebookStore((state) => state.setCurrentNotebook);
   const addNotebook = useNotebookStore((state) => state.addNotebook);
@@ -105,7 +105,7 @@ const NotebooksScreen: React.FC = () => {
   };
 
   const openAddModal = () => {
-    if (!checkCanCreateNotebook()) return;
+    if (!checkVipPermission('createNotebook')) return;
     setIsEditMode(false);
     setEditingNotebookId(null);
     setNewNotebookName('');
@@ -145,7 +145,7 @@ const NotebooksScreen: React.FC = () => {
   };
 
   const handleMoreOptions = (notebook: Notebook) => {
-    if (!checkCanManageNotebook()) return;
+    if (!checkVipPermission('manageNotebook')) return;
 
     const options: any[] = [
       { text: '取消', style: 'cancel' },
