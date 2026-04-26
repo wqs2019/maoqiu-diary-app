@@ -25,6 +25,7 @@ import MineScreen from '@/screens/mine/MineScreen';
 import NotebooksScreen from '@/screens/mine/NotebooksScreen';
 import SettingsScreen from '@/screens/mine/SettingsScreen';
 import SubscriptionScreen from '@/screens/mine/SubscriptionScreen';
+import AccountSecurityScreen from '@/screens/mine/AccountSecurityScreen';
 import WebScreen from '@/screens/mine/WebScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
 import { useAppStore } from '@/store/appStore';
@@ -47,6 +48,7 @@ export type RootStackParamList = {
   Favorites: undefined;
   Notebooks: undefined;
   Settings: undefined;
+  AccountSecurity: undefined;
   Subscription: undefined;
   AppLockSetting: undefined;
   Web: { url: string; title?: string };
@@ -236,6 +238,13 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="Settings"
             component={SettingsScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="AccountSecurity"
+            component={AccountSecurityScreen}
             options={{
               headerShown: false,
             }}

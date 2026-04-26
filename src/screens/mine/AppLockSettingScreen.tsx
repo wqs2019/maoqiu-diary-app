@@ -19,25 +19,26 @@ const AppLockSettingScreen: React.FC = () => {
 
   const [passwordInput, setPasswordInput] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [step, setStep] = useState<'initial' | 'set_password' | 'confirm_password'>('initial');
+  const [step, setStep] = useState<'initial' | 'set_password' | 'confirm_password' | 'verify_close'>('initial');
 
   const handleToggle = (val: boolean) => {
     if (val) {
       setStep('set_password');
     } else {
-      Alert.alert('关闭密码锁', '确定要关闭应用密码锁吗？', [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '确定',
-          onPress: () => {
-            setAppLock(false, null);
-            setStep('initial');
-            setPasswordInput('');
-            setConfirmPassword('');
-          },
-        },
-      ]);
+      setStep('verify_close');
     }
+  };
+
+  const handleVerifyClose = () => {
+    if (passwordInput !== appLockPassword) {
+      Alert.alert('提示', '密码不正确');
+      setPasswordInput('');
+      return;
+    }
+    setAppLock(false, null);
+    setStep('initial');
+    setPasswordInput('');
+    Alert.alert('提示', '应用密码锁已关闭');
   };
 
   const handleSetPassword = () => {
@@ -109,10 +110,18 @@ const AppLockSettingScreen: React.FC = () => {
     }
 
     const isConfirm = step === 'confirm_password';
+    const isVerifyClose = step === 'verify_close';
+
+    const getTitle = () => {
+      if (isVerifyClose) return '请输入原密码以关闭';
+      if (isConfirm) return '请再次输入密码';
+      return '请设置4位数字密码';
+    };
+
     return (
       <View style={styles.setupContainer}>
         <Text style={[styles.setupTitle, { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[800] }]}>
-          {isConfirm ? '请再次输入密码' : '请设置4位数字密码'}
+          {getTitle()}
         </Text>
         <TextInput
           style={[
@@ -139,9 +148,15 @@ const AppLockSettingScreen: React.FC = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.confirmButton]}
-            onPress={isConfirm ? handleConfirmPassword : handleSetPassword}
+            onPress={
+              isVerifyClose
+                ? handleVerifyClose
+                : isConfirm
+                  ? handleConfirmPassword
+                  : handleSetPassword
+            }
           >
-            <Text style={styles.confirmButtonText}>下一步</Text>
+            <Text style={styles.confirmButtonText}>确定</Text>
           </TouchableOpacity>
         </View>
       </View>

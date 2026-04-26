@@ -245,7 +245,7 @@ const SettingsScreen: React.FC = () => {
             <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
             false,
             () => {
-              Alert.alert('提示', '功能开发中');
+              navigation.navigate('AccountSecurity' as never);
             }
           )}
           {renderSettingItem(
@@ -269,7 +269,7 @@ const SettingsScreen: React.FC = () => {
           )}
         </View>
 
-        {/* 隐私与安全 */}
+        {/* 隐私与安全
         <View
           style={[
             styles.menuSection,
@@ -285,17 +285,8 @@ const SettingsScreen: React.FC = () => {
             },
           ]}
         >
-          {renderSettingItem(
-            'lock',
-            '应用密码锁',
-            currentHealingColors.yellow[600],
-            <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
-            false,
-            () => {
-              navigation.navigate('AppLockSetting' as never);
-            }
-          )}
         </View>
+        */}
 
         {/* 通用设置 */}
         <View
