@@ -287,7 +287,8 @@ const getDiaryList = async (data) => {
 
     if (isPublic !== undefined) {
       query.isPublic = isPublic;
-      if (isPublic === true) {
+      // 如果既传了 userId 又传了 isPublic=true，说明是在看特定用户的公开日记，保留 userId
+      if (isPublic === true && !userId) {
         delete query.userId; // 确保世界频道展示所有人
       }
     }

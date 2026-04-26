@@ -250,7 +250,12 @@ const syncVipStatus = async (data) => {
     const userRes = await db.collection('users').doc(_id).get();
     const user = userRes.data ? (Array.isArray(userRes.data) ? userRes.data[0] : userRes.data) : null;
     
-    if (!user) return { success: false, message: 'User not found' };
+    if (!user) {
+      return { success: false, message: '该用户不存在' };
+    }
+    if (user.isDelete) {
+      return { success: false, message: '该用户已注销' };
+    }
 
     let isVip = false;
     
@@ -366,6 +371,142 @@ const deactivateAccount = async (data) => {
   }
 };
 
+// Get user profile
+const getProfile = async (data) => {
+  try {
+    const { targetUserId, currentUserId } = data;
+    if (!targetUserId) {
+      return { success: false, message: 'targetUserId is required' };
+    }
+
+    const userRes = await db.collection('users').doc(targetUserId).get();
+    const userData = userRes.data && Array.isArray(userRes.data) ? userRes.data[0] : userRes.data;
+    
+    if (!userData) {
+      return { success: false, message: '该用户不存在' };
+    }
+
+    if (userData.isDelete) {
+      return { success: false, message: '该用户已注销' };
+    }
+
+    // get public diaries count and total likes
+    const countRes = await db.collection('diaries').where({ 
+      userId: targetUserId, 
+      isPublic: true 
+    }).count();
+    
+    let publicDiariesCount = countRes.total || 0;
+    let totalLikes = 0;
+
+    if (publicDiariesCount > 0) {
+      const MAX_LIMIT = 1000;
+      const batchTimes = Math.ceil(publicDiariesCount / MAX_LIMIT);
+      const tasks = [];
+      
+      for (let i = 0; i < batchTimes; i++) {
+        tasks.push(
+          db.collection('diaries').where({ 
+            userId: targetUserId, 
+            isPublic: true 
+          })
+          .skip(i * MAX_LIMIT)
+          .limit(MAX_LIMIT)
+          .field({ likedUserIds: true }) // 只查点赞字段，极大地节省内存和网络开销
+          .get()
+        );
+      }
+      
+      const results = await Promise.all(tasks);
+      for (const res of results) {
+        if (res.data) {
+          const diaries = Array.isArray(res.data) ? res.data : [res.data];
+          totalLikes += diaries.reduce((sum, diary) => {
+            const likes = Array.isArray(diary.likedUserIds) ? diary.likedUserIds.length : 0;
+            return sum + likes;
+          }, 0);
+        }
+      }
+    }
+    
+    // get followers count
+    const followersCount = Array.isArray(userData.followers) ? userData.followers.length : 0;
+    
+    // check if current user is following
+    let isFollowing = false;
+    if (currentUserId && Array.isArray(userData.followers)) {
+      isFollowing = userData.followers.includes(currentUserId);
+    }
+
+    return {
+      success: true,
+      data: {
+        _id: userData._id,
+        nickname: userData.nickname,
+        avatar: userData.avatar,
+        publicDiariesCount: publicDiariesCount,
+        followersCount: followersCount,
+        totalLikes: totalLikes,
+        isFollowing,
+      }
+    };
+  } catch (error) {
+    console.error('Get profile error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+// Follow or unfollow user
+const follow = async (data) => {
+  try {
+    const { followerId, followingId, action } = data; // action: 'follow' or 'unfollow'
+    if (!followerId || !followingId) {
+      return { success: false, message: 'followerId and followingId are required' };
+    }
+    if (followerId === followingId) {
+      return { success: false, message: 'Cannot follow yourself' };
+    }
+
+    const usersColl = db.collection('users');
+
+    const followingUserRes = await usersColl.doc(followingId).get();
+    const followerUserRes = await usersColl.doc(followerId).get();
+    
+    let followingUser = followingUserRes.data ? (Array.isArray(followingUserRes.data) ? followingUserRes.data[0] : followingUserRes.data) : null;
+    let followerUser = followerUserRes.data ? (Array.isArray(followerUserRes.data) ? followerUserRes.data[0] : followerUserRes.data) : null;
+
+    if (!followingUser || !followerUser) {
+      return { success: false, message: '该用户不存在' };
+    }
+
+    if (followingUser.isDelete) {
+      return { success: false, message: '对方已注销，无法关注' };
+    }
+    if (followerUser.isDelete) {
+      return { success: false, message: '您的账号已注销' };
+    }
+
+    let followers = Array.isArray(followingUser.followers) ? followingUser.followers : [];
+    let following = Array.isArray(followerUser.following) ? followerUser.following : [];
+
+    if (action === 'follow') {
+      if (!followers.includes(followerId)) followers.push(followerId);
+      if (!following.includes(followingId)) following.push(followingId);
+    } else {
+      followers = followers.filter(id => id !== followerId);
+      following = following.filter(id => id !== followingId);
+    }
+
+    await usersColl.doc(followingId).update({ followers, updatedAt: db.serverDate() });
+    await usersColl.doc(followerId).update({ following, updatedAt: db.serverDate() });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Follow error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
 exports.main = async (event, context) => {
   const { action, data } = event;
 
@@ -386,6 +527,10 @@ exports.main = async (event, context) => {
       return await syncVipStatus(data);
     case 'verifyPurchase':
       return await verifyPurchase(data);
+    case 'getProfile':
+      return await getProfile(data);
+    case 'follow':
+      return await follow(data);
     default:
       return {
         success: false,

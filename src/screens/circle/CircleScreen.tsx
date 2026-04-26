@@ -101,8 +101,13 @@ const CircleScreen: React.FC = () => {
           >
             {/* 顶部：头像、昵称、时间 */}
             <View style={styles.feedHeader}>
-              <View
+              <TouchableOpacity
                 style={[styles.avatarPlaceholder, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}
+                onPress={() => {
+                  if (item.userId) {
+                    navigation.navigate('UserProfile', { userId: item.userId });
+                  }
+                }}
               >
                 {item.authorInfo?.avatar ? (
                   <Image
@@ -112,7 +117,7 @@ const CircleScreen: React.FC = () => {
                 ) : (
                   <Image source={require('../../../assets/logo_bg.png')} style={{ width: '100%', height: '100%', borderRadius: 18 }} />
                 )}
-              </View>
+              </TouchableOpacity>
               <View style={styles.headerInfo}>
                 <Text style={[styles.nickname, { color: isDark ? '#FFF' : '#111827' }]}>
                   {item.authorInfo?.nickname || '某只毛球'}

@@ -11,6 +11,7 @@ import CategoryScreen from '@/screens/category/CategoryScreen';
 import PhotoWallScreen from '@/screens/category/PhotoWallScreen';
 import CircleDetailScreen from '@/screens/circle/CircleDetailScreen';
 import CircleScreen from '@/screens/circle/CircleScreen';
+import UserProfileScreen from '@/screens/circle/UserProfileScreen';
 import DiaryDetailScreen from '@/screens/diary/DiaryDetailScreen';
 import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
 import HomeScreen from '@/screens/home/HomeScreen';
@@ -39,6 +40,7 @@ export type RootStackParamList = {
   EditDiary: { scenario?: string; diaryId?: string };
   DiaryDetail: { _id: string };
   CircleDetail: { _id: string };
+  UserProfile: { userId: string };
   EditProfile: undefined;
   PhotoWall: { scenario?: string };
   About: undefined;
@@ -177,6 +179,13 @@ export const RootNavigator = () => {
               },
               headerTintColor: colors.text,
               headerBackTitle: '返回',
+            }}
+          />
+          <RootStack.Screen
+            name="UserProfile"
+            component={UserProfileScreen}
+            options={{
+              headerShown: false,
             }}
           />
           <RootStack.Screen

@@ -70,6 +70,64 @@ export class UserService {
       throw error;
     }
   }
+
+  /**
+   * 获取用户公开主页信息
+   */
+  async getProfile(targetUserId: string, currentUserId?: string): Promise<any> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'getProfile',
+        data: {
+          targetUserId,
+          currentUserId,
+        },
+      });
+
+      if (response.code === 0 && response.data) {
+        const cloudResult = response.data;
+        if (cloudResult.success && cloudResult.data) {
+          return cloudResult.data;
+        }
+        if (cloudResult.success === false) {
+          throw new Error(cloudResult.message || '获取用户主页失败');
+        }
+      }
+
+      throw new Error(response.message || '获取用户主页失败');
+    } catch (error) {
+      console.error('UserService.getProfile error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 关注/取消关注用户
+   */
+  async follow(followerId: string, followingId: string, action: 'follow' | 'unfollow'): Promise<boolean> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'follow',
+        data: {
+          followerId,
+          followingId,
+          action,
+        },
+      });
+
+      if (response.code === 0 && response.data) {
+        const cloudResult = response.data;
+        if (cloudResult.success) {
+          return true;
+        }
+      }
+
+      throw new Error(response.message || '操作失败');
+    } catch (error) {
+      console.error('UserService.follow error:', error);
+      throw error;
+    }
+  }
 }
 
 export default new UserService();
