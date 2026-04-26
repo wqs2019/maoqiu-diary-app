@@ -42,12 +42,26 @@ export const ScenarioChip: React.FC<ScenarioChipProps> = ({
       activeOpacity={0.7}
     >
       <Text style={styles.icon}>{template.icon}</Text>
-      <Text style={[styles.text, selected ? { color: '#FFFFFF' } : { color: isDark ? '#AAA' : scenario.primary }]}>
+      <Text
+        style={[
+          styles.text,
+          selected ? { color: '#FFFFFF' } : { color: isDark ? '#AAA' : scenario.primary },
+        ]}
+      >
         {template.name}
       </Text>
       {count !== undefined && (
-        <View style={[styles.badge, { backgroundColor: selected ? '#FFFFFF' : (isDark ? '#333' : scenario.primary) }]}>
-          <Text style={[styles.badgeText, { color: isDark && !selected ? '#AAA' : scenario.primary }]}>{count}</Text>
+        <View
+          style={[
+            styles.badge,
+            { backgroundColor: selected ? '#FFFFFF' : isDark ? '#333' : scenario.primary },
+          ]}
+        >
+          <Text
+            style={[styles.badgeText, { color: isDark && !selected ? '#AAA' : scenario.primary }]}
+          >
+            {count}
+          </Text>
         </View>
       )}
     </TouchableOpacity>

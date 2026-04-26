@@ -97,7 +97,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
           {media.map((item, index) => {
             const isLastInRow = (index + 1) % columns === 0;
             const isLastRow = Math.floor(index / columns) === Math.floor((count - 1) / columns);
-            
+
             return (
               <View
                 key={index}
@@ -105,8 +105,8 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
                   styles.mediaWrapper,
                   {
                     width: columns === 1 ? '100%' : columns === 2 ? '48.5%' : '32%',
-                    aspectRatio: columns === 1 ? 4/3 : 1,
-                    marginRight: isLastInRow ? 0 : (columns === 2 ? '3%' : '2%'),
+                    aspectRatio: columns === 1 ? 4 / 3 : 1,
+                    marginRight: isLastInRow ? 0 : columns === 2 ? '3%' : '2%',
                     marginBottom: isLastRow ? 0 : 8,
                   },
                 ]}
@@ -136,8 +136,8 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
             <View style={{ width: 36 }} />
           </View>
 
-          <ScrollView 
-            style={{ flex: 1 }} 
+          <ScrollView
+            style={{ flex: 1 }}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
@@ -173,7 +173,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
                         {quoteData.content.en ? (
                           <Text style={styles.quoteTextEn}>{quoteData.content.en}</Text>
                         ) : null}
-                        <Text style={styles.quoteAuthor}>—— {quoteData.author.zh || quoteData.author.en || '佚名'}</Text>
+                        <Text style={styles.quoteAuthor}>
+                          —— {quoteData.author.zh || quoteData.author.en || '佚名'}
+                        </Text>
                       </View>
                     )}
                   </View>

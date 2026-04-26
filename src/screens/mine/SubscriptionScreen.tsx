@@ -12,24 +12,29 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
-
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as RNIap from 'react-native-iap';
-import { ensureIAPConnection } from '../../services/iapManager';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import { ensureIAPConnection } from '../../services/iapManager';
 import { useAuthStore } from '../../store/authStore';
+
 import { useToast } from '@/components/common/Toast';
 
-type SubscriptionScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Subscription'>;
+type SubscriptionScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Subscription'
+>;
 
 const SubscriptionScreen: React.FC = () => {
   const navigation = useNavigation<SubscriptionScreenNavigationProp>();
   const { isDark } = useAppTheme();
-  const user = useAuthStore(state => state.user);
-  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
+  const user = useAuthStore((state) => state.user);
+  const currentHealingColors = isDark
+    ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS }
+    : HEALING_COLORS;
 
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -40,10 +45,35 @@ const SubscriptionScreen: React.FC = () => {
   const isPurchasing = useRef(false);
 
   const plans = [
-    { id: 'com.maoqiu.diary.monthly', title: '连续包月', price: '¥8', originalPrice: '¥12', label: '基础体验' },
-    { id: 'com.maoqiu.diary.quarterly', title: '连续包季', price: '¥25', originalPrice: '¥36', label: '折扣优选' },
-    { id: 'com.maoqiu.diary.half_yearly', title: '连续包半年', price: '¥40', originalPrice: '¥72', label: '超值特惠' },
-    { id: 'com.maoqiu.diary.yearly', title: '连续包年', price: '¥72', originalPrice: '¥144', label: '年度最低，仅 ¥6/月', isHot: true },
+    {
+      id: 'com.maoqiu.diary.monthly',
+      title: '连续包月',
+      price: '¥8',
+      originalPrice: '¥12',
+      label: '基础体验',
+    },
+    {
+      id: 'com.maoqiu.diary.quarterly',
+      title: '连续包季',
+      price: '¥25',
+      originalPrice: '¥36',
+      label: '折扣优选',
+    },
+    {
+      id: 'com.maoqiu.diary.half_yearly',
+      title: '连续包半年',
+      price: '¥40',
+      originalPrice: '¥72',
+      label: '超值特惠',
+    },
+    {
+      id: 'com.maoqiu.diary.yearly',
+      title: '连续包年',
+      price: '¥72',
+      originalPrice: '¥144',
+      label: '年度最低，仅 ¥6/月',
+      isHot: true,
+    },
   ];
 
   const features = [
@@ -66,7 +96,7 @@ const SubscriptionScreen: React.FC = () => {
         console.log('IAP: 建立/复用全局连接成功');
 
         // 必须先获取商品信息，否则苹果无法弹出支付窗口
-        const itemSKUs = plans.map(p => p.id);
+        const itemSKUs = plans.map((p) => p.id);
         console.log('IAP: 开始请求商品信息, skus:', itemSKUs);
         const products = await RNIap.fetchProducts({ skus: itemSKUs, type: 'subs' });
         console.log('IAP: 获取商品信息结果:', products?.length);
@@ -82,15 +112,34 @@ const SubscriptionScreen: React.FC = () => {
           const activePurchase = availablePurchases[0] as any;
           console.log('IAP: => 发现有效订阅！该用户当前拥有VIP。', availablePurchases);
           const currentUser = useAuthStore.getState().user;
-          const expiresAt = activePurchase.expirationDateIOS ? Number(activePurchase.expirationDateIOS) : undefined;
-          if (currentUser && (!currentUser.isVip?.value || currentUser.isVip?.type !== activePurchase.productId || currentUser.isVip?.expiresAt !== expiresAt)) {
-            useAuthStore.getState().updateProfile(currentUser._id, { isVip: { value: true, type: activePurchase.productId, expiresAt } }).catch(e => console.log(e));
+          const expiresAt = activePurchase.expirationDateIOS
+            ? Number(activePurchase.expirationDateIOS)
+            : undefined;
+          if (
+            currentUser &&
+            (!currentUser.isVip?.value ||
+              currentUser.isVip?.type !== activePurchase.productId ||
+              currentUser.isVip?.expiresAt !== expiresAt)
+          ) {
+            useAuthStore
+              .getState()
+              .updateProfile(currentUser._id, {
+                isVip: { value: true, type: activePurchase.productId, expiresAt },
+              })
+              .catch((e) => {
+                console.log(e);
+              });
           }
         } else {
           console.log('IAP: => 未发现有效订阅，用户当前不是VIP。');
           const currentUser = useAuthStore.getState().user;
-          if (currentUser && currentUser.isVip?.value) {
-            useAuthStore.getState().updateProfile(currentUser._id, { isVip: { value: false } }).catch(e => console.log(e));
+          if (currentUser?.isVip?.value) {
+            useAuthStore
+              .getState()
+              .updateProfile(currentUser._id, { isVip: { value: false } })
+              .catch((e) => {
+                console.log(e);
+              });
           }
         }
       } catch (err: any) {
@@ -106,8 +155,12 @@ const SubscriptionScreen: React.FC = () => {
         try {
           const currentUser = useAuthStore.getState().user;
           if (currentUser) {
-            const expiresAt = (purchase as any).expirationDateIOS ? Number((purchase as any).expirationDateIOS) : undefined;
-            await useAuthStore.getState().updateProfile(currentUser._id, { isVip: { value: true, type: purchase.productId, expiresAt } });
+            const expiresAt = (purchase as any).expirationDateIOS
+              ? Number((purchase as any).expirationDateIOS)
+              : undefined;
+            await useAuthStore.getState().updateProfile(currentUser._id, {
+              isVip: { value: true, type: purchase.productId, expiresAt },
+            });
           }
 
           if (isPurchasing.current) {
@@ -137,10 +190,10 @@ const SubscriptionScreen: React.FC = () => {
 
     purchaseErrorSubscription = RNIap.purchaseErrorListener((error) => {
       console.error('IAP: purchaseErrorListener 收到错误', error);
-      
+
       const errorCode = String(error.code);
       let errorMessage = '购买过程中发生未知错误';
-      
+
       switch (errorCode) {
         case 'user-cancelled':
         case 'E_USER_CANCELLED':
@@ -166,14 +219,18 @@ const SubscriptionScreen: React.FC = () => {
         default:
           errorMessage = error.message || errorMessage;
       }
-      
+
       if (navigation.isFocused()) {
         toast.error(errorMessage);
       }
       setLoading(false);
       isPurchasing.current = false;
       // 增加 E_USER_CANCELLED 的容错处理，有时它是作为字符串传递的
-      if (errorCode !== 'user-cancelled' && errorCode !== 'E_USER_CANCELLED' && errorCode !== 'PROMISE_BUY_ITEM') {
+      if (
+        errorCode !== 'user-cancelled' &&
+        errorCode !== 'E_USER_CANCELLED' &&
+        errorCode !== 'PROMISE_BUY_ITEM'
+      ) {
         if (navigation.isFocused()) {
           Alert.alert('购买失败', errorMessage);
         } else {
@@ -204,19 +261,19 @@ const SubscriptionScreen: React.FC = () => {
     try {
       console.log('IAP: 准备发起 requestPurchase，SKU:', selectedPlan);
       // 移除了 Alert.alert('请求中...') 避免与后续的弹窗堆叠
-      
+
       const requestResult = await RNIap.requestPurchase({
-              type: 'subs',
-              request: {
-                apple: { sku: selectedPlan, andDangerouslyFinishTransactionAutomatically: false },
-                google: { skus: [selectedPlan] },
-              },
-            });
-            console.log('IAP: requestPurchase 发起成功，返回信息:', requestResult);
-            // 苹果支付弹窗关闭后（无论成功或放弃），立刻结束按钮的 loading 状态
-            // 真实的交易结果和发货逻辑由全局的 purchaseUpdatedListener 处理
-            setLoading(false);
-          } catch (err: any) {
+        type: 'subs',
+        request: {
+          apple: { sku: selectedPlan, andDangerouslyFinishTransactionAutomatically: false },
+          google: { skus: [selectedPlan] },
+        },
+      });
+      console.log('IAP: requestPurchase 发起成功，返回信息:', requestResult);
+      // 苹果支付弹窗关闭后（无论成功或放弃），立刻结束按钮的 loading 状态
+      // 真实的交易结果和发货逻辑由全局的 purchaseUpdatedListener 处理
+      setLoading(false);
+    } catch (err: any) {
       console.error('IAP: requestPurchase 异常:', err);
       setLoading(false);
       isPurchasing.current = false;
@@ -235,21 +292,40 @@ const SubscriptionScreen: React.FC = () => {
       console.log('IAP: 正在调用 getAvailablePurchases()...');
       const purchases = await RNIap.getAvailablePurchases();
       console.log('IAP: 恢复购买获取到的有效订阅记录:', purchases?.length);
-      
+
       if (purchases && purchases.length > 0) {
         console.log('IAP: 恢复成功，找到了历史订阅', purchases);
         const activePurchase = purchases[0] as any;
         const currentUser = useAuthStore.getState().user;
-        const expiresAt = activePurchase.expirationDateIOS ? Number(activePurchase.expirationDateIOS) : undefined;
-        if (currentUser && (!currentUser.isVip?.value || currentUser.isVip?.type !== activePurchase.productId || currentUser.isVip?.expiresAt !== expiresAt)) {
-          useAuthStore.getState().updateProfile(currentUser._id, { isVip: { value: true, type: activePurchase.productId, expiresAt } }).catch(e => console.log(e));
+        const expiresAt = activePurchase.expirationDateIOS
+          ? Number(activePurchase.expirationDateIOS)
+          : undefined;
+        if (
+          currentUser &&
+          (!currentUser.isVip?.value ||
+            currentUser.isVip?.type !== activePurchase.productId ||
+            currentUser.isVip?.expiresAt !== expiresAt)
+        ) {
+          useAuthStore
+            .getState()
+            .updateProfile(currentUser._id, {
+              isVip: { value: true, type: activePurchase.productId, expiresAt },
+            })
+            .catch((e) => {
+              console.log(e);
+            });
         }
         Alert.alert('恢复成功', '您的订阅状态已恢复。');
       } else {
         console.log('IAP: 恢复结束，没有找到有效的订阅记录');
         const currentUser = useAuthStore.getState().user;
-        if (currentUser && currentUser.isVip?.value) {
-          useAuthStore.getState().updateProfile(currentUser._id, { isVip: { value: false } }).catch(e => console.log(e));
+        if (currentUser?.isVip?.value) {
+          useAuthStore
+            .getState()
+            .updateProfile(currentUser._id, { isVip: { value: false } })
+            .catch((e) => {
+              console.log(e);
+            });
         }
         Alert.alert('恢复结果', '暂无需要恢复的订阅记录。');
       }
@@ -263,21 +339,36 @@ const SubscriptionScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.safeArea, { backgroundColor: isDark ? '#121212' : '#FFF5F7', paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.safeArea,
+        { backgroundColor: isDark ? '#121212' : '#FFF5F7', paddingTop: insets.top },
+      ]}
+    >
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            navigation.goBack();
+          }}
           activeOpacity={0.7}
         >
-          <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : currentHealingColors.gray[800]} />
+          <Feather
+            name="chevron-left"
+            size={28}
+            color={isDark ? '#FFF' : currentHealingColors.gray[800]}
+          />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
+        <Text
+          style={[styles.headerTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
+        >
           {isActiveVIP ? '会员中心' : '开通 VIP'}
         </Text>
         {!isActiveVIP ? (
           <TouchableOpacity style={styles.headerRight} onPress={handleRestore}>
-            <Text style={[styles.restoreText, { color: currentHealingColors.pink[500] }]}>恢复购买</Text>
+            <Text style={[styles.restoreText, { color: currentHealingColors.pink[500] }]}>
+              恢复购买
+            </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.headerRight} />
@@ -295,7 +386,7 @@ const SubscriptionScreen: React.FC = () => {
                 : {
                     backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[500],
                     shadowColor: isDark ? '#000' : currentHealingColors.pink[500],
-                  }
+                  },
             ]}
           >
             <View style={styles.vipCardHeader}>
@@ -308,7 +399,12 @@ const SubscriptionScreen: React.FC = () => {
               {isActiveVIP ? '已解锁所有功能，感谢您的支持' : '解锁所有功能，记录美好生活'}
             </Text>
             <View style={styles.vipCardFooter}>
-              <Text style={[styles.vipCardStatus, isActiveVIP && { backgroundColor: 'rgba(251, 191, 36, 0.2)', color: '#FBBF24' }]}>
+              <Text
+                style={[
+                  styles.vipCardStatus,
+                  isActiveVIP && { backgroundColor: 'rgba(251, 191, 36, 0.2)', color: '#FBBF24' },
+                ]}
+              >
                 {isActiveVIP ? '当前已开通' : '当前未开通'}
               </Text>
               {isActiveVIP && user?.isVip?.expiresAt && (
@@ -322,17 +418,45 @@ const SubscriptionScreen: React.FC = () => {
 
         {/* 特权列表 */}
         <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] },
+            ]}
+          >
             {isActiveVIP ? '您已解锁以下特权' : '会员专属特权'}
           </Text>
           <View style={styles.featuresGrid}>
             {features.map((feature, index) => (
               <View key={index} style={styles.featureItem}>
-                <View style={[styles.featureIconWrap, { backgroundColor: isDark ? '#374151' : currentHealingColors.pink[50] }]}>
-                  <Feather name={feature.icon as any} size={22} color={isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[500]} />
+                <View
+                  style={[
+                    styles.featureIconWrap,
+                    { backgroundColor: isDark ? '#374151' : currentHealingColors.pink[50] },
+                  ]}
+                >
+                  <Feather
+                    name={feature.icon as any}
+                    size={22}
+                    color={isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[500]}
+                  />
                 </View>
-                <Text style={[styles.featureTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>{feature.title}</Text>
-                <Text style={[styles.featureDesc, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>{feature.desc}</Text>
+                <Text
+                  style={[
+                    styles.featureTitle,
+                    { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] },
+                  ]}
+                >
+                  {feature.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.featureDesc,
+                    { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                  ]}
+                >
+                  {feature.desc}
+                </Text>
               </View>
             ))}
           </View>
@@ -341,7 +465,12 @@ const SubscriptionScreen: React.FC = () => {
         {/* 订阅选项 */}
         {!isActiveVIP && (
           <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] },
+              ]}
+            >
               选择订阅方案
             </Text>
             <View style={styles.plansContainer}>
@@ -357,31 +486,78 @@ const SubscriptionScreen: React.FC = () => {
                         borderColor: isSelected
                           ? currentHealingColors.pink[500]
                           : isDark
-                          ? '#333'
-                          : '#F3F4F6',
+                            ? '#333'
+                            : '#F3F4F6',
                       },
                     ]}
                     activeOpacity={0.8}
-                    onPress={() => setSelectedPlan(plan.id)}
+                    onPress={() => {
+                      setSelectedPlan(plan.id);
+                    }}
                   >
                     {plan.isHot && (
-                      <View style={[styles.hotTag, { backgroundColor: currentHealingColors.pink[600] }]}>
+                      <View
+                        style={[styles.hotTag, { backgroundColor: currentHealingColors.pink[600] }]}
+                      >
                         <Text style={styles.hotTagText}>强烈推荐</Text>
                       </View>
                     )}
-                    <Text style={[styles.planTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>
+                    <Text
+                      style={[
+                        styles.planTitle,
+                        { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] },
+                      ]}
+                    >
                       {plan.title}
                     </Text>
                     <View style={styles.priceContainer}>
-                      <Text style={[styles.planPrice, { color: isSelected ? currentHealingColors.pink[500] : isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
+                      <Text
+                        style={[
+                          styles.planPrice,
+                          {
+                            color: isSelected
+                              ? currentHealingColors.pink[500]
+                              : isDark
+                                ? '#FFF'
+                                : currentHealingColors.gray[800],
+                          },
+                        ]}
+                      >
                         {plan.price}
                       </Text>
                     </View>
-                    <Text style={[styles.planOriginalPrice, { color: isDark ? '#6B7280' : currentHealingColors.gray[400] }]}>
+                    <Text
+                      style={[
+                        styles.planOriginalPrice,
+                        { color: isDark ? '#6B7280' : currentHealingColors.gray[400] },
+                      ]}
+                    >
                       原价 {plan.originalPrice}
                     </Text>
-                    <View style={[styles.planLabelWrap, { backgroundColor: isSelected ? currentHealingColors.pink[50] : isDark ? '#374151' : '#F3F4F6' }]}>
-                      <Text style={[styles.planLabel, { color: isSelected ? currentHealingColors.pink[600] : isDark ? '#D1D5DB' : currentHealingColors.gray[600] }]}>
+                    <View
+                      style={[
+                        styles.planLabelWrap,
+                        {
+                          backgroundColor: isSelected
+                            ? currentHealingColors.pink[50]
+                            : isDark
+                              ? '#374151'
+                              : '#F3F4F6',
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.planLabel,
+                          {
+                            color: isSelected
+                              ? currentHealingColors.pink[600]
+                              : isDark
+                                ? '#D1D5DB'
+                                : currentHealingColors.gray[600],
+                          },
+                        ]}
+                      >
                         {plan.label}
                       </Text>
                     </View>
@@ -395,16 +571,47 @@ const SubscriptionScreen: React.FC = () => {
         {/* 底部购买说明 */}
         {!isActiveVIP && (
           <View style={styles.footerContainer}>
-            <Text style={[styles.footerText, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>
-              确认购买后，将从您的 iTunes 账户扣费。订阅会自动续期，除非在当前订阅期结束前至少 24 小时关闭自动续期。
+            <Text
+              style={[
+                styles.footerText,
+                { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+              ]}
+            >
+              确认购买后，将从您的 iTunes 账户扣费。订阅会自动续期，除非在当前订阅期结束前至少 24
+              小时关闭自动续期。
             </Text>
             <View style={styles.footerLinks}>
-              <TouchableOpacity onPress={() => navigation.navigate('Web' as any, { url: 'https://maoqiu.com/terms', title: '用户协议' })}>
-                <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>用户协议</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate('Web' as any, {
+                    url: 'https://maoqiu.com/terms',
+                    title: '用户协议',
+                  });
+                }}
+              >
+                <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>
+                  用户协议
+                </Text>
               </TouchableOpacity>
-              <Text style={[styles.linkDot, { color: isDark ? '#6B7280' : currentHealingColors.gray[400] }]}>・</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Web' as any, { url: 'https://maoqiu.com/privacy', title: '隐私政策' })}>
-                <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>隐私政策</Text>
+              <Text
+                style={[
+                  styles.linkDot,
+                  { color: isDark ? '#6B7280' : currentHealingColors.gray[400] },
+                ]}
+              >
+                ・
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate('Web' as any, {
+                    url: 'https://maoqiu.com/privacy',
+                    title: '隐私政策',
+                  });
+                }}
+              >
+                <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>
+                  隐私政策
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -412,16 +619,28 @@ const SubscriptionScreen: React.FC = () => {
       </ScrollView>
 
       {/* 底部悬浮按钮 */}
-      <View style={[styles.bottomBar, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderTopColor: isDark ? '#333' : '#F3F4F6' }]}>
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+            borderTopColor: isDark ? '#333' : '#F3F4F6',
+          },
+        ]}
+      >
         <TouchableOpacity
           style={[
-            styles.subscribeButton, 
+            styles.subscribeButton,
             { backgroundColor: isActiveVIP ? '#2C2C2C' : currentHealingColors.pink[500] }, // 已经是VIP时变为黑金风格
-            loading && { opacity: 0.7 }
+            loading && { opacity: 0.7 },
           ]}
           activeOpacity={0.8}
           disabled={loading}
-          onPress={isActiveVIP ? () => Linking.openURL('https://apps.apple.com/account/subscriptions') : handleSubscribe}
+          onPress={
+            isActiveVIP
+              ? () => Linking.openURL('https://apps.apple.com/account/subscriptions')
+              : handleSubscribe
+          }
         >
           {loading ? (
             <ActivityIndicator color={isActiveVIP ? '#FBBF24' : '#FFF'} />

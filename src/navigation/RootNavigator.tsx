@@ -3,9 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
-import { COLORS } from '@/config/constant';
-
 // Screens
+import { useAppTheme } from '@/hooks/useAppTheme';
 import AIScreen from '@/screens/ai/AIScreen';
 import LoginScreen from '@/screens/auth/LoginScreen';
 import CategoryScreen from '@/screens/category/CategoryScreen';
@@ -16,6 +15,7 @@ import DiaryDetailScreen from '@/screens/diary/DiaryDetailScreen';
 import EditDiaryScreen from '@/screens/edit/EditDiaryScreen';
 import HomeScreen from '@/screens/home/HomeScreen';
 import AboutScreen from '@/screens/mine/AboutScreen';
+import AppLockSettingScreen from '@/screens/mine/AppLockSettingScreen';
 import BadgesScreen from '@/screens/mine/BadgesScreen';
 import CalendarScreen from '@/screens/mine/CalendarScreen';
 import EditProfileScreen from '@/screens/mine/EditProfileScreen';
@@ -26,9 +26,7 @@ import NotebooksScreen from '@/screens/mine/NotebooksScreen';
 import SettingsScreen from '@/screens/mine/SettingsScreen';
 import SubscriptionScreen from '@/screens/mine/SubscriptionScreen';
 import WebScreen from '@/screens/mine/WebScreen';
-import AppLockSettingScreen from '@/screens/mine/AppLockSettingScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
-import { useAppTheme } from '@/hooks/useAppTheme';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
 

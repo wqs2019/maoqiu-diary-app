@@ -10,16 +10,14 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { DraggableGrid } from 'react-native-draggable-grid';
 
 import { MediaPreviewer } from './MediaPreviewer';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { imageService } from '../../services/imageService';
 import { MediaResource } from '../../types';
-
-import { useAppTheme } from '../../hooks/useAppTheme';
 
 interface MediaSelectorProps {
   media: MediaResource[];
@@ -67,56 +65,56 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       const uploadResult = await imageService.uploadImage(item.uri, cloudPath, item.mimeType);
 
       let thumbnailUrl = item.thumbnail;
-        let uploadedLivePhotoVideoUri = item.livePhotoVideoUri;
+      let uploadedLivePhotoVideoUri = item.livePhotoVideoUri;
 
-        // 如果是视频且有本地封面图，也需要上传封面图
-        if (item.type === 'video' && item.thumbnail?.startsWith('file://')) {
-          try {
-            const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
-            const thumbUploadResult = await imageService.uploadImage(
-              item.thumbnail,
-              thumbPathResult.data.cloudPath,
-              'image/jpeg'
-            );
-            if (thumbUploadResult.success && thumbUploadResult.data) {
-              thumbnailUrl = thumbUploadResult.data.url;
-            }
-          } catch (e) {
-            console.warn('Failed to upload video thumbnail on retry:', e);
+      // 如果是视频且有本地封面图，也需要上传封面图
+      if (item.type === 'video' && item.thumbnail?.startsWith('file://')) {
+        try {
+          const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
+          const thumbUploadResult = await imageService.uploadImage(
+            item.thumbnail,
+            thumbPathResult.data.cloudPath,
+            'image/jpeg'
+          );
+          if (thumbUploadResult.success && thumbUploadResult.data) {
+            thumbnailUrl = thumbUploadResult.data.url;
           }
+        } catch (e) {
+          console.warn('Failed to upload video thumbnail on retry:', e);
         }
+      }
 
-        // 如果是实况照片且包含本地视频路径，也需要上传对应的视频
-        if (item.type === 'livePhoto' && item.livePhotoVideoUri?.startsWith('file://')) {
-          try {
-            const videoPathResult = await imageService.generateCloudPath('mov', 'diary');
-            const videoUploadResult = await imageService.uploadImage(
-              item.livePhotoVideoUri,
-              videoPathResult.data.cloudPath,
-              'video/quicktime'
-            );
-            if (videoUploadResult.success && videoUploadResult.data) {
-              uploadedLivePhotoVideoUri = videoUploadResult.data.url;
-            }
-          } catch (e) {
-            console.warn('Failed to upload live photo video on retry:', e);
+      // 如果是实况照片且包含本地视频路径，也需要上传对应的视频
+      if (item.type === 'livePhoto' && item.livePhotoVideoUri?.startsWith('file://')) {
+        try {
+          const videoPathResult = await imageService.generateCloudPath('mov', 'diary');
+          const videoUploadResult = await imageService.uploadImage(
+            item.livePhotoVideoUri,
+            videoPathResult.data.cloudPath,
+            'video/quicktime'
+          );
+          if (videoUploadResult.success && videoUploadResult.data) {
+            uploadedLivePhotoVideoUri = videoUploadResult.data.url;
           }
+        } catch (e) {
+          console.warn('Failed to upload live photo video on retry:', e);
         }
+      }
 
-        if (uploadResult.success && uploadResult.data) {
-          console.log(`[MediaUpload] Retry success: ${uploadResult.data.url}`);
-          // 更新成功的媒体
-          const successMedia = [...media];
-          successMedia[index] = {
-            ...item,
-            uri: uploadResult.data.url,
-            thumbnail: thumbnailUrl,
-            livePhotoVideoUri: uploadedLivePhotoVideoUri,
-            uploadStatus: 'success',
-            uploadError: undefined,
-          };
-          onMediaChange(successMedia);
-        } else {
+      if (uploadResult.success && uploadResult.data) {
+        console.log(`[MediaUpload] Retry success: ${uploadResult.data.url}`);
+        // 更新成功的媒体
+        const successMedia = [...media];
+        successMedia[index] = {
+          ...item,
+          uri: uploadResult.data.url,
+          thumbnail: thumbnailUrl,
+          livePhotoVideoUri: uploadedLivePhotoVideoUri,
+          uploadStatus: 'success',
+          uploadError: undefined,
+        };
+        onMediaChange(successMedia);
+      } else {
         throw new Error(uploadResult.message || '上传失败');
       }
     } catch (error: any) {
@@ -259,12 +257,15 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       selectionLimit: remainingCount,
       quality: 0.8,
       // 必须开启此选项，ImagePicker 才会将 Live Photo 的视频部分抽离并返回 livePhotoVideoUri / pairedVideoAsset
-      allowsEditing: false, 
+      allowsEditing: false,
       exif: false,
     });
 
     if (!result.canceled && result.assets) {
-      console.log('[MediaSelector] pickImages result assets:', JSON.stringify(result.assets, null, 2));
+      console.log(
+        '[MediaSelector] pickImages result assets:',
+        JSON.stringify(result.assets, null, 2)
+      );
       // 先添加本地媒体（带 loading 状态）
       const localMedia: MediaResource[] = result.assets.map((asset) => {
         // Expo ImagePicker 17.0+ 中，如果指定了 livePhotos 并且未经过 allowsEditing 处理，
@@ -273,7 +274,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         const pairedVideo = (asset as any).pairedVideoAsset;
         const liveVideoUri = pairedVideo?.uri || (asset as any).livePhotoVideoUri;
         const isLivePhoto = !!liveVideoUri;
-        
+
         return {
           type: isLivePhoto ? 'livePhoto' : 'image',
           uri: asset.uri,
@@ -515,10 +516,23 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       return (
         <View style={styles.gridItemContainer} key={item.key}>
           <View
-            style={[styles.addButton, { backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5', borderColor: isDark ? '#333' : '#E5E5E5' }, isUploading.current && styles.addButtonDisabled]}
+            style={[
+              styles.addButton,
+              {
+                backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5',
+                borderColor: isDark ? '#333' : '#E5E5E5',
+              },
+              isUploading.current && styles.addButtonDisabled,
+            ]}
           >
-            <Ionicons name="add-circle-outline" size={32} color={isDark ? '#AAA' : HEALING_COLORS.pink[500]} />
-            <Text style={[styles.addButtonText, { color: isDark ? '#AAA' : '#999' }]}>添加媒体</Text>
+            <Ionicons
+              name="add-circle-outline"
+              size={32}
+              color={isDark ? '#AAA' : HEALING_COLORS.pink[500]}
+            />
+            <Text style={[styles.addButtonText, { color: isDark ? '#AAA' : '#999' }]}>
+              添加媒体
+            </Text>
           </View>
         </View>
       );
@@ -570,10 +584,12 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           }
         }}
         onDragRelease={(newData) => {
-          const newMedia = newData.filter((i: any) => !i.isAddButton).map((i: any) => {
-            const { key, isAddButton, disabledDrag, disabledReSorted, ...rest } = i;
-            return rest;
-          });
+          const newMedia = newData
+            .filter((i: any) => !i.isAddButton)
+            .map((i: any) => {
+              const { key, isAddButton, disabledDrag, disabledReSorted, ...rest } = i;
+              return rest;
+            });
           onMediaChange(newMedia as MediaResource[]);
         }}
       />

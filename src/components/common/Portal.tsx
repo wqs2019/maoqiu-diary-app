@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 
 type MountFn = (id: string, content: ReactNode) => void;
@@ -7,8 +7,8 @@ type UnmountFn = (id: string) => void;
 // We use EventEmitter pattern instead of React State to avoid infinite loops
 // when the Portal consumer is deeply nested and causes re-renders.
 class PortalManager {
-  private portals: Map<string, ReactNode> = new Map();
-  private listeners: Set<() => void> = new Set();
+  private readonly portals: Map<string, ReactNode> = new Map();
+  private readonly listeners: Set<() => void> = new Set();
 
   mount(id: string, content: ReactNode) {
     this.portals.set(id, content);
@@ -32,7 +32,9 @@ class PortalManager {
   }
 
   private notify() {
-    this.listeners.forEach((listener) => listener());
+    this.listeners.forEach((listener) => {
+      listener();
+    });
   }
 }
 
@@ -51,9 +53,7 @@ export const PortalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   return (
     <PortalContext.Provider value={manager}>
-      <View style={styles.container}>
-        {children}
-      </View>
+      <View style={styles.container}>{children}</View>
       {portals.map(([id, content]) => (
         <View key={id} style={StyleSheet.absoluteFill} pointerEvents="box-none">
           {content}

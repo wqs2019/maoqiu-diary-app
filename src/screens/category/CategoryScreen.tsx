@@ -7,23 +7,21 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
   ActivityIndicator,
   RefreshControl,
   Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { LoadableImage } from '../../components/handDrawn/PhotoWall';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
+import { LoadableImage } from '../../components/handDrawn/PhotoWall';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES, getAllScenarios } from '../../config/scenarioTemplates';
 import { getMoodConfig } from '../../config/statusConfig';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 import { ScenarioType, MediaResource } from '../../types';
-
-import { useAppTheme } from '../../hooks/useAppTheme';
 
 const { width } = Dimensions.get('window');
 const GRID_SPACING = 16;
@@ -79,7 +77,9 @@ const CategoryScreen: React.FC = () => {
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>生活洞察</Text>
-      <Text style={[styles.headerSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>按场景回顾你的美好生活</Text>
+      <Text style={[styles.headerSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>
+        按场景回顾你的美好生活
+      </Text>
 
       {/* 分类网格 */}
       <View style={styles.gridContainer}>
@@ -139,7 +139,12 @@ const CategoryScreen: React.FC = () => {
               }}
               activeOpacity={0.8}
             >
-              <View style={[styles.iconContainer, { backgroundColor: scenario.color + (isDark ? '40' : '20') }]}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: scenario.color + (isDark ? '40' : '20') },
+                ]}
+              >
                 <Text style={styles.scenarioIcon}>{scenario.icon}</Text>
               </View>
               <Text
@@ -163,18 +168,42 @@ const CategoryScreen: React.FC = () => {
 
   const renderStats = () => (
     <View style={styles.sectionContainer}>
-      <Text style={[styles.sectionTitle, { marginBottom: 12, color: isDark ? '#FFF' : '#111827' }]}>数据概览</Text>
+      <Text style={[styles.sectionTitle, { marginBottom: 12, color: isDark ? '#FFF' : '#111827' }]}>
+        数据概览
+      </Text>
       <View style={styles.statsRow}>
-        <View style={[styles.statsCard, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#F3F4F6' }]}>
+        <View
+          style={[
+            styles.statsCard,
+            {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+              borderColor: isDark ? '#333' : '#F3F4F6',
+            },
+          ]}
+        >
           <Ionicons name="document-text" size={28} color={HEALING_COLORS.pink[400]} />
-          <Text style={[styles.statsValue, { color: isDark ? '#FFF' : '#111827' }]}>{totalCount}</Text>
+          <Text style={[styles.statsValue, { color: isDark ? '#FFF' : '#111827' }]}>
+            {totalCount}
+          </Text>
           <Text style={[styles.statsLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>篇日记</Text>
         </View>
-        <View style={[styles.statsCard, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#F3F4F6' }]}>
+        <View
+          style={[
+            styles.statsCard,
+            {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+              borderColor: isDark ? '#333' : '#F3F4F6',
+            },
+          ]}
+        >
           <Ionicons name="images" size={28} color={HEALING_COLORS.pink[400]} />
-          <Text style={[styles.statsValue, { color: isDark ? '#FFF' : '#111827' }]}>{allMedia.length}</Text>
+          <Text style={[styles.statsValue, { color: isDark ? '#FFF' : '#111827' }]}>
+            {allMedia.length}
+          </Text>
           <View style={styles.statsLabelRow}>
-            <Text style={[styles.statsLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>图片/视频总数</Text>
+            <Text style={[styles.statsLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>
+              图片/视频总数
+            </Text>
           </View>
         </View>
       </View>
@@ -185,22 +214,47 @@ const CategoryScreen: React.FC = () => {
     if (moodStats.length === 0) return null;
     return (
       <View style={styles.sectionContainer}>
-        <Text style={[styles.sectionTitle, { marginBottom: 12, color: isDark ? '#FFF' : '#111827' }]}>心情晴雨表</Text>
-        <View style={[styles.cardContainer, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#F3F4F6' }]}>
+        <Text
+          style={[styles.sectionTitle, { marginBottom: 12, color: isDark ? '#FFF' : '#111827' }]}
+        >
+          心情晴雨表
+        </Text>
+        <View
+          style={[
+            styles.cardContainer,
+            {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+              borderColor: isDark ? '#333' : '#F3F4F6',
+            },
+          ]}
+        >
           {moodStats.map(({ mood, count }, index) => {
             const config = getMoodConfig(mood);
             const percent = Math.round((count / diaries.length) * 100);
             return (
-              <View key={mood} style={[styles.moodRow, index !== 0 && [styles.moodRowMargin, { borderTopColor: isDark ? '#333' : '#F3F4F6' }]]}>
+              <View
+                key={mood}
+                style={[
+                  styles.moodRow,
+                  index !== 0 && [
+                    styles.moodRowMargin,
+                    { borderTopColor: isDark ? '#333' : '#F3F4F6' },
+                  ],
+                ]}
+              >
                 <Text style={styles.moodEmoji}>{config.emoji}</Text>
                 <View style={styles.moodInfo}>
                   <View style={styles.moodTextRow}>
-                    <Text style={[styles.moodLabel, { color: isDark ? '#FFF' : '#374151' }]}>{config.label}</Text>
+                    <Text style={[styles.moodLabel, { color: isDark ? '#FFF' : '#374151' }]}>
+                      {config.label}
+                    </Text>
                     <Text style={[styles.moodCount, { color: isDark ? '#AAA' : '#6B7280' }]}>
                       {count}次 ({percent}%)
                     </Text>
                   </View>
-                  <View style={[styles.progressBarBg, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
+                  <View
+                    style={[styles.progressBarBg, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}
+                  >
                     <View
                       style={[
                         styles.progressBarFill,
@@ -222,13 +276,17 @@ const CategoryScreen: React.FC = () => {
     return (
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: isDark ? '#FFF' : '#111827' }]}>时光相册</Text>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#FFF' : '#111827' }]}>
+            时光相册
+          </Text>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => navigation.navigate('PhotoWall', { scenario: selectedScenario })}
             style={styles.viewAllButton}
           >
-            <Text style={[styles.viewAllText, { color: isDark ? '#AAA' : '#6B7280' }]}>查看全部</Text>
+            <Text style={[styles.viewAllText, { color: isDark ? '#AAA' : '#6B7280' }]}>
+              查看全部
+            </Text>
             <Ionicons name="chevron-forward" size={14} color={isDark ? '#AAA' : '#6B7280'} />
           </TouchableOpacity>
         </View>
@@ -262,14 +320,21 @@ const CategoryScreen: React.FC = () => {
           ))}
         </View>
         {allMedia.length > 9 && (
-          <Text style={[styles.morePhotosText, { color: isDark ? '#AAA' : '#9CA3AF' }]}>只展示最近 9 个瞬间，更多请在日记中查看~</Text>
+          <Text style={[styles.morePhotosText, { color: isDark ? '#AAA' : '#9CA3AF' }]}>
+            只展示最近 9 个瞬间，更多请在日记中查看~
+          </Text>
         )}
       </View>
     );
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#F9FAFB' }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#F9FAFB' },
+      ]}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}

@@ -1,28 +1,29 @@
+import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import * as RNIap from 'react-native-iap';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppLockOverlay } from './src/components/AppLockOverlay';
+
+import { PortalProvider } from '@/components/common/Portal';
+import { ToastProvider } from '@/components/common/Toast';
 import { initSentry, setUser, clearUser } from '@/config/sentry';
 import { Navigation } from '@/navigation';
 import { AppQueryProvider } from '@/providers/AppQueryProvider';
-import { PortalProvider } from '@/components/common/Portal';
-import { ToastProvider } from '@/components/common/Toast';
 import CustomSplashScreen from '@/screens/common/CustomSplashScreen';
 import LoadingScreen from '@/screens/common/LoadingScreen';
+import { ensureIAPConnection } from '@/services/iapManager';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
-import * as RNIap from 'react-native-iap';
-import { ensureIAPConnection } from '@/services/iapManager';
 
 // 保持原生 SplashScreen 阻止隐藏，直到我们的 CustomSplashScreen 准备就绪
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // 初始化 Sentry
 initSentry();
-
-import { AppLockOverlay } from './src/components/AppLockOverlay';
 
 const checkAndSyncVIPStatus = async () => {
   try {
@@ -31,32 +32,41 @@ const checkAndSyncVIPStatus = async () => {
 
     await ensureIAPConnection();
     const purchases = await RNIap.getAvailablePurchases();
-    
+
     // 如果有有效的订阅记录
     if (purchases && purchases.length > 0) {
-        // 获取最近的一个订阅记录
-        const activePurchase = purchases[0] as any;
-        const expiresAt = activePurchase.expirationDateIOS ? Number(activePurchase.expirationDateIOS) : undefined;
-        
-        // 如果本地没有 vip 状态或者状态不一致，则更新服务器和本地状态
-        if (!user.isVip?.value || user.isVip?.type !== activePurchase.productId || user.isVip?.expiresAt !== expiresAt) {
-          console.log('App Startup: Found valid subscription, syncing VIP status...', activePurchase.productId);
-          await useAuthStore.getState().updateProfile(user._id, {
-            isVip: {
-              value: true,
-              type: activePurchase.productId,
-              expiresAt
-            }
-          });
-        }
-      } else {
+      // 获取最近的一个订阅记录
+      const activePurchase = purchases[0] as any;
+      const expiresAt = activePurchase.expirationDateIOS
+        ? Number(activePurchase.expirationDateIOS)
+        : undefined;
+
+      // 如果本地没有 vip 状态或者状态不一致，则更新服务器和本地状态
+      if (
+        !user.isVip?.value ||
+        user.isVip?.type !== activePurchase.productId ||
+        user.isVip?.expiresAt !== expiresAt
+      ) {
+        console.log(
+          'App Startup: Found valid subscription, syncing VIP status...',
+          activePurchase.productId
+        );
+        await useAuthStore.getState().updateProfile(user._id, {
+          isVip: {
+            value: true,
+            type: activePurchase.productId,
+            expiresAt,
+          },
+        });
+      }
+    } else {
       // 如果没有有效订阅，但本地还是 vip，则取消 vip
       if (user.isVip?.value) {
         console.log('App Startup: No valid subscription found, removing VIP status...');
         await useAuthStore.getState().updateProfile(user._id, {
           isVip: {
-            value: false
-          }
+            value: false,
+          },
         });
       }
     }
@@ -103,7 +113,7 @@ function App() {
   }, [user]);
 
   const systemColorScheme = useColorScheme();
-  const actualTheme = theme === 'system' ? (systemColorScheme || 'light') : theme;
+  const actualTheme = theme === 'system' ? systemColorScheme || 'light' : theme;
 
   if (appLoading) {
     return <LoadingScreen />;
@@ -131,8 +141,6 @@ function App() {
     </SafeAreaProvider>
   );
 }
-
-import * as Sentry from '@sentry/react-native';
 
 // 将 App 用 Sentry 包裹以捕获渲染层面的错误 (Error Boundary)
 export default Sentry.wrap(App);

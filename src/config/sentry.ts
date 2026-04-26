@@ -29,9 +29,7 @@ export const initSentry = () => {
       enableAutoPerformanceTracing: true,
       enableUserInteractionTracing: true,
       enableAppStartTracking: true,
-      integrations: [
-        routingInstrumentation,
-      ],
+      integrations: [routingInstrumentation],
     });
   }
 };

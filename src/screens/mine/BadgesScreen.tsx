@@ -43,17 +43,36 @@ const BadgesScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
-      <View style={[styles.header, { borderBottomColor: isDark ? '#333' : '#F0F0F0', backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' },
+      ]}
+    >
+      <View
+        style={[
+          styles.header,
+          {
+            borderBottomColor: isDark ? '#333' : '#F0F0F0',
+            backgroundColor: isDark ? '#121212' : '#FAFAFA',
+          },
+        ]}
+      >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => {
             navigation.goBack();
           }}
         >
-          <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : HEALING_COLORS.gray[800]} />
+          <Feather
+            name="chevron-left"
+            size={28}
+            color={isDark ? '#FFF' : HEALING_COLORS.gray[800]}
+          />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>我的徽章</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
+          我的徽章
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -77,7 +96,22 @@ const BadgesScreen: React.FC = () => {
                   {
                     borderRadius: themeStyle.borderRadius,
                   },
-                  isUnlocked ? [styles.badgeUnlocked, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3', shadowColor: isDark ? '#000' : themeStyle.shadowColor }] : [styles.badgeLocked, { backgroundColor: isDark ? '#121212' : '#F5F5F5', borderColor: isDark ? '#333' : '#EAEAEA' }],
+                  isUnlocked
+                    ? [
+                        styles.badgeUnlocked,
+                        {
+                          backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                          borderColor: isDark ? '#333' : '#FFF0F3',
+                          shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+                        },
+                      ]
+                    : [
+                        styles.badgeLocked,
+                        {
+                          backgroundColor: isDark ? '#121212' : '#F5F5F5',
+                          borderColor: isDark ? '#333' : '#EAEAEA',
+                        },
+                      ],
                 ]}
                 activeOpacity={0.7}
                 onPress={() => {
@@ -87,7 +121,9 @@ const BadgesScreen: React.FC = () => {
                 <View
                   style={[
                     styles.iconContainer,
-                    isUnlocked ? { backgroundColor: badge.color + (isDark ? '40' : '20') } : [styles.iconLocked, { backgroundColor: isDark ? '#333' : '#EEEEEE' }],
+                    isUnlocked
+                      ? { backgroundColor: badge.color + (isDark ? '40' : '20') }
+                      : [styles.iconLocked, { backgroundColor: isDark ? '#333' : '#EEEEEE' }],
                   ]}
                 >
                   <Text style={[styles.badgeIcon, !isUnlocked && styles.badgeIconLocked]}>
@@ -150,7 +186,8 @@ const BadgesScreen: React.FC = () => {
                   {unlockedBadges.includes(selectedBadge.id) ? (
                     <Text style={[styles.modalStatusText, { color: HEALING_COLORS.green[500] }]}>
                       ✨ 已获得
-                      {user?.unlockedBadges?.[selectedBadge.id] && ` (${new Date(user.unlockedBadges[selectedBadge.id]).toLocaleDateString()})`}
+                      {user?.unlockedBadges?.[selectedBadge.id] &&
+                        ` (${new Date(user.unlockedBadges[selectedBadge.id]).toLocaleDateString()})`}
                     </Text>
                   ) : (
                     <Text style={[styles.modalStatusText, { color: HEALING_COLORS.gray[400] }]}>

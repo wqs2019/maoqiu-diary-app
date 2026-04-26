@@ -24,7 +24,9 @@ export const ImageSkeleton = () => {
       ])
     );
     sharedAnimation.start();
-    return () => sharedAnimation.stop();
+    return () => {
+      sharedAnimation.stop();
+    };
   }, [pulseAnim]);
 
   const opacity = pulseAnim.interpolate({
@@ -34,12 +36,7 @@ export const ImageSkeleton = () => {
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.skeletonContainer]}>
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: '#A0A0A0', opacity },
-        ]}
-      />
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#A0A0A0', opacity }]} />
     </View>
   );
 };
@@ -55,7 +52,9 @@ export const LoadableImage = ({ source, style, resizeMode }: any) => {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 500); // 500ms 后强制结束 loading
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [imageUri]);
 
   return (
@@ -71,9 +70,15 @@ export const LoadableImage = ({ source, style, resizeMode }: any) => {
         source={source}
         style={StyleSheet.absoluteFill}
         resizeMode={resizeMode}
-        onLoad={() => setIsLoading(false)}
-        onLoadEnd={() => setIsLoading(false)}
-        onError={() => setIsLoading(false)}
+        onLoad={() => {
+          setIsLoading(false);
+        }}
+        onLoadEnd={() => {
+          setIsLoading(false);
+        }}
+        onError={() => {
+          setIsLoading(false);
+        }}
       />
     </View>
   );
@@ -133,18 +138,39 @@ export const PhotoWall: React.FC<PhotoWallProps> = ({ memories = [], isLoading =
       <View style={styles.grid}>
         {isLoading
           ? Array.from({ length: 3 }).map((_, index) => (
-              <HandDrawnCard key={`skeleton-${index}`} style="warm" variant="default" padding="small">
+              <HandDrawnCard
+                key={`skeleton-${index}`}
+                style="warm"
+                variant="default"
+                padding="small"
+              >
                 <View style={styles.memoryCard}>
                   <View style={styles.photoGrid}>
-                    <View style={[styles.photoItem, styles.singlePhoto, { backgroundColor: 'transparent' }]}>
+                    <View
+                      style={[
+                        styles.photoItem,
+                        styles.singlePhoto,
+                        { backgroundColor: 'transparent' },
+                      ]}
+                    >
                       <ImageSkeleton />
                     </View>
                   </View>
                   <View style={styles.info}>
                     <View style={styles.infoHeader}>
-                      <View style={{ width: 120, height: 20, backgroundColor: '#E5E5E5', borderRadius: 4, marginBottom: 4 }} />
+                      <View
+                        style={{
+                          width: 120,
+                          height: 20,
+                          backgroundColor: '#E5E5E5',
+                          borderRadius: 4,
+                          marginBottom: 4,
+                        }}
+                      />
                     </View>
-                    <View style={{ width: 80, height: 14, backgroundColor: '#E5E5E5', borderRadius: 4 }} />
+                    <View
+                      style={{ width: 80, height: 14, backgroundColor: '#E5E5E5', borderRadius: 4 }}
+                    />
                   </View>
                 </View>
               </HandDrawnCard>
@@ -163,7 +189,11 @@ export const PhotoWall: React.FC<PhotoWallProps> = ({ memories = [], isLoading =
                           memory.images.length > 1 && index === 0 && styles.firstPhoto,
                         ]}
                       >
-                        <LoadableImage source={{ uri: image }} style={styles.photo} resizeMode="cover" />
+                        <LoadableImage
+                          source={{ uri: image }}
+                          style={styles.photo}
+                          resizeMode="cover"
+                        />
                       </View>
                     ))}
                     {memory.images.length > 4 && (

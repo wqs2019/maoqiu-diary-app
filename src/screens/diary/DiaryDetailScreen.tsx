@@ -1,14 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  RefreshControl,
+  Dimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useToast } from '../../components/common/Toast';
 import { CommentList } from '../../components/handDrawn/CommentList';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 import { NineGridMedia } from '../../components/handDrawn/NineGridMedia';
 import { ShareCardModal } from '../../components/handDrawn/ShareCardModal';
-import { useToast } from '../../components/common/Toast';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
@@ -54,13 +63,13 @@ const DiaryDetailScreen: React.FC = () => {
 
   const handleToggleFavorite = async () => {
     if (!diary) return;
-    
+
     // Optimistic UI updates feel better, but we'll show toast based on action
     const isNowFavorite = !diary.isFavorite;
-    
+
     try {
       await toggleFavorite(_id, !!diary.isFavorite);
-      
+
       if (isNowFavorite) {
         toast.success('已加入收藏');
       } else {
@@ -82,8 +91,8 @@ const DiaryDetailScreen: React.FC = () => {
     }
     Alert.alert('确认删除', '删除后无法恢复，是否继续？', [
       { text: '取消', style: 'cancel' },
-      { 
-        text: '删除', 
+      {
+        text: '删除',
         style: 'destructive',
         onPress: () => {
           deleteMutation.mutate(_id, {
@@ -93,10 +102,10 @@ const DiaryDetailScreen: React.FC = () => {
             },
             onError: () => {
               toast.error('删除失败，请稍后重试');
-            }
+            },
           });
-        }
-      }
+        },
+      },
     ]);
   };
 
@@ -150,7 +159,11 @@ const DiaryDetailScreen: React.FC = () => {
               <Text style={styles.scenarioIcon}>{scenario.icon}</Text>
               <Text style={[styles.scenarioName, { color: scenario.color }]}>{scenario.name}</Text>
             </View>
-            <TouchableOpacity onPress={handleToggleFavorite} style={styles.favoriteBtn} hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+            <TouchableOpacity
+              onPress={handleToggleFavorite}
+              style={styles.favoriteBtn}
+              hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+            >
               <Ionicons
                 name={diary.isFavorite ? 'star' : 'star-outline'}
                 size={24}
@@ -160,7 +173,9 @@ const DiaryDetailScreen: React.FC = () => {
           </View>
 
           {/* Title */}
-          <Text style={styles.title} selectable>{diary.title || '无标题'}</Text>
+          <Text style={styles.title} selectable>
+            {diary.title || '无标题'}
+          </Text>
 
           {/* Meta Info (Mood, Weather, Date, Location) */}
           <View style={styles.metaContainer}>
@@ -192,7 +207,9 @@ const DiaryDetailScreen: React.FC = () => {
           <View style={styles.divider} />
 
           {/* Text Content */}
-          <Text style={styles.content} selectable>{diary.content}</Text>
+          <Text style={styles.content} selectable>
+            {diary.content}
+          </Text>
 
           {/* Media Attachments */}
           {diary.media && diary.media.length > 0 && (
@@ -213,9 +230,9 @@ const DiaryDetailScreen: React.FC = () => {
 
         {/* Comments */}
         <View style={styles.commentsSection}>
-          <CommentList 
-            comments={diary.comments || []} 
-            emptyText="还没有评论哦，快去圈子里和大家互动吧~" 
+          <CommentList
+            comments={diary.comments || []}
+            emptyText="还没有评论哦，快去圈子里和大家互动吧~"
             authorId={diary.userId}
           />
         </View>
@@ -227,8 +244,8 @@ const DiaryDetailScreen: React.FC = () => {
           <Ionicons name="share-social-outline" size={24} color="#4B5563" />
           <Text style={styles.bottomBarActionText}>分享</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.bottomBarAction} 
+        <TouchableOpacity
+          style={styles.bottomBarAction}
           onPress={() => {
             if (checkCanWriteDiary()) {
               navigation.navigate('EditDiary', { diaryId: _id });
@@ -250,7 +267,9 @@ const DiaryDetailScreen: React.FC = () => {
           visible={previewVisible}
           media={diary.media}
           initialIndex={previewIndex}
-          onClose={() => setPreviewVisible(false)}
+          onClose={() => {
+            setPreviewVisible(false);
+          }}
         />
       )}
 
@@ -258,7 +277,9 @@ const DiaryDetailScreen: React.FC = () => {
       <ShareCardModal
         visible={shareModalVisible}
         diary={diary}
-        onClose={() => setShareModalVisible(false)}
+        onClose={() => {
+          setShareModalVisible(false);
+        }}
       />
     </View>
   );

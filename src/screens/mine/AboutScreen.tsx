@@ -14,7 +14,12 @@ const AboutScreen: React.FC = () => {
   const { isDark } = useAppTheme();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' },
+      ]}
+    >
       <View style={[styles.header, { borderBottomColor: isDark ? '#333' : '#F0F0F0' }]}>
         <TouchableOpacity
           style={styles.backButton}
@@ -22,42 +27,73 @@ const AboutScreen: React.FC = () => {
             navigation.goBack();
           }}
         >
-          <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : HEALING_COLORS.gray[800]} />
+          <Feather
+            name="chevron-left"
+            size={28}
+            color={isDark ? '#FFF' : HEALING_COLORS.gray[800]}
+          />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>关于毛球</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
+          关于毛球
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} indicatorStyle={isDark ? 'white' : 'black'}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        indicatorStyle={isDark ? 'white' : 'black'}
+      >
         <View style={styles.logoSection}>
-          <View style={[
-            styles.logoContainer, 
-            { 
-              backgroundColor: isDark ? '#333' : HEALING_COLORS.pink[50],
-              borderColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              shadowColor: isDark ? '#000' : HEALING_COLORS.pink[400]
-            }
-          ]}>
+          <View
+            style={[
+              styles.logoContainer,
+              {
+                backgroundColor: isDark ? '#333' : HEALING_COLORS.pink[50],
+                borderColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                shadowColor: isDark ? '#000' : HEALING_COLORS.pink[400],
+              },
+            ]}
+          >
             <Image source={require('../../../assets/logo.png')} style={styles.logo} />
           </View>
-          <Text style={[styles.appName, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>毛球日记</Text>
-          <Text style={[styles.versionText, { color: isDark ? '#888' : HEALING_COLORS.gray[400] }]}>Version 1.0.0</Text>
+          <Text style={[styles.appName, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
+            毛球日记
+          </Text>
+          <Text style={[styles.versionText, { color: isDark ? '#888' : HEALING_COLORS.gray[400] }]}>
+            Version 1.0.0
+          </Text>
 
-          <View style={[
-            styles.sloganContainer, 
-            { 
-              backgroundColor: isDark ? '#2C1B24' : '#FFF0F3',
-              borderColor: isDark ? '#4A2533' : '#FFE0E6'
-            }
-          ]}>
-            <Text style={[styles.sloganText, { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] }]}>「收集日常里微小而确定的幸福」</Text>
-            <Text style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}>
+          <View
+            style={[
+              styles.sloganContainer,
+              {
+                backgroundColor: isDark ? '#2C1B24' : '#FFF0F3',
+                borderColor: isDark ? '#4A2533' : '#FFE0E6',
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sloganText,
+                { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] },
+              ]}
+            >
+              「收集日常里微小而确定的幸福」
+            </Text>
+            <Text
+              style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}
+            >
               毛球日记是一个温暖的树洞，也是你专属的时光手账。
             </Text>
-            <Text style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}>
+            <Text
+              style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}
+            >
               在这里，你可以卸下疲惫，记录每一份开心、难过或是突如其来的灵感。那些看似平淡的日常与沿途的风景，都将化作闪光的碎片，被妥善地珍藏在岁月的口袋里。
             </Text>
-            <Text style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}>
+            <Text
+              style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}
+            >
               希望毛球能像一个小小的太阳，永远温暖地陪伴你的每一段回忆。🐾✨
             </Text>
           </View>
@@ -78,29 +114,77 @@ const AboutScreen: React.FC = () => {
             },
           ]}
         >
-          <TouchableOpacity style={[styles.menuItem, styles.menuItemBorder, { borderBottomColor: isDark ? '#333' : HEALING_COLORS.gray[100] }]}>
-            <Text style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>✨ 去应用市场给毛球好评</Text>
-            <Feather name="chevron-right" size={20} color={isDark ? '#888' : HEALING_COLORS.gray[400]} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.menuItem, styles.menuItemBorder, { borderBottomColor: isDark ? '#333' : HEALING_COLORS.gray[100] }]}
-            onPress={() => (navigation as any).navigate('Web', { url: 'https://www.xieyimao.com/doc/detailzh/token/1772109293_4012', title: '用户服务协议' })}
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              styles.menuItemBorder,
+              { borderBottomColor: isDark ? '#333' : HEALING_COLORS.gray[100] },
+            ]}
           >
-            <Text style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>📄 用户服务协议</Text>
-            <Feather name="chevron-right" size={20} color={isDark ? '#888' : HEALING_COLORS.gray[400]} />
+            <Text
+              style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+            >
+              ✨ 去应用市场给毛球好评
+            </Text>
+            <Feather
+              name="chevron-right"
+              size={20}
+              color={isDark ? '#888' : HEALING_COLORS.gray[400]}
+            />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              styles.menuItemBorder,
+              { borderBottomColor: isDark ? '#333' : HEALING_COLORS.gray[100] },
+            ]}
+            onPress={() =>
+              (navigation as any).navigate('Web', {
+                url: 'https://www.xieyimao.com/doc/detailzh/token/1772109293_4012',
+                title: '用户服务协议',
+              })
+            }
+          >
+            <Text
+              style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+            >
+              📄 用户服务协议
+            </Text>
+            <Feather
+              name="chevron-right"
+              size={20}
+              color={isDark ? '#888' : HEALING_COLORS.gray[400]}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => (navigation as any).navigate('Web', { url: 'https://www.xieyimao.com/doc/detailzh/token/1772108718_2251', title: '隐私保护政策' })}
+            onPress={() =>
+              (navigation as any).navigate('Web', {
+                url: 'https://www.xieyimao.com/doc/detailzh/token/1772108718_2251',
+                title: '隐私保护政策',
+              })
+            }
           >
-            <Text style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>🔒 隐私保护政策</Text>
-            <Feather name="chevron-right" size={20} color={isDark ? '#888' : HEALING_COLORS.gray[400]} />
+            <Text
+              style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+            >
+              🔒 隐私保护政策
+            </Text>
+            <Feather
+              name="chevron-right"
+              size={20}
+              color={isDark ? '#888' : HEALING_COLORS.gray[400]}
+            />
           </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>毛球工作室 版权所有</Text>
-          <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>Copyright © 2026 Maoqiu Studio.</Text>
+          <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>
+            毛球工作室 版权所有
+          </Text>
+          <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>
+            Copyright © 2026 Maoqiu Studio.
+          </Text>
         </View>
       </ScrollView>
     </View>

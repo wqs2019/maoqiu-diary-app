@@ -1,5 +1,6 @@
-import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Alert } from 'react-native';
+
 import { useAuthStore } from '../store/authStore';
 import { useNotebookStore } from '../store/notebookStore';
 
@@ -8,7 +9,7 @@ export const useVipGuard = () => {
   const user = useAuthStore((state) => state.user);
   const getCurrentNotebook = useNotebookStore((state) => state.getCurrentNotebook);
 
-  const checkVipPermission = (action: 'writeDiary' | 'createNotebook'): boolean => {
+  const checkVipPermission = (action: 'writeDiary' | 'createNotebook' | 'manageNotebook'): boolean => {
     if (!user) {
       Alert.alert('提示', '用户未登录，请重新登录');
       return false;
@@ -58,6 +59,26 @@ export const useVipGuard = () => {
       return true;
     }
 
+    if (action === 'manageNotebook') {
+      if (!user.isVip?.value) {
+        Alert.alert(
+          'VIP 专属特权',
+          '编辑和删除日记本是 VIP 用户的专属功能哦，升级即可解锁所有高级功能～',
+          [
+            { text: '取消', style: 'cancel' },
+            {
+              text: '去升级',
+              onPress: () => {
+                navigation.navigate('Subscription');
+              },
+            },
+          ]
+        );
+        return false;
+      }
+      return true;
+    }
+
     return true;
   };
 
@@ -67,5 +88,9 @@ export const useVipGuard = () => {
     return checkVipPermission('createNotebook');
   };
 
-  return { checkCanWriteDiary, checkCanCreateNotebook };
+  const checkCanManageNotebook = (): boolean => {
+    return checkVipPermission('manageNotebook');
+  };
+
+  return { checkCanWriteDiary, checkCanCreateNotebook, checkCanManageNotebook };
 };

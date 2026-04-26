@@ -107,14 +107,14 @@ export interface Diary {
     nickname?: string;
     avatar?: string;
   };
-  comments?: Array<{
+  comments?: {
     id: string;
     user: string;
     userId: string;
     content: string;
     createTime: string;
     image?: string;
-  }>;
+  }[];
 }
 
 // 日记列表响应

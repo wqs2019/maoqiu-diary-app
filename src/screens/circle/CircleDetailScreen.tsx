@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -24,7 +25,6 @@ import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useDiaryDetail, useLikeDiary, useCommentDiary } from '@/hooks/useDiaryQuery';
 import { useAuthStore } from '@/store/authStore';
 import { FormatUtil } from '@/utils/format';
-import * as Clipboard from 'expo-clipboard';
 
 const { width } = Dimensions.get('window');
 
@@ -81,7 +81,7 @@ const CircleDetailScreen: React.FC = () => {
       userId: user._id,
       avatar: user.avatar,
       content: commentText.trim(),
-      createTime: new Date().toISOString()
+      createTime: new Date().toISOString(),
     };
 
     if (replyToComment) {
@@ -122,13 +122,9 @@ const CircleDetailScreen: React.FC = () => {
     } else {
       const shareUrl = `maoqiudiary://circle/${_id}`;
       await Clipboard.setStringAsync(shareUrl);
-      Alert.alert(
-        '分享链接已复制',
-        `可以把链接发给朋友，他们点击后就能直接打开这条内容啦！`,
-        [
-          { text: '好的', style: 'default' }
-        ]
-      );
+      Alert.alert('分享链接已复制', `可以把链接发给朋友，他们点击后就能直接打开这条内容啦！`, [
+        { text: '好的', style: 'default' },
+      ]);
     }
   };
 
@@ -168,7 +164,10 @@ const CircleDetailScreen: React.FC = () => {
         <View style={styles.authorSection}>
           <View style={styles.avatarPlaceholder}>
             {diary.authorInfo?.avatar ? (
-              <Image source={{ uri: diary.authorInfo.avatar }} style={{ width: 48, height: 48, borderRadius: 24 }} />
+              <Image
+                source={{ uri: diary.authorInfo.avatar }}
+                style={{ width: 48, height: 48, borderRadius: 24 }}
+              />
             ) : (
               <Text style={styles.avatarEmoji}>🐱</Text>
             )}
@@ -200,11 +199,7 @@ const CircleDetailScreen: React.FC = () => {
         )}
 
         {/* 评论区 */}
-        <CommentList 
-          comments={comments} 
-          authorId={diary.userId}
-          onReplyPress={handleReplyPress}
-        />
+        <CommentList comments={comments} authorId={diary.userId} onReplyPress={handleReplyPress} />
       </ScrollView>
 
       {/* 底部互动与输入栏 */}
@@ -217,7 +212,7 @@ const CircleDetailScreen: React.FC = () => {
             <TextInput
               ref={inputRef}
               style={styles.commentInput}
-              placeholder={replyToComment ? `回复 @${replyToComment.user}` : "说点什么吧..."}
+              placeholder={replyToComment ? `回复 @${replyToComment.user}` : '说点什么吧...'}
               placeholderTextColor="#9CA3AF"
               value={commentText}
               onChangeText={setCommentText}
@@ -233,8 +228,16 @@ const CircleDetailScreen: React.FC = () => {
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('like')}>
               <View style={styles.actionIconWithText}>
-                <Ionicons name={hasLiked ? "heart" : "heart-outline"} size={28} color={hasLiked ? HEALING_COLORS.pink[500] : "#4B5563"} />
-                <Text style={[styles.actionIconText, hasLiked && { color: HEALING_COLORS.pink[500] }]}>{diary.likedUserIds?.length || 0}</Text>
+                <Ionicons
+                  name={hasLiked ? 'heart' : 'heart-outline'}
+                  size={28}
+                  color={hasLiked ? HEALING_COLORS.pink[500] : '#4B5563'}
+                />
+                <Text
+                  style={[styles.actionIconText, hasLiked && { color: HEALING_COLORS.pink[500] }]}
+                >
+                  {diary.likedUserIds?.length || 0}
+                </Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('share')}>
@@ -248,7 +251,9 @@ const CircleDetailScreen: React.FC = () => {
         visible={previewVisible}
         media={diary.media || []}
         initialIndex={previewIndex}
-        onClose={() => setPreviewVisible(false)}
+        onClose={() => {
+          setPreviewVisible(false);
+        }}
       />
     </View>
   );

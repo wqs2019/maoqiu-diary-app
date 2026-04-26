@@ -7,14 +7,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
   ActivityIndicator,
   RefreshControl,
   Dimensions,
 } from 'react-native';
 
-import { LoadableImage } from '../../components/handDrawn/PhotoWall';
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
+import { LoadableImage } from '../../components/handDrawn/PhotoWall';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -115,8 +114,12 @@ const PhotoWallScreen: React.FC = () => {
           handlePreview(index);
         }}
         style={[
-          styles.mediaCard, 
-          { height, backgroundColor: isDark ? '#1E1E1E' : '#FFF', shadowColor: isDark ? '#000' : '#000' }
+          styles.mediaCard,
+          {
+            height,
+            backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+            shadowColor: isDark ? '#000' : '#000',
+          },
         ]}
       >
         <LoadableImage
@@ -147,11 +150,21 @@ const PhotoWallScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F9FAFB' }]}>
-      <View style={[styles.header, { backgroundColor: isDark ? '#121212' : '#FFF', borderBottomColor: isDark ? '#333' : '#F3F4F6' }]}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: isDark ? '#121212' : '#FFF',
+            borderBottomColor: isDark ? '#333' : '#F3F4F6',
+          },
+        ]}
+      >
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={isDark ? '#FFF' : '#111827'} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>{scenarioName} - 时光相册</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>
+          {scenarioName} - 时光相册
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -179,7 +192,9 @@ const PhotoWallScreen: React.FC = () => {
         ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="images-outline" size={48} color={isDark ? '#444' : '#D1D5DB'} />
-            <Text style={[styles.emptyText, { color: isDark ? '#888' : '#9CA3AF' }]}>这里空空如也，快去记录吧</Text>
+            <Text style={[styles.emptyText, { color: isDark ? '#888' : '#9CA3AF' }]}>
+              这里空空如也，快去记录吧
+            </Text>
           </View>
         )}
       </ScrollView>

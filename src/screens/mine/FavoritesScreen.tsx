@@ -73,7 +73,9 @@ const FavoritesScreen: React.FC = () => {
       {isLoading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={HEALING_COLORS.pink[400]} />
-          <Text style={[styles.loadingText, { color: isDark ? '#AAA' : '#999' }]}>正在加载收藏...</Text>
+          <Text style={[styles.loadingText, { color: isDark ? '#AAA' : '#999' }]}>
+            正在加载收藏...
+          </Text>
         </View>
       ) : error ? (
         <View style={styles.centerContainer}>
@@ -82,8 +84,12 @@ const FavoritesScreen: React.FC = () => {
       ) : timelineItems.length === 0 ? (
         <View style={styles.emptyStateContainer}>
           <Text style={styles.ticketIcon}>🌟</Text>
-          <Text style={[styles.emptyStateText, { color: isDark ? '#AAA' : '#666' }]}>还没有收藏的日记</Text>
-          <Text style={[styles.emptyStateSubText, { color: isDark ? '#888' : '#999' }]}>去详情页点击右上角的星星收藏吧</Text>
+          <Text style={[styles.emptyStateText, { color: isDark ? '#AAA' : '#666' }]}>
+            还没有收藏的日记
+          </Text>
+          <Text style={[styles.emptyStateSubText, { color: isDark ? '#888' : '#999' }]}>
+            去详情页点击右上角的星星收藏吧
+          </Text>
         </View>
       ) : (
         <ScrollView

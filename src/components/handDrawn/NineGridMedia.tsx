@@ -3,6 +3,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Dimensions, Text } from 'react-native';
 
 import { LoadableImage } from './PhotoWall';
+
 import { MediaResource } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -51,7 +52,9 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
           <TouchableOpacity
             key={index}
             activeOpacity={0.8}
-            onPress={() => onPreview(media, index)}
+            onPress={() => {
+              onPreview(media, index);
+            }}
             style={[
               styles.mediaWrapper,
               {

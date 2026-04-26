@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Animated, StyleSheet, TouchableWithoutFeedback, ModalProps, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Animated,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  ModalProps,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+
 import { Portal } from './Portal';
 
 interface CustomModalProps extends Omit<ModalProps, 'visible'> {
@@ -31,7 +40,9 @@ export const Modal: React.FC<CustomModalProps> = ({
         toValue: 0,
         duration: animationDuration,
         useNativeDriver: true,
-      }).start(() => setShouldRender(false));
+      }).start(() => {
+        setShouldRender(false);
+      });
     }
   }, [visible, opacity, shouldRender, animationDuration]);
 
@@ -39,7 +50,7 @@ export const Modal: React.FC<CustomModalProps> = ({
 
   return (
     <Portal>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >

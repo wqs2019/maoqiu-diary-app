@@ -7,6 +7,7 @@ import * as notebookService from '../services/notebookService';
 export interface Notebook {
   _id: string;
   name: string;
+  cover?: string;
   createdAt: string;
   isDefault?: boolean;
 }
@@ -19,7 +20,9 @@ interface NotebookState {
   fetchNotebooks: (userId: string) => Promise<void>;
   getNotebooks: (userId: string) => Notebook[];
   getCurrentNotebook: (userId: string) => Notebook;
-  addNotebook: (userId: string, name: string) => Promise<Notebook>;
+  addNotebook: (userId: string, name: string, cover?: string) => Promise<Notebook>;
+  updateNotebook: (userId: string, notebookId: string, name: string, cover?: string) => Promise<void>;
+  deleteNotebook: (userId: string, notebookId: string) => Promise<void>;
   setCurrentNotebook: (userId: string, notebookId: string) => void;
 }
 
@@ -64,7 +67,14 @@ export const useNotebookStore = create<NotebookState>()(
       getNotebooks: (userId: string) => {
         const notebooks = get().notebooksByUserId[userId];
         if (!notebooks || notebooks.length === 0) {
-          return [{ _id: 'default', name: '毛球日记', createdAt: new Date().toISOString(), isDefault: true }];
+          return [
+            {
+              _id: 'default',
+              name: '毛球日记',
+              createdAt: new Date().toISOString(),
+              isDefault: true,
+            },
+          ];
         }
         return notebooks;
       },
@@ -76,9 +86,9 @@ export const useNotebookStore = create<NotebookState>()(
         return notebook || notebooks[0];
       },
 
-      addNotebook: async (userId: string, name: string) => {
+      addNotebook: async (userId: string, name: string, cover?: string) => {
         // 先调用云端
-        const newNotebook = await notebookService.createNotebook(userId, name);
+        const newNotebook = await notebookService.createNotebook(userId, name, false, cover);
 
         // 更新本地 store
         const notebooks = get().getNotebooks(userId);
@@ -93,6 +103,46 @@ export const useNotebookStore = create<NotebookState>()(
           },
         }));
         return newNotebook;
+      },
+
+      updateNotebook: async (userId: string, notebookId: string, name: string, cover?: string) => {
+        await notebookService.updateNotebook(notebookId, name, cover);
+        const notebooks = get().getNotebooks(userId);
+        set((state) => ({
+          notebooksByUserId: {
+            ...state.notebooksByUserId,
+            [userId]: notebooks.map((nb) => 
+              nb._id === notebookId ? { ...nb, name, cover: cover !== undefined ? cover : nb.cover } : nb
+            ),
+          },
+        }));
+      },
+
+      deleteNotebook: async (userId: string, notebookId: string) => {
+        const notebooks = get().getNotebooks(userId);
+        const targetNotebook = notebooks.find((nb) => nb._id === notebookId);
+        
+        if (targetNotebook?.isDefault) {
+          throw new Error('默认日记本不允许删除');
+        }
+
+        await notebookService.deleteNotebook(notebookId);
+        const newNotebooks = notebooks.filter((nb) => nb._id !== notebookId);
+        
+        set((state) => {
+          const currentId = state.currentNotebookIdByUserId[userId];
+          return {
+            notebooksByUserId: {
+              ...state.notebooksByUserId,
+              [userId]: newNotebooks,
+            },
+            // 如果删除的是当前选中的日记本，切换到第一个（或default）
+            currentNotebookIdByUserId: {
+              ...state.currentNotebookIdByUserId,
+              [userId]: currentId === notebookId ? (newNotebooks[0]?._id || 'default') : currentId,
+            },
+          };
+        });
       },
 
       setCurrentNotebook: (userId: string, notebookId: string) => {

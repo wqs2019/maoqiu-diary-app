@@ -1,15 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Switch,
-  Alert,
-  TextInput,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
@@ -20,11 +12,11 @@ const AppLockSettingScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
-  
+
   const appLockEnabled = useAppStore((state) => state.appLockEnabled);
   const appLockPassword = useAppStore((state) => state.appLockPassword);
   const setAppLock = useAppStore((state) => state.setAppLock);
-  
+
   const [passwordInput, setPasswordInput] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [step, setStep] = useState<'initial' | 'set_password' | 'confirm_password'>('initial');
@@ -35,15 +27,15 @@ const AppLockSettingScreen: React.FC = () => {
     } else {
       Alert.alert('关闭密码锁', '确定要关闭应用密码锁吗？', [
         { text: '取消', style: 'cancel' },
-        { 
-          text: '确定', 
+        {
+          text: '确定',
           onPress: () => {
             setAppLock(false, null);
             setStep('initial');
             setPasswordInput('');
             setConfirmPassword('');
-          }
-        }
+          },
+        },
       ]);
     }
   };
@@ -83,10 +75,22 @@ const AppLockSettingScreen: React.FC = () => {
         <View style={styles.menuSection}>
           <View style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIconContainer, { backgroundColor: HEALING_COLORS.yellow[600] + '15' }]}>
+              <View
+                style={[
+                  styles.menuIconContainer,
+                  { backgroundColor: HEALING_COLORS.yellow[600] + '15' },
+                ]}
+              >
                 <Feather name="lock" size={20} color={HEALING_COLORS.yellow[600]} />
               </View>
-              <Text style={[styles.menuItemText, { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[800] }]}>应用密码锁</Text>
+              <Text
+                style={[
+                  styles.menuItemText,
+                  { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[800] },
+                ]}
+              >
+                应用密码锁
+              </Text>
             </View>
             <View style={styles.menuItemRight}>
               <Switch
@@ -112,12 +116,12 @@ const AppLockSettingScreen: React.FC = () => {
         </Text>
         <TextInput
           style={[
-            styles.passwordInput, 
-            { 
+            styles.passwordInput,
+            {
               backgroundColor: isDark ? '#1E1E1E' : '#FFF',
               color: isDark ? '#FFF' : HEALING_COLORS.gray[800],
-              borderColor: isDark ? '#333' : '#FFF0F3'
-            }
+              borderColor: isDark ? '#333' : '#FFF0F3',
+            },
           ]}
           keyboardType="number-pad"
           maxLength={4}
@@ -127,11 +131,14 @@ const AppLockSettingScreen: React.FC = () => {
           onChangeText={isConfirm ? setConfirmPassword : setPasswordInput}
         />
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCancelSetup}>
+          <TouchableOpacity
+            style={[styles.button, styles.cancelButton]}
+            onPress={handleCancelSetup}
+          >
             <Text style={styles.cancelButtonText}>取消</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.button, styles.confirmButton]} 
+          <TouchableOpacity
+            style={[styles.button, styles.confirmButton]}
             onPress={isConfirm ? handleConfirmPassword : handleSetPassword}
           >
             <Text style={styles.confirmButtonText}>下一步</Text>
@@ -142,17 +149,33 @@ const AppLockSettingScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' },
+      ]}
+    >
       <View style={[styles.header, { borderBottomColor: isDark ? '#333' : '#F0F0F0' }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Feather name="chevron-left" size={28} color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[800]} />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            navigation.goBack();
+          }}
+        >
+          <Feather
+            name="chevron-left"
+            size={28}
+            color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[800]}
+          />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[800] }]}>应用密码锁</Text>
+        <Text
+          style={[styles.headerTitle, { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[800] }]}
+        >
+          应用密码锁
+        </Text>
         <View style={{ width: 40 }} />
       </View>
-      <View style={styles.content}>
-        {renderContent()}
-      </View>
+      <View style={styles.content}>{renderContent()}</View>
     </View>
   );
 };

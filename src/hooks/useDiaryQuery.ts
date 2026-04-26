@@ -287,7 +287,7 @@ export const useDiaryStats = (userId?: string) => {
   }, [allDiaryData]);
 
   React.useEffect(() => {
-    if (!user || !user._id || !stats.unlockedBadges.length || user._id !== userId) return;
+    if (!user?._id || !stats.unlockedBadges.length || user._id !== userId) return;
 
     const userBadges = user.unlockedBadges || {};
     let hasNew = false;
@@ -382,7 +382,7 @@ export const useLikeDiary = () => {
   type LikeDiaryVariables = { id: string; userId: string; action: 'like' | 'unlike' };
   type LikeDiaryContext = {
     previousDetail?: diaryApi.Diary;
-    previousLists: Array<[readonly unknown[], diaryApi.DiaryListResponse | undefined]>;
+    previousLists: [readonly unknown[], diaryApi.DiaryListResponse | undefined][];
   };
 
   const toggleLikedState = (diary?: diaryApi.Diary) => (variables: LikeDiaryVariables) => {
@@ -412,26 +412,31 @@ export const useLikeDiary = () => {
           queryClient.cancelQueries({ queryKey: ['diaryList'] }),
         ]);
 
-        const previousDetail = queryClient.getQueryData<diaryApi.Diary>(['diaryDetail', variables.id]);
-        const previousLists =
-          queryClient.getQueriesData<diaryApi.DiaryListResponse>({ queryKey: ['diaryList'] }) as Array<
-            [readonly unknown[], diaryApi.DiaryListResponse | undefined]
-          >;
+        const previousDetail = queryClient.getQueryData<diaryApi.Diary>([
+          'diaryDetail',
+          variables.id,
+        ]);
+        const previousLists = queryClient.getQueriesData<diaryApi.DiaryListResponse>({
+          queryKey: ['diaryList'],
+        });
 
         queryClient.setQueryData<diaryApi.Diary>(['diaryDetail', variables.id], (old) =>
           toggleLikedState(old)(variables)
         );
 
-        queryClient.setQueriesData<diaryApi.DiaryListResponse>({ queryKey: ['diaryList'] }, (old) => {
-          if (!old?.list) return old;
+        queryClient.setQueriesData<diaryApi.DiaryListResponse>(
+          { queryKey: ['diaryList'] },
+          (old) => {
+            if (!old?.list) return old;
 
-          return {
-            ...old,
-            list: old.list.map((item) =>
-              item._id === variables.id ? toggleLikedState(item)(variables) ?? item : item
-            ),
-          };
-        });
+            return {
+              ...old,
+              list: old.list.map((item) =>
+                item._id === variables.id ? (toggleLikedState(item)(variables) ?? item) : item
+              ),
+            };
+          }
+        );
 
         return { previousDetail, previousLists };
       },

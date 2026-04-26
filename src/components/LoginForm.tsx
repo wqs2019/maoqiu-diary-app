@@ -2,13 +2,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';
 import { Controller } from 'react-hook-form';
-import { View, TextInput, TouchableOpacity, Alert, Text } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text } from 'react-native';
+
+import { useToast } from './common/Toast';
 
 import { COLORS, FONT_SIZES, SPACING } from '@/config/constant';
 import { useZodForm } from '@/hooks/useZodForm';
 import { useAuthStore } from '@/store/authStore';
 import { loginFormSchema, LoginFormSchema } from '@/utils/validators';
-import { useToast } from './common/Toast';
 
 interface LoginFormProps {
   onSuccess?: () => void;

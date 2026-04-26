@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,8 +25,8 @@ import { useToast } from '../../components/common/Toast';
 import { TimelineView } from '../../components/handDrawn/TimelineView';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
-import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useVipGuard } from '../../hooks/useVipGuard';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
@@ -44,7 +45,7 @@ const HomeScreen: React.FC = () => {
   const [yearLayouts, setYearLayouts] = useState<Record<string, number>>({});
   const scrollViewRef = useRef<ScrollView>(null);
   const [activeYear, setActiveYear] = useState<string | null>(null);
-  
+
   const { themeName, isDark } = useAppTheme();
 
   // 场景筛选状态
@@ -91,12 +92,10 @@ const HomeScreen: React.FC = () => {
 
   const notebooks =
     userNotebooks && userNotebooks.length > 0 ? userNotebooks : userId ? getNotebooks(userId) : [];
-  
+
   // 确保在 currentNotebookId 改变时能够获取到最新的 notebook
-  const currentNotebook =
-    notebooks.find((n) => n._id === currentNotebookId) ||
-    notebooks[0] ||
-    { _id: 'default', name: '毛球日记', createdAt: '' };
+  const currentNotebook = notebooks.find((n) => n._id === currentNotebookId) ||
+    notebooks[0] || { _id: 'default', name: '毛球日记', createdAt: '' };
 
   // 拉取用户的日记本数据
   useEffect(() => {
@@ -269,7 +268,9 @@ const HomeScreen: React.FC = () => {
                 setIsNotebookModalVisible(true);
               }}
             >
-              <Text style={[styles.title, { color: isDark ? '#FFF' : '#333' }]}>{currentNotebook.name}</Text>
+              <Text style={[styles.title, { color: isDark ? '#FFF' : '#333' }]}>
+                {currentNotebook.name}
+              </Text>
               <Ionicons name="chevron-down" size={20} color={isDark ? '#FFF' : '#333'} />
             </TouchableOpacity>
             <Text style={styles.dateText}>{getFormattedDate()}</Text>
@@ -281,7 +282,15 @@ const HomeScreen: React.FC = () => {
         </View>
 
         <View style={styles.searchContainer}>
-          <View style={[styles.searchInputWrapper, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#E5E5EA' }]}>
+          <View
+            style={[
+              styles.searchInputWrapper,
+              {
+                backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+                borderColor: isDark ? '#333' : '#E5E5EA',
+              },
+            ]}
+          >
             <TextInput
               style={[styles.searchInput, { color: isDark ? '#FFF' : '#333' }]}
               placeholder="搜索你的回忆..."
@@ -293,7 +302,14 @@ const HomeScreen: React.FC = () => {
             />
           </View>
           <TouchableOpacity
-            style={[styles.filterButton, { backgroundColor: isDark ? '#1E1E1E' : '#FFF', borderColor: isDark ? '#333' : '#E5E5EA' }, selectedScenario && styles.filterButtonActive]}
+            style={[
+              styles.filterButton,
+              {
+                backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+                borderColor: isDark ? '#333' : '#E5E5EA',
+              },
+              selectedScenario && styles.filterButtonActive,
+            ]}
             onPress={() => {
               setIsFilterVisible(true);
             }}
@@ -316,9 +332,13 @@ const HomeScreen: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
-            <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+            <View
+              style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}
+            >
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>筛选场景</Text>
+                <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>
+                  筛选场景
+                </Text>
                 <TouchableOpacity
                   onPress={() => {
                     setIsFilterVisible(false);
@@ -388,9 +408,13 @@ const HomeScreen: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
-            <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+            <View
+              style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}
+            >
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>我的日记本</Text>
+                <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>
+                  我的日记本
+                </Text>
                 <TouchableOpacity
                   onPress={() => {
                     setIsNotebookModalVisible(false);
@@ -400,14 +424,17 @@ const HomeScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={{ maxHeight: 300, marginBottom: 20 }}>
+              <ScrollView>
                 {notebooks.map((notebook, index) => (
                   <TouchableOpacity
                     key={notebook._id || `notebook-${index}`}
                     style={[
                       styles.notebookItem,
                       currentNotebook._id === notebook._id && styles.notebookItemActive,
-                      { backgroundColor: isDark ? '#2C2C2C' : '#FFF', borderColor: isDark ? '#444' : '#F0F0F0' }
+                      {
+                        backgroundColor: isDark ? '#2C2C2C' : '#FFF',
+                        borderColor: isDark ? '#444' : '#F0F0F0',
+                      },
                     ]}
                     onPress={() => {
                       if (userId) {
@@ -416,13 +443,28 @@ const HomeScreen: React.FC = () => {
                       }
                     }}
                   >
-                    <Ionicons
-                      name="book"
-                      size={20}
-                      color={
-                        currentNotebook._id === notebook._id ? HEALING_COLORS.pink[500] : (isDark ? '#AAA' : '#666')
-                      }
-                    />
+                    {notebook.cover ? (
+                      <Image source={{ uri: notebook.cover }} style={styles.notebookCover} />
+                    ) : (
+                      <View
+                        style={[
+                          styles.notebookCoverPlaceholder,
+                          { backgroundColor: isDark ? '#333' : '#F5F5F5' },
+                        ]}
+                      >
+                        <Ionicons
+                          name="book"
+                          size={28}
+                          color={
+                            currentNotebook._id === notebook._id
+                              ? HEALING_COLORS.pink[500]
+                              : isDark
+                                ? '#AAA'
+                                : '#999'
+                          }
+                        />
+                      </View>
+                    )}
                     <Text
                       style={[
                         styles.notebookItemText,
@@ -442,7 +484,14 @@ const HomeScreen: React.FC = () => {
               <View style={styles.addNotebookContainer}>
                 <TextInput
                   ref={newNotebookInputRef}
-                  style={[styles.addNotebookInput, { color: isDark ? '#FFF' : '#333', backgroundColor: isDark ? '#2C2C2C' : '#F9F9F9', borderColor: isDark ? '#444' : '#E5E5EA' }]}
+                  style={[
+                    styles.addNotebookInput,
+                    {
+                      color: isDark ? '#FFF' : '#333',
+                      backgroundColor: isDark ? '#2C2C2C' : '#F9F9F9',
+                      borderColor: isDark ? '#444' : '#E5E5EA',
+                    },
+                  ]}
                   placeholder="新日记本名称..."
                   placeholderTextColor={isDark ? '#888' : '#999'}
                   defaultValue=""
@@ -562,7 +611,13 @@ const HomeScreen: React.FC = () => {
                 handleYearPress(year);
               }}
             >
-              <Text style={[styles.yearText, { color: isDark ? '#AAA' : '#999' }, activeYear === year && styles.activeYearText]}>
+              <Text
+                style={[
+                  styles.yearText,
+                  { color: isDark ? '#AAA' : '#999' },
+                  activeYear === year && styles.activeYearText,
+                ]}
+              >
                 {year}
               </Text>
               {activeYear === year && <View style={styles.yearDot} />}
@@ -588,7 +643,7 @@ const HomeScreen: React.FC = () => {
               borderColor: '#121212',
               backgroundColor: HEALING_COLORS.pink[500],
               shadowColor: HEALING_COLORS.pink[500],
-            }
+            },
           ]}
           onPress={() => {
             handleCreateDiary();
@@ -852,13 +907,25 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginTop: -2,
   },
+  notebookCover: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  notebookCoverPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   notebookItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#F5F5F5',
   },
@@ -879,7 +946,6 @@ const styles = StyleSheet.create({
   addNotebookContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F5F5F5',
     paddingTop: 16,

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
 import { useAuthStore } from '../../store/authStore';
+
 import { useToast } from '@/components/common/Toast';
 
 const LoginScreen: React.FC = () => {
@@ -80,113 +81,113 @@ const LoginScreen: React.FC = () => {
         bounces={false}
       >
         <View style={styles.content}>
-        {/* 装饰元素 */}
-        <View style={styles.decoration}>
-          <Ionicons name="heart" size={24} color={COLORS.primary} style={styles.decorationIcon} />
-          <Ionicons
-            name="star"
-            size={16}
-            color={COLORS.secondary}
-            style={[styles.decorationIcon, { top: 10, right: 40 }]}
-          />
-          <Ionicons
-            name="flower"
-            size={20}
-            color={COLORS.primary}
-            style={[styles.decorationIcon, { bottom: 20, left: 20 }]}
-          />
-        </View>
-
-        {/* 标题部分 */}
-        <View style={styles.header}>
-          <Image source={require('../../../assets/logo.png')} style={styles.logo} />
-          <Text style={styles.title}>欢迎回来！</Text>
-          <Text style={styles.subtitle}>登录后开始记录你的美好生活</Text>
-        </View>
-
-        {/* 输入框部分 */}
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="call" size={20} color={COLORS.primary} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="请输入手机号"
-                placeholderTextColor={COLORS.textSecondary}
-                keyboardType="phone-pad"
-                value={phone}
-                onChangeText={setPhone}
-                maxLength={11}
-              />
-            </View>
+          {/* 装饰元素 */}
+          <View style={styles.decoration}>
+            <Ionicons name="heart" size={24} color={COLORS.primary} style={styles.decorationIcon} />
+            <Ionicons
+              name="star"
+              size={16}
+              color={COLORS.secondary}
+              style={[styles.decorationIcon, { top: 10, right: 40 }]}
+            />
+            <Ionicons
+              name="flower"
+              size={20}
+              color={COLORS.primary}
+              style={[styles.decorationIcon, { bottom: 20, left: 20 }]}
+            />
           </View>
 
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="lock-closed"
-                size={20}
-                color={COLORS.primary}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="请输入验证码"
-                placeholderTextColor={COLORS.textSecondary}
-                keyboardType="number-pad"
-                value={code}
-                onChangeText={setCode}
-                maxLength={6}
-              />
-              <TouchableOpacity
-                style={[styles.codeButton, countdown > 0 && styles.codeButtonDisabled]}
-                onPress={handleSendCode}
-                disabled={countdown > 0}
-              >
-                <Text
-                  style={[styles.codeButtonText, countdown > 0 && styles.codeButtonTextDisabled]}
-                >
-                  {countdown > 0 ? `${countdown}s` : '获取'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+          {/* 标题部分 */}
+          <View style={styles.header}>
+            <Image source={require('../../../assets/logo.png')} style={styles.logo} />
+            <Text style={styles.title}>欢迎回来！</Text>
+            <Text style={styles.subtitle}>登录后开始记录你的美好生活</Text>
           </View>
 
-          {/* 登录按钮 */}
-          <TouchableOpacity
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Text style={styles.loginButtonText}>{loading ? '登录中...' : '登录'}</Text>
-            <Ionicons name="arrow-forward" size={20} color={COLORS.surface} />
-          </TouchableOpacity>
-
-          {/* 微信登录（因个人开发者暂无权限，先隐藏以便后续使用） */}
-          {false && (
-            <>
-              <View style={styles.dividerContainer}>
-                <View style={styles.divider} />
-                <Text style={styles.dividerText}>或</Text>
-                <View style={styles.divider} />
+          {/* 输入框部分 */}
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="call" size={20} color={COLORS.primary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="请输入手机号"
+                  placeholderTextColor={COLORS.textSecondary}
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={setPhone}
+                  maxLength={11}
+                />
               </View>
+            </View>
 
-              <TouchableOpacity
-                style={styles.wechatButton}
-                onPress={async () => {
-                  await loginWithWechat();
-                  const currentError = useAuthStore.getState().error;
-                  if (currentError) toast.error(currentError);
-                }}
-                disabled={loading}
-              >
-                <Ionicons name="logo-wechat" size={24} color="#07C160" />
-                <Text style={styles.wechatButtonText}>微信一键登录</Text>
-              </TouchableOpacity>
-            </>
-          )}
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="lock-closed"
+                  size={20}
+                  color={COLORS.primary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="请输入验证码"
+                  placeholderTextColor={COLORS.textSecondary}
+                  keyboardType="number-pad"
+                  value={code}
+                  onChangeText={setCode}
+                  maxLength={6}
+                />
+                <TouchableOpacity
+                  style={[styles.codeButton, countdown > 0 && styles.codeButtonDisabled]}
+                  onPress={handleSendCode}
+                  disabled={countdown > 0}
+                >
+                  <Text
+                    style={[styles.codeButtonText, countdown > 0 && styles.codeButtonTextDisabled]}
+                  >
+                    {countdown > 0 ? `${countdown}s` : '获取'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 登录按钮 */}
+            <TouchableOpacity
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.loginButtonText}>{loading ? '登录中...' : '登录'}</Text>
+              <Ionicons name="arrow-forward" size={20} color={COLORS.surface} />
+            </TouchableOpacity>
+
+            {/* 微信登录（因个人开发者暂无权限，先隐藏以便后续使用） */}
+            {false && (
+              <>
+                <View style={styles.dividerContainer}>
+                  <View style={styles.divider} />
+                  <Text style={styles.dividerText}>或</Text>
+                  <View style={styles.divider} />
+                </View>
+
+                <TouchableOpacity
+                  style={styles.wechatButton}
+                  onPress={async () => {
+                    await loginWithWechat();
+                    const currentError = useAuthStore.getState().error;
+                    if (currentError) toast.error(currentError);
+                  }}
+                  disabled={loading}
+                >
+                  <Ionicons name="logo-wechat" size={24} color="#07C160" />
+                  <Text style={styles.wechatButtonText}>微信一键登录</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </View>
-      </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

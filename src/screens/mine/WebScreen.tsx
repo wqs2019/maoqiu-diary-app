@@ -1,9 +1,10 @@
+import { Feather } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
-import { WebView } from 'react-native-webview';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
+
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
@@ -19,28 +20,71 @@ const WebScreen: React.FC = () => {
 
   if (!url) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
+      <View
+        style={[
+          styles.container,
+          { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' },
+        ]}
+      >
         <View style={[styles.header, { borderBottomColor: isDark ? '#333' : '#F0F0F0' }]}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : HEALING_COLORS.gray[800]} />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              navigation.goBack();
+            }}
+          >
+            <Feather
+              name="chevron-left"
+              size={28}
+              color={isDark ? '#FFF' : HEALING_COLORS.gray[800]}
+            />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>错误</Text>
+          <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
+            错误
+          </Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.centerContainer}>
-          <Text style={{ color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }}>未提供有效的链接</Text>
+          <Text style={{ color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }}>
+            未提供有效的链接
+          </Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
-      <View style={[styles.header, { borderBottomColor: isDark ? '#333' : '#F0F0F0', backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : HEALING_COLORS.gray[800]} />
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' },
+      ]}
+    >
+      <View
+        style={[
+          styles.header,
+          {
+            borderBottomColor: isDark ? '#333' : '#F0F0F0',
+            backgroundColor: isDark ? '#121212' : '#FAFAFA',
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            navigation.goBack();
+          }}
+        >
+          <Feather
+            name="chevron-left"
+            size={28}
+            color={isDark ? '#FFF' : HEALING_COLORS.gray[800]}
+          />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]} numberOfLines={1}>
+        <Text
+          style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+          numberOfLines={1}
+        >
           {title || '网页'}
         </Text>
         <View style={{ width: 40 }} />
@@ -48,14 +92,18 @@ const WebScreen: React.FC = () => {
 
       <View style={styles.webViewContainer}>
         {loading && (
-          <View style={[styles.loadingContainer, { backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
+          <View
+            style={[styles.loadingContainer, { backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}
+          >
             <ActivityIndicator size="large" color={HEALING_COLORS.pink[400]} />
           </View>
         )}
         <WebView
           source={{ uri: url }}
           style={{ flex: 1, backgroundColor: isDark ? '#121212' : '#FAFAFA' }}
-          onLoadEnd={() => setLoading(false)}
+          onLoadEnd={() => {
+            setLoading(false);
+          }}
           startInLoadingState={false}
           showsVerticalScrollIndicator={false}
         />

@@ -11,9 +11,10 @@ import {
   ViewToken,
 } from 'react-native';
 
+import { useAppTheme } from '../../hooks/useAppTheme';
+
 import { COLORS, FONT_SIZES } from '@/config/constant';
 import { useAppStore } from '@/store/appStore';
-import { useAppTheme } from '../../hooks/useAppTheme';
 
 const { width, height } = Dimensions.get('window');
 

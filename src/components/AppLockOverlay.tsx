@@ -5,7 +5,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   Animated,
   TouchableOpacity,
   Dimensions,
@@ -30,7 +29,7 @@ export const AppLockOverlay: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [biometricType, setBiometricType] = useState<LocalAuthentication.AuthenticationType[]>([]);
-  
+
   const shakeAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -103,7 +102,7 @@ export const AppLockOverlay: React.FC = () => {
       const newCode = inputCode + num;
       setInputCode(newCode);
       setErrorMsg('');
-      
+
       if (newCode.length === 4) {
         if (newCode === appLockPassword) {
           // 密码正确，解锁
@@ -144,24 +143,25 @@ export const AppLockOverlay: React.FC = () => {
           <Ionicons name="lock-closed" size={48} color={HEALING_COLORS.pink[400]} />
         </View>
         <Text style={[styles.title, { color: textColor }]}>请输入密码</Text>
-        
-        <Animated.View style={[styles.dotsContainer, { transform: [{ translateX: shakeAnimation }] }]}>
+
+        <Animated.View
+          style={[styles.dotsContainer, { transform: [{ translateX: shakeAnimation }] }]}
+        >
           {[0, 1, 2, 3].map((index) => (
             <View
               key={index}
               style={[
                 styles.dot,
-                { 
+                {
                   borderColor: isDark ? '#555' : HEALING_COLORS.gray[300],
-                  backgroundColor: inputCode.length > index 
-                    ? HEALING_COLORS.pink[400] 
-                    : 'transparent'
-                }
+                  backgroundColor:
+                    inputCode.length > index ? HEALING_COLORS.pink[400] : 'transparent',
+                },
               ]}
             />
           ))}
         </Animated.View>
-        
+
         <Text style={styles.errorText}>{errorMsg}</Text>
       </View>
 
@@ -175,8 +175,13 @@ export const AppLockOverlay: React.FC = () => {
             {row.map((key) => (
               <TouchableOpacity
                 key={key}
-                style={[styles.keyButton, { backgroundColor: keyBgColor, borderColor: keyBorderColor }]}
-                onPress={() => handleKeyPress(key)}
+                style={[
+                  styles.keyButton,
+                  { backgroundColor: keyBgColor, borderColor: keyBorderColor },
+                ]}
+                onPress={() => {
+                  handleKeyPress(key);
+                }}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.keyText, { color: textColor }]}>{key}</Text>
@@ -187,22 +192,36 @@ export const AppLockOverlay: React.FC = () => {
         <View style={styles.keyRow}>
           {isBiometricSupported ? (
             <TouchableOpacity
-              style={[styles.keyButton, { backgroundColor: 'transparent', borderColor: 'transparent' }]}
+              style={[
+                styles.keyButton,
+                { backgroundColor: 'transparent', borderColor: 'transparent' },
+              ]}
               onPress={handleBiometricAuth}
               activeOpacity={0.7}
             >
-              <Ionicons 
-                name={biometricType.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION) ? "scan-outline" : "finger-print-outline"} 
-                size={32} 
-                color={textColor} 
+              <Ionicons
+                name={
+                  biometricType.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)
+                    ? 'scan-outline'
+                    : 'finger-print-outline'
+                }
+                size={32}
+                color={textColor}
               />
             </TouchableOpacity>
           ) : (
-            <View style={[styles.keyButton, { backgroundColor: 'transparent', borderColor: 'transparent' }]} />
+            <View
+              style={[
+                styles.keyButton,
+                { backgroundColor: 'transparent', borderColor: 'transparent' },
+              ]}
+            />
           )}
           <TouchableOpacity
             style={[styles.keyButton, { backgroundColor: keyBgColor, borderColor: keyBorderColor }]}
-            onPress={() => handleKeyPress('0')}
+            onPress={() => {
+              handleKeyPress('0');
+            }}
             activeOpacity={0.7}
           >
             <Text style={[styles.keyText, { color: textColor }]}>0</Text>
@@ -272,7 +291,7 @@ const styles = StyleSheet.create({
   keyButton: {
     width: (width - 60 - 40) / 3,
     height: (width - 60 - 40) / 3,
-    borderRadius: ((width - 60 - 40) / 3) / 2,
+    borderRadius: (width - 60 - 40) / 3 / 2,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,

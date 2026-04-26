@@ -8,9 +8,11 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Modal } from '../../components/common/Modal';
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
 import { getMoodConfig } from '../../config/statusConfig';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -26,6 +28,10 @@ const CalendarScreen: React.FC = () => {
 
   // 当前日历查看的年月
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // 弹窗状态
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedDiaries, setSelectedDiaries] = useState<any[]>([]);
 
   // 生成当前月份的查询范围
   const { startDate, endDate } = useMemo(() => {
@@ -119,21 +125,44 @@ const CalendarScreen: React.FC = () => {
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
-      <View style={[styles.header, { backgroundColor: isDark ? '#121212' : '#FAFAFA', borderBottomColor: isDark ? '#333' : '#F0F0F0' }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' },
+      ]}
+    >
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: isDark ? '#121212' : '#FAFAFA',
+            borderBottomColor: isDark ? '#333' : '#F0F0F0',
+          },
+        ]}
+      >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => {
             navigation.goBack();
           }}
         >
-          <Feather name="chevron-left" size={28} color={isDark ? '#FFF' : HEALING_COLORS.gray[800]} />
+          <Feather
+            name="chevron-left"
+            size={28}
+            color={isDark ? '#FFF' : HEALING_COLORS.gray[800]}
+          />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>打卡日历</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
+          打卡日历
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} indicatorStyle={isDark ? 'white' : 'black'}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        indicatorStyle={isDark ? 'white' : 'black'}
+      >
         {/* 统计卡片 */}
         <View
           style={[
@@ -151,13 +180,35 @@ const CalendarScreen: React.FC = () => {
           ]}
         >
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] }]}>{checkInStats.currentStreak}</Text>
-            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}>连续打卡(天)</Text>
+            <Text
+              style={[
+                styles.statValue,
+                { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] },
+              ]}
+            >
+              {checkInStats.currentStreak}
+            </Text>
+            <Text
+              style={[styles.statLabel, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}
+            >
+              连续打卡(天)
+            </Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]} />
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] }]}>{checkInStats.totalCheckIns}</Text>
-            <Text style={[styles.statLabel, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}>本月打卡(次)</Text>
+            <Text
+              style={[
+                styles.statValue,
+                { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] },
+              ]}
+            >
+              {checkInStats.totalCheckIns}
+            </Text>
+            <Text
+              style={[styles.statLabel, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}
+            >
+              本月打卡(次)
+            </Text>
           </View>
         </View>
 
@@ -179,21 +230,43 @@ const CalendarScreen: React.FC = () => {
         >
           {/* 日历头部：切换月份 */}
           <View style={styles.calendarHeader}>
-            <TouchableOpacity onPress={handlePrevMonth} style={[styles.monthButton, { backgroundColor: isDark ? '#333' : '#FAFAFA' }]}>
-              <Feather name="chevron-left" size={24} color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[600]} />
+            <TouchableOpacity
+              onPress={handlePrevMonth}
+              style={[styles.monthButton, { backgroundColor: isDark ? '#333' : '#FAFAFA' }]}
+            >
+              <Feather
+                name="chevron-left"
+                size={24}
+                color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[600]}
+              />
             </TouchableOpacity>
-            <Text style={[styles.monthTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
+            <Text
+              style={[styles.monthTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+            >
               {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
             </Text>
-            <TouchableOpacity onPress={handleNextMonth} style={[styles.monthButton, { backgroundColor: isDark ? '#333' : '#FAFAFA' }]}>
-              <Feather name="chevron-right" size={24} color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[600]} />
+            <TouchableOpacity
+              onPress={handleNextMonth}
+              style={[styles.monthButton, { backgroundColor: isDark ? '#333' : '#FAFAFA' }]}
+            >
+              <Feather
+                name="chevron-right"
+                size={24}
+                color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[600]}
+              />
             </TouchableOpacity>
           </View>
 
           {/* 星期表头 */}
           <View style={styles.weekDaysContainer}>
             {weekDays.map((day, index) => (
-              <Text key={index} style={[styles.weekDayText, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[400] }]}>
+              <Text
+                key={index}
+                style={[
+                  styles.weekDayText,
+                  { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[400] },
+                ]}
+              >
                 {day}
               </Text>
             ))}
@@ -230,27 +303,63 @@ const CalendarScreen: React.FC = () => {
                     activeOpacity={hasDiary ? 0.7 : 1}
                     onPress={() => {
                       if (hasDiary) {
-                        // 如果当天有多篇，可以跳转到详情或者列表，这里跳转到第一篇的详情
-                        (navigation as any).navigate('DiaryDetail', { _id: item.diaries[0]._id });
+                        if (item.diaries.length > 1) {
+                          setSelectedDiaries(item.diaries);
+                          setIsModalVisible(true);
+                        } else {
+                          (navigation as any).navigate('DiaryDetail', { _id: item.diaries[0]._id });
+                        }
                       }
                     }}
                   >
                     <View
                       style={[
                         styles.dayCircle,
-                        isToday && !hasDiary && [styles.todayCircle, { backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50], borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[300] }],
-                        hasDiary && [styles.checkedCircle, { backgroundColor: isDark ? '#2C1B24' : '#FFF0F3' }],
+                        isToday &&
+                          !hasDiary && [
+                            styles.todayCircle,
+                            {
+                              backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50],
+                              borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[300],
+                            },
+                          ],
+                        hasDiary && [
+                          styles.checkedCircle,
+                          { backgroundColor: isDark ? '#2C1B24' : '#FFF0F3' },
+                        ],
                       ]}
                     >
                       {hasDiary ? (
                         <Text style={styles.dayEmoji}>{moodEmoji}</Text>
                       ) : (
-                        <Text style={[styles.dayText, { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[700] }, isToday && [styles.todayText, { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] }]]}>
+                        <Text
+                          style={[
+                            styles.dayText,
+                            { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[700] },
+                            isToday && [
+                              styles.todayText,
+                              {
+                                color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600],
+                              },
+                            ],
+                          ]}
+                        >
                           {item.day}
                         </Text>
                       )}
                     </View>
-                    {hasDiary && item.diaries.length > 1 && <View style={[styles.multiDot, { backgroundColor: isDark ? HEALING_COLORS.pink[500] : HEALING_COLORS.pink[400] }]} />}
+                    {hasDiary && item.diaries.length > 1 && (
+                      <View
+                        style={[
+                          styles.multiDot,
+                          {
+                            backgroundColor: isDark
+                              ? HEALING_COLORS.pink[500]
+                              : HEALING_COLORS.pink[400],
+                          },
+                        ]}
+                      />
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -259,9 +368,107 @@ const CalendarScreen: React.FC = () => {
         </View>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>🐾 每天都要记得来看毛球哦</Text>
+          <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>
+            🐾 每天都要记得来看毛球哦
+          </Text>
         </View>
       </ScrollView>
+
+      {/* 选择日记弹窗 */}
+      <Modal
+        visible={isModalVisible}
+        onClose={() => {
+          setIsModalVisible(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+            <View style={styles.modalHeader}>
+              <Text
+                style={[styles.modalTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+              >
+                请选择要查看的日记
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsModalVisible(false);
+                }}
+              >
+                <Feather name="x" size={24} color={isDark ? '#9CA3AF' : HEALING_COLORS.gray[400]} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              {selectedDiaries.map((diary) => {
+                const moodConfig = getMoodConfig(diary.mood);
+                const d = new Date(diary.createdAt);
+                const formattedTime = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+                return (
+                  <TouchableOpacity
+                    key={diary._id}
+                    style={[styles.diaryItem, { backgroundColor: isDark ? '#2C2C2C' : '#FAFAFA' }]}
+                    onPress={() => {
+                      setIsModalVisible(false);
+                      (navigation as any).navigate('DiaryDetail', { _id: diary._id });
+                    }}
+                  >
+                    {diary.media && diary.media.length > 0 ? (
+                      <Image
+                        source={{ uri: diary.media[0].thumbnail || diary.media[0].uri }}
+                        style={styles.diaryItemImage}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.diaryItemImagePlaceholder,
+                          { backgroundColor: isDark ? '#3A3A3A' : '#E5E7EB' },
+                        ]}
+                      />
+                    )}
+                    <View style={styles.diaryItemContent}>
+                      {diary.title ? (
+                        <Text
+                          style={[
+                            styles.diaryItemTitle,
+                            { color: isDark ? '#F3F4F6' : HEALING_COLORS.gray[800] },
+                          ]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {diary.title}
+                        </Text>
+                      ) : null}
+                      <Text
+                        style={[
+                          styles.diaryItemText,
+                          { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[600] },
+                        ]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {diary.content.replace(/\n/g, ' ')}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.diaryItemTime,
+                          { color: isDark ? '#6B7280' : HEALING_COLORS.gray[400] },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {formattedTime}
+                      </Text>
+                    </View>
+                    <Feather
+                      name="chevron-right"
+                      size={20}
+                      color={isDark ? '#6B7280' : HEALING_COLORS.gray[400]}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -421,6 +628,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: HEALING_COLORS.gray[400],
     fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalScroll: {
+    marginBottom: 20,
+  },
+  diaryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  diaryItemImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  diaryItemImagePlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  diaryItemContent: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  diaryItemTime: {
+    fontSize: 12,
+  },
+  diaryItemTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  diaryItemText: {
+    fontSize: 13,
+    marginBottom: 6,
   },
 });
 

@@ -13,7 +13,7 @@ export const ensureIAPConnection = async (): Promise<boolean> => {
   }
 
   if (connectionPromise) {
-    return connectionPromise;
+    return await connectionPromise;
   }
 
   connectionPromise = (async () => {
@@ -32,7 +32,7 @@ export const ensureIAPConnection = async (): Promise<boolean> => {
     }
   })();
 
-  return connectionPromise;
+  return await connectionPromise;
 };
 
 /**

@@ -66,11 +66,21 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             }}
           >
             <View style={styles.dateHeader}>
-              <View style={[styles.dateHeaderBadge, { backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[100] }]}>
+              <View
+                style={[
+                  styles.dateHeaderBadge,
+                  { backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[100] },
+                ]}
+              >
                 <Text style={styles.dateHeaderYear}>{itemData.year}年</Text>
                 <Text style={styles.dateHeaderMonth}>{dateKey.split('-')[1]}月</Text>
               </View>
-              <View style={[styles.dateLine, { backgroundColor: isDark ? '#4A2533' : HEALING_COLORS.pink[200] }]} />
+              <View
+                style={[
+                  styles.dateLine,
+                  { backgroundColor: isDark ? '#4A2533' : HEALING_COLORS.pink[200] },
+                ]}
+              />
             </View>
 
             {groupedItems[dateKey].items.map((item, itemIndex) => {
@@ -88,14 +98,35 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                 <View key={item._id} style={styles.timelineItem}>
                   {/* 左侧时间轴区域 */}
                   <View style={styles.timelineLeft}>
-                    <Text style={[styles.timelineDay, { color: isDark ? '#FFF' : '#333' }, isToday && styles.timelineDayToday]}>
+                    <Text
+                      style={[
+                        styles.timelineDay,
+                        { color: isDark ? '#FFF' : '#333' },
+                        isToday && styles.timelineDayToday,
+                      ]}
+                    >
                       {isToday ? '今天' : dayStr}
                     </Text>
-                    <Text style={[styles.timelineWeek, { color: isDark ? '#AAA' : '#999' }, isToday && styles.timelineWeekToday]}>
+                    <Text
+                      style={[
+                        styles.timelineWeek,
+                        { color: isDark ? '#AAA' : '#999' },
+                        isToday && styles.timelineWeekToday,
+                      ]}
+                    >
                       {weekStr}
                     </Text>
-                    <View style={[styles.timelineDot, { borderColor: isDark ? '#121212' : '#FFFFFF' }]} />
-                    {!isLastItem && <View style={[styles.timelineVerticalLine, { backgroundColor: isDark ? '#333' : '#F0F0F0' }]} />}
+                    <View
+                      style={[styles.timelineDot, { borderColor: isDark ? '#121212' : '#FFFFFF' }]}
+                    />
+                    {!isLastItem && (
+                      <View
+                        style={[
+                          styles.timelineVerticalLine,
+                          { backgroundColor: isDark ? '#333' : '#F0F0F0' },
+                        ]}
+                      />
+                    )}
                   </View>
 
                   {/* 右侧卡片内容 */}

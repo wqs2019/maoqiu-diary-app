@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ToastType = 'success' | 'error' | 'info' | 'loading';
@@ -34,7 +34,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [visible, setVisible] = useState(false);
   const [options, setOptions] = useState<ToastOptions>({ message: '', type: 'info' });
   const insets = useSafeAreaInsets();
-  
+
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-20)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,7 +44,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    
+
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 0,
@@ -55,43 +55,47 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toValue: -20,
         duration: 200,
         useNativeDriver: true,
-      })
+      }),
     ]).start(() => {
       setVisible(false);
     });
   }, [opacity, translateY]);
 
-  const showToast = useCallback((opts: ToastOptions | string) => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
+  const showToast = useCallback(
+    (opts: ToastOptions | string) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
 
-    const toastOptions = typeof opts === 'string' ? { message: opts, type: 'info' as ToastType } : opts;
-    const type = toastOptions.type || 'info';
-    const duration = toastOptions.duration || (type === 'loading' ? 0 : 2500);
+      const toastOptions =
+        typeof opts === 'string' ? { message: opts, type: 'info' as ToastType } : opts;
+      const type = toastOptions.type || 'info';
+      const duration = toastOptions.duration || (type === 'loading' ? 0 : 2500);
 
-    setOptions({ ...toastOptions, type });
-    setVisible(true);
+      setOptions({ ...toastOptions, type });
+      setVisible(true);
 
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start();
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
-    if (duration > 0) {
-      timerRef.current = setTimeout(() => {
-        hide();
-      }, duration);
-    }
-  }, [opacity, translateY, hide]);
+      if (duration > 0) {
+        timerRef.current = setTimeout(() => {
+          hide();
+        }, duration);
+      }
+    },
+    [opacity, translateY, hide]
+  );
 
   const getIcon = () => {
     switch (options.type) {
@@ -112,20 +116,25 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider
       value={{
         showToast,
-        success: (msg) => showToast({ message: msg, type: 'success' }),
-        error: (msg) => showToast({ message: msg, type: 'error' }),
-        info: (msg) => showToast({ message: msg, type: 'info' }),
-        loading: (msg) => showToast({ message: msg, type: 'loading' }),
+        success: (msg) => {
+          showToast({ message: msg, type: 'success' });
+        },
+        error: (msg) => {
+          showToast({ message: msg, type: 'error' });
+        },
+        info: (msg) => {
+          showToast({ message: msg, type: 'info' });
+        },
+        loading: (msg) => {
+          showToast({ message: msg, type: 'loading' });
+        },
         hide,
       }}
     >
       {children}
       {visible && (
         <View
-          style={[
-            styles.container,
-            { top: Math.max(insets.top, 20) + 10 }
-          ]}
+          style={[styles.container, { top: Math.max(insets.top, 20) + 10 }]}
           pointerEvents="none"
         >
           <Animated.View

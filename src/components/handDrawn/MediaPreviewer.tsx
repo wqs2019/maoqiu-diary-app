@@ -59,7 +59,7 @@ const LivePhotoItem = ({ item, isFocused }: { item: MediaResource; isFocused: bo
           style={[styles.fullScreen, { opacity: isPlaying ? 0 : 1 }]}
           resizeMode="contain"
         />
-        
+
         {item.type === 'livePhoto' && item.livePhotoVideoUri && (
           <Video
             source={{ uri: item.livePhotoVideoUri }}
@@ -104,7 +104,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
         console.warn('Failed to configure audio mode:', e);
       }
     };
-    
+
     configureAudio();
   }, []);
 

@@ -168,7 +168,11 @@ const SettingsScreen: React.FC = () => {
     onPress?: () => void
   ) => (
     <TouchableOpacity
-      style={[styles.menuItem, !isLast && styles.menuItemBorder, { borderBottomColor: isDark ? '#333' : '#FFF0F3' }]}
+      style={[
+        styles.menuItem,
+        !isLast && styles.menuItemBorder,
+        { borderBottomColor: isDark ? '#333' : '#FFF0F3' },
+      ]}
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.7}
@@ -177,7 +181,14 @@ const SettingsScreen: React.FC = () => {
         <View style={[styles.menuIconContainer, { backgroundColor: color + '15' }]}>
           <Feather name={iconName} size={20} color={color} />
         </View>
-        <Text style={[styles.menuItemText, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>{title}</Text>
+        <Text
+          style={[
+            styles.menuItemText,
+            { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] },
+          ]}
+        >
+          {title}
+        </Text>
       </View>
       <View style={styles.menuItemRight}>{rightComponent}</View>
     </TouchableOpacity>
@@ -199,7 +210,12 @@ const SettingsScreen: React.FC = () => {
         >
           <Feather name="chevron-left" size={28} color={currentHealingColors.gray[800]} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] }]}>
+        <Text
+          style={[
+            styles.headerTitle,
+            { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] },
+          ]}
+        >
           应用设置
         </Text>
         <View style={{ width: 40 }} />
@@ -317,7 +333,12 @@ const SettingsScreen: React.FC = () => {
             '主题模式',
             currentHealingColors.blue[400],
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={[styles.valueText, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>
+              <Text
+                style={[
+                  styles.valueText,
+                  { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                ]}
+              >
                 {getThemeText()}
               </Text>
               <Feather
@@ -352,7 +373,12 @@ const SettingsScreen: React.FC = () => {
             'trash-2',
             '清除缓存',
             currentHealingColors.gray[600],
-            <Text style={[styles.valueText, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>
+            <Text
+              style={[
+                styles.valueText,
+                { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+              ]}
+            >
               {cacheSize}
             </Text>,
             false,

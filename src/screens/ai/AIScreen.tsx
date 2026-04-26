@@ -19,10 +19,11 @@ import {
 import Markdown from 'react-native-markdown-display';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useAppTheme } from '../../hooks/useAppTheme';
+
 import { COLORS, FONT_SIZES, SPACING } from '@/config/constant';
 import { useDiaryStats } from '@/hooks/useDiaryQuery';
 import { getDiaryList } from '@/services/diaryService';
-import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
 import { useNotebookStore } from '@/store/notebookStore';
 
@@ -39,8 +40,6 @@ interface Message {
 const DOUBAO_API_KEY = '837368c6-aa84-4ae8-920f-0474cae5709b';
 const DOUBAO_CHAT_MODEL_ID = 'doubao-seed-1-6-lite-251015';
 const DOUBAO_API_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
-
-import { useAppTheme } from '../../hooks/useAppTheme';
 
 const AIScreen: React.FC = () => {
   const insets = useSafeAreaInsets();

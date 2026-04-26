@@ -8,19 +8,25 @@ const db = app.database();
 // 创建日记本
 const createNotebook = async (data) => {
   try {
-    const { userId, name, isDefault } = data;
+    const { userId, name, isDefault, cover } = data;
 
     if (!userId || !name) {
       return { success: false, message: '用户ID或名称不能为空' };
     }
 
-    const result = await db.collection('notebooks').add({
+    const notebookData = {
       userId,
       name,
       isDefault: isDefault || false,
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),
-    });
+    };
+    
+    if (cover) {
+      notebookData.cover = cover;
+    }
+
+    const result = await db.collection('notebooks').add(notebookData);
 
     return {
       success: true,
@@ -29,6 +35,7 @@ const createNotebook = async (data) => {
         userId,
         name,
         isDefault: isDefault || false,
+        cover,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -67,16 +74,22 @@ const getNotebookList = async (data) => {
 // 更新日记本
 const updateNotebook = async (data) => {
   try {
-    const { _id, name } = data;
+    const { _id, name, cover } = data;
 
     if (!_id || !name) {
       return { success: false, message: '日记本 ID 或名称不能为空' };
     }
 
-    await db.collection('notebooks').doc(_id).update({
+    const updateData = {
       name,
       updatedAt: db.serverDate(),
-    });
+    };
+    
+    if (cover !== undefined) {
+      updateData.cover = cover;
+    }
+
+    await db.collection('notebooks').doc(_id).update(updateData);
 
     return {
       success: true,
@@ -95,6 +108,11 @@ const deleteNotebook = async (data) => {
 
     if (!_id) {
       return { success: false, message: '日记本 ID 不能为空' };
+    }
+
+    const notebook = await db.collection('notebooks').doc(_id).get();
+    if (notebook.data && notebook.data.length > 0 && notebook.data[0].isDefault) {
+      return { success: false, message: '默认日记本不允许删除' };
     }
 
     await db.collection('notebooks').doc(_id).remove();

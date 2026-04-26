@@ -21,10 +21,10 @@ import { MoodTabSelector } from '../../components/handDrawn/MoodTabSelector';
 import { WeatherTabSelector } from '../../components/handDrawn/WeatherTabSelector';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
-import { useCreateDiary, useUpdateDiary, useDiaryDetail } from '../../hooks/useDiaryQuery';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { useVipGuard } from '../../hooks/useVipGuard';
+import { useCreateDiary, useUpdateDiary, useDiaryDetail } from '../../hooks/useDiaryQuery';
 import { useQueryClient } from '../../hooks/useQuery';
+import { useVipGuard } from '../../hooks/useVipGuard';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 import { ScenarioType, MoodType, WeatherType, MediaResource } from '../../types';
@@ -164,7 +164,11 @@ const EditDiaryScreen: React.FC = () => {
       style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F7F8FA' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* 场景选择 */}
         <View style={styles.scenarioWrapper}>
           <View style={styles.scenarioGrid}>
@@ -173,19 +177,28 @@ const EditDiaryScreen: React.FC = () => {
               const isSelected = type === scenario;
               // 简短的名称，去掉"记录"或"时刻"以节省空间
               const shortName = template.name.replace('记录', '').replace('时刻', '');
-              
+
               return (
                 <TouchableOpacity
                   key={type}
                   style={styles.compactChip}
-                  onPress={() => setScenario(type)}
+                  onPress={() => {
+                    setScenario(type);
+                  }}
                   activeOpacity={0.7}
                 >
                   <View
                     style={[
                       styles.compactIconWrapper,
                       { backgroundColor: isDark ? '#1E1E1E' : '#F0F0F0' },
-                      isSelected && { backgroundColor: template.color, shadowColor: template.color, shadowOpacity: 0.3, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+                      isSelected && {
+                        backgroundColor: template.color,
+                        shadowColor: template.color,
+                        shadowOpacity: 0.3,
+                        shadowRadius: 4,
+                        shadowOffset: { width: 0, height: 2 },
+                        elevation: 4,
+                      },
                     ]}
                   >
                     <Text style={styles.compactIcon}>{template.icon}</Text>
@@ -231,15 +244,26 @@ const EditDiaryScreen: React.FC = () => {
         </View>
 
         {/* 媒体附件模块 */}
-        <View style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }, styles.mediaCard]}>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' },
+            styles.mediaCard,
+          ]}
+        >
           <MediaSelector media={media} onMediaChange={setMedia} maxCount={9} draggable />
         </View>
 
         {/* 属性卡片 (日期、地点、心情、天气) */}
         <View style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
           <DatePicker selectedDate={date} onDateChange={setDate} label="日期" />
-          <View style={[styles.divider, { borderBottomColor: isDark ? '#333' : '#F0F0F0', marginVertical: 8 }]} />
-          
+          <View
+            style={[
+              styles.divider,
+              { borderBottomColor: isDark ? '#333' : '#F0F0F0', marginVertical: 8 },
+            ]}
+          />
+
           <View style={styles.locationRow}>
             <Text style={[styles.metadataLabel, { color: isDark ? '#AAA' : '#666' }]}>地点</Text>
             <TextInput
@@ -250,25 +274,45 @@ const EditDiaryScreen: React.FC = () => {
               onChangeText={setLocation}
             />
           </View>
-          <View style={[styles.divider, { borderBottomColor: isDark ? '#333' : '#F0F0F0', marginVertical: 8 }]} />
-          
+          <View
+            style={[
+              styles.divider,
+              { borderBottomColor: isDark ? '#333' : '#F0F0F0', marginVertical: 8 },
+            ]}
+          />
+
           <MoodTabSelector selectedMood={mood} onSelectMood={setMood} />
-          <View style={[styles.divider, { borderBottomColor: isDark ? '#333' : '#F0F0F0', marginVertical: 8 }]} />
-          
+          <View
+            style={[
+              styles.divider,
+              { borderBottomColor: isDark ? '#333' : '#F0F0F0', marginVertical: 8 },
+            ]}
+          />
+
           <WeatherTabSelector selectedWeather={weather} onSelectWeather={setWeather} />
         </View>
 
         {/* 权限设置卡片 */}
-        <View style={[styles.card, styles.switchCard, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+        <View
+          style={[
+            styles.card,
+            styles.switchCard,
+            { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' },
+          ]}
+        >
           <View style={styles.switchInfo}>
-            <Text style={[styles.switchTitle, { color: isDark ? '#FFF' : '#333' }]}>🌍 分享到圈子</Text>
-            <Text style={[styles.switchSubtitle, { color: isDark ? '#AAA' : '#999' }]}>让所有人都能看到这篇美好的日记</Text>
+            <Text style={[styles.switchTitle, { color: isDark ? '#FFF' : '#333' }]}>
+              🌍 分享到圈子
+            </Text>
+            <Text style={[styles.switchSubtitle, { color: isDark ? '#AAA' : '#999' }]}>
+              让所有人都能看到这篇美好的日记
+            </Text>
           </View>
           <Switch
             value={isPublic}
             onValueChange={setIsPublic}
             trackColor={{ false: isDark ? '#555' : '#E5E5E5', true: HEALING_COLORS.pink[400] }}
-            thumbColor={'#FFFFFF'}
+            thumbColor="#FFFFFF"
           />
         </View>
 

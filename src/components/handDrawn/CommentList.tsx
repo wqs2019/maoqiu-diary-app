@@ -13,7 +13,7 @@ export interface Comment {
   time?: string; // 兼容旧数据
   parentId?: string; // 新增：父评论 ID
   replyToUser?: string; // 新增：回复的目标用户名称
-  replies?: Comment[];  // 新增：嵌套的回复列表
+  replies?: Comment[]; // 新增：嵌套的回复列表
 }
 
 interface CommentListProps {
@@ -23,11 +23,11 @@ interface CommentListProps {
   onReplyPress?: (comment: Comment) => void; // 新增：点击回复事件回调
 }
 
-export const CommentList: React.FC<CommentListProps> = ({ 
-  comments = [], 
+export const CommentList: React.FC<CommentListProps> = ({
+  comments = [],
   emptyText = '还没有评论哦，快来抢沙发~',
   authorId,
-  onReplyPress
+  onReplyPress,
 }) => {
   // 在组件内部将扁平的评论数组转换为树形结构
   const commentTree = useMemo(() => {
@@ -43,7 +43,7 @@ export const CommentList: React.FC<CommentListProps> = ({
       }
     });
 
-    tree.forEach(t => {
+    tree.forEach((t) => {
       if (replyMap[t.id]) {
         t.replies = replyMap[t.id];
       }
@@ -75,46 +75,46 @@ export const CommentList: React.FC<CommentListProps> = ({
                 )}
               </View>
               <Text style={styles.commentTime}>
-              {(comment.createTime || comment.time) ? FormatUtil.formatRelativeTime(comment.createTime || comment.time || '') : ''}
-            </Text>
-          </View>
-          
-          {/* 主评论内容，点击触发回复 */}
-          <TouchableOpacity activeOpacity={0.7} onPress={() => onReplyPress?.(comment)}>
-            <Text style={styles.commentText}>{comment.content}</Text>
-          </TouchableOpacity>
-
-          {/* 嵌套回复区域 */}
-          {comment.replies && comment.replies.length > 0 && (
-            <View style={styles.repliesContainer}>
-              {comment.replies.map((reply) => (
-                <TouchableOpacity 
-                  key={reply.id} 
-                  activeOpacity={0.7} 
-                  onPress={() => onReplyPress?.(reply)}
-                  style={styles.replyItem}
-                >
-                  <Text style={styles.replyText}>
-                    <Text style={styles.replyUser}>{reply.user}</Text>
-                    {reply.replyToUser && (
-                      <>
-                        <Text style={styles.replyAction}> 回复 </Text>
-                        <Text style={styles.replyUser}>{reply.replyToUser}</Text>
-                      </>
-                    )}
-                    <Text style={styles.replyColon}>: </Text>
-                    {reply.content}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                {comment.createTime || comment.time
+                  ? FormatUtil.formatRelativeTime(comment.createTime || comment.time || '')
+                  : ''}
+              </Text>
             </View>
-          )}
+
+            {/* 主评论内容，点击触发回复 */}
+            <TouchableOpacity activeOpacity={0.7} onPress={() => onReplyPress?.(comment)}>
+              <Text style={styles.commentText}>{comment.content}</Text>
+            </TouchableOpacity>
+
+            {/* 嵌套回复区域 */}
+            {comment.replies && comment.replies.length > 0 && (
+              <View style={styles.repliesContainer}>
+                {comment.replies.map((reply) => (
+                  <TouchableOpacity
+                    key={reply.id}
+                    activeOpacity={0.7}
+                    onPress={() => onReplyPress?.(reply)}
+                    style={styles.replyItem}
+                  >
+                    <Text style={styles.replyText}>
+                      <Text style={styles.replyUser}>{reply.user}</Text>
+                      {reply.replyToUser && (
+                        <>
+                          <Text style={styles.replyAction}> 回复 </Text>
+                          <Text style={styles.replyUser}>{reply.replyToUser}</Text>
+                        </>
+                      )}
+                      <Text style={styles.replyColon}>: </Text>
+                      {reply.content}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-    ))}
-      {comments.length === 0 && (
-        <Text style={styles.emptyCommentText}>{emptyText}</Text>
-      )}
+      ))}
+      {comments.length === 0 && <Text style={styles.emptyCommentText}>{emptyText}</Text>}
     </View>
   );
 };

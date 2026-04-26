@@ -63,14 +63,22 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     <View style={styles.container}>
       <Text style={[styles.label, { color: isDark ? '#AAA' : '#666' }]}>{label}</Text>
       <TouchableOpacity
-        style={[styles.dateButton, { backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5', borderColor: isDark ? '#333' : '#E5E5E5' }]}
+        style={[
+          styles.dateButton,
+          {
+            backgroundColor: isDark ? '#1E1E1E' : '#F5F5F5',
+            borderColor: isDark ? '#333' : '#E5E5E5',
+          },
+        ]}
         onPress={() => {
           setShowPicker(true);
         }}
         activeOpacity={0.7}
       >
         <Text style={styles.calendarIcon}>📅</Text>
-        <Text style={[styles.dateButtonText, { color: isDark ? '#FFF' : '#333' }]}>{formatDate(date)}</Text>
+        <Text style={[styles.dateButtonText, { color: isDark ? '#FFF' : '#333' }]}>
+          {formatDate(date)}
+        </Text>
       </TouchableOpacity>
 
       <Modal visible={showPicker} transparent animationType="fade" onRequestClose={handleDismiss}>
@@ -93,10 +101,16 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
             <View style={[styles.modalButtons, { borderTopColor: isDark ? '#333' : '#F0F0F0' }]}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton, { borderRightColor: isDark ? '#333' : '#F0F0F0' }]}
+                style={[
+                  styles.modalButton,
+                  styles.cancelButton,
+                  { borderRightColor: isDark ? '#333' : '#F0F0F0' },
+                ]}
                 onPress={handleCancel}
               >
-                <Text style={[styles.cancelButtonText, { color: isDark ? '#AAA' : '#666' }]}>取消</Text>
+                <Text style={[styles.cancelButtonText, { color: isDark ? '#AAA' : '#666' }]}>
+                  取消
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
