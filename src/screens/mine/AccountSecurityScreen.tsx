@@ -132,15 +132,8 @@ const AccountSecurityScreen: React.FC = () => {
               >
                 {formatPhone(user?.phone)}
               </Text>
-              <Feather
-                name="chevron-right"
-                size={20}
-                color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
-                style={{ marginLeft: 4 }}
-              />
             </View>,
-            false,
-            handleDevelopTip
+            false
           )}
           {renderSettingItem(
             'lock',
@@ -187,6 +180,42 @@ const AccountSecurityScreen: React.FC = () => {
         >
         </View>
         */}
+        {/* 危险操作 */}
+        <View
+          style={[
+            styles.menuSection,
+            {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderRadius: themeStyle.borderRadius,
+              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowOpacity: themeStyle.shadowOpacity * 0.5,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 4,
+            },
+          ]}
+        >
+          {renderSettingItem(
+            'user-x',
+            '注销账号',
+            currentHealingColors.pink[600],
+            <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
+            true,
+            () => {
+              Alert.alert('注销账号', '确定要注销账号吗？注销后数据将无法恢复。', [
+                { text: '取消', style: 'cancel' },
+                {
+                  text: '确定',
+                  style: 'destructive',
+                  onPress: () => {
+                    Alert.alert('提示', '功能开发中');
+                  },
+                },
+              ]);
+            }
+          )}
+        </View>
       </ScrollView>
     </View>
   );

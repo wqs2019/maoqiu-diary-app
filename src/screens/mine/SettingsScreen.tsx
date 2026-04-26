@@ -243,28 +243,9 @@ const SettingsScreen: React.FC = () => {
             '账号与安全',
             currentHealingColors.blue[500],
             <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
-            false,
-            () => {
-              navigation.navigate('AccountSecurity' as never);
-            }
-          )}
-          {renderSettingItem(
-            'user-x',
-            '注销账号',
-            currentHealingColors.pink[600],
-            <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
             true,
             () => {
-              Alert.alert('注销账号', '确定要注销账号吗？注销后数据将无法恢复。', [
-                { text: '取消', style: 'cancel' },
-                {
-                  text: '确定',
-                  style: 'destructive',
-                  onPress: () => {
-                    Alert.alert('提示', '功能开发中');
-                  },
-                },
-              ]);
+              navigation.navigate('AccountSecurity' as never);
             }
           )}
         </View>
