@@ -251,7 +251,12 @@ const EditDiaryScreen: React.FC = () => {
             styles.mediaCard,
           ]}
         >
-          <MediaSelector media={media} onMediaChange={setMedia} maxCount={9} draggable />
+          <MediaSelector media={media} onMediaChange={setMedia} maxCount={user?.isVip?.value ? 9 : 3} draggable />
+          {!user?.isVip?.value && (
+            <Text style={[styles.vipHintText, { color: isDark ? '#888' : '#999' }]}>
+              开通 VIP 可上传最多 9 张图片/视频
+            </Text>
+          )}
         </View>
 
         {/* 属性卡片 (日期、地点、心情、天气) */}
@@ -410,6 +415,11 @@ const styles = StyleSheet.create({
   mediaCard: {
     paddingVertical: 20,
     paddingHorizontal: 20,
+  },
+  vipHintText: {
+    fontSize: 12,
+    textAlign: 'left',
+    marginTop: 12,
   },
   metadataLabel: {
     fontSize: 15,
