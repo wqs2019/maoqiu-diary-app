@@ -10,13 +10,17 @@ import {
   DARK_HEALING_COLORS,
 } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { CloudService } from '../../services/tcb';
 import { useAuthStore } from '../../store/authStore';
+import { useToast } from '../../components/common/Toast';
 
 const AccountSecurityScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const toast = useToast();
 
   const currentHealingColors = isDark
     ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS }
@@ -31,6 +35,37 @@ const AccountSecurityScreen: React.FC = () => {
 
   const handleDevelopTip = () => {
     Alert.alert('提示', '功能开发中，敬请期待');
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user?._id) return;
+    
+    try {
+      // 1. 标记用户的日记本为已注销
+      const notebookRes: any = await CloudService.callFunction('notebook', {
+        action: 'deactivateUserNotebooks',
+        data: { userId: user._id },
+      });
+      if (notebookRes.code !== 0 && notebookRes.data?.success === false) {
+        throw new Error(notebookRes.data?.message || '注销日记本失败');
+      }
+
+      // 2. 标记用户账户为已注销
+      const userRes: any = await CloudService.callFunction('user', {
+        action: 'deactivateAccount',
+        data: { _id: user._id },
+      });
+      if (userRes.code !== 0 && userRes.data?.success === false) {
+        throw new Error(userRes.data?.message || '注销账户失败');
+      }
+
+      // 3. 退出登录
+      toast.success('账号已成功注销');
+      await logout();
+    } catch (error) {
+      console.error('Delete account error:', error);
+      toast.error('注销账号失败，请稍后重试');
+    }
   };
 
   const renderSettingItem = (
@@ -208,9 +243,7 @@ const AccountSecurityScreen: React.FC = () => {
                 {
                   text: '确定',
                   style: 'destructive',
-                  onPress: () => {
-                    Alert.alert('提示', '功能开发中');
-                  },
+                  onPress: handleDeleteAccount,
                 },
               ]);
             }

@@ -9,7 +9,10 @@ export const useVipGuard = () => {
   const user = useAuthStore((state) => state.user);
   const getCurrentNotebook = useNotebookStore((state) => state.getCurrentNotebook);
 
-  const checkVipPermission = (action: 'writeDiary' | 'createNotebook' | 'manageNotebook'): boolean => {
+  const checkVipPermission = (
+    action: 'writeDiary' | 'createNotebook' | 'manageNotebook',
+    onConfirm?: () => void
+  ): boolean => {
     if (!user) {
       Alert.alert('提示', '用户未登录，请重新登录');
       return false;
@@ -28,6 +31,9 @@ export const useVipGuard = () => {
               {
                 text: '去升级',
                 onPress: () => {
+                  if (onConfirm) {
+                    onConfirm();
+                  }
                   navigation.navigate('Subscription');
                 },
               },
@@ -49,6 +55,9 @@ export const useVipGuard = () => {
             {
               text: '去升级',
               onPress: () => {
+                if (onConfirm) {
+                  onConfirm();
+                }
                 navigation.navigate('Subscription');
               },
             },
@@ -69,6 +78,9 @@ export const useVipGuard = () => {
             {
               text: '去升级',
               onPress: () => {
+                if (onConfirm) {
+                  onConfirm();
+                }
                 navigation.navigate('Subscription');
               },
             },
@@ -82,14 +94,14 @@ export const useVipGuard = () => {
     return true;
   };
 
-  const checkCanWriteDiary = (): boolean => checkVipPermission('writeDiary');
+  const checkCanWriteDiary = (onConfirm?: () => void): boolean => checkVipPermission('writeDiary', onConfirm);
 
-  const checkCanCreateNotebook = (): boolean => {
-    return checkVipPermission('createNotebook');
+  const checkCanCreateNotebook = (onConfirm?: () => void): boolean => {
+    return checkVipPermission('createNotebook', onConfirm);
   };
 
-  const checkCanManageNotebook = (): boolean => {
-    return checkVipPermission('manageNotebook');
+  const checkCanManageNotebook = (onConfirm?: () => void): boolean => {
+    return checkVipPermission('manageNotebook', onConfirm);
   };
 
   return { checkCanWriteDiary, checkCanCreateNotebook, checkCanManageNotebook };

@@ -55,9 +55,13 @@ const getNotebookList = async (data) => {
       return { success: false, message: '用户ID不能为空' };
     }
 
+    const _ = db.command;
     const result = await db
       .collection('notebooks')
-      .where({ userId })
+      .where({
+        userId,
+        isDelete: _.neq(true) // 查询 isDelete 不为 true 的数据（即 false 或不存在）
+      })
       .orderBy('createdAt', 'asc')
       .get();
 
@@ -127,6 +131,30 @@ const deleteNotebook = async (data) => {
   }
 };
 
+// 标记用户所有日记本为已注销 (isDelete = true)
+const deactivateUserNotebooks = async (data) => {
+  try {
+    const { userId } = data;
+
+    if (!userId) {
+      return { success: false, message: '用户ID不能为空' };
+    }
+
+    await db.collection('notebooks').where({ userId }).update({
+      isDelete: true,
+      updatedAt: db.serverDate(),
+    });
+
+    return {
+      success: true,
+      message: '用户日记本已注销',
+    };
+  } catch (error) {
+    console.error('Deactivate notebooks error:', error);
+    return { success: false, message: '注销用户日记本失败', error: error.message };
+  }
+};
+
 // 导出主函数
 exports.main = async (event, context) => {
   const { action, data } = event;
@@ -140,6 +168,8 @@ exports.main = async (event, context) => {
       return await updateNotebook(data);
     case 'delete':
       return await deleteNotebook(data);
+    case 'deactivateUserNotebooks':
+      return await deactivateUserNotebooks(data);
     default:
       return { success: false, message: '无效的操作' };
   }

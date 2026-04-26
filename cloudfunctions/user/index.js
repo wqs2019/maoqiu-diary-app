@@ -329,6 +329,38 @@ const listUsers = async (data) => {
   }
 };
 
+// Deactivate user (soft delete)
+const deactivateAccount = async (data) => {
+  try {
+    const { _id } = data;
+
+    if (!_id) {
+      return {
+        success: false,
+        message: 'User ID is required',
+      };
+    }
+
+    // Soft delete the user
+    await db.collection('users').doc(_id).update({
+      isDelete: true,
+      updatedAt: db.serverDate(),
+    });
+
+    return {
+      success: true,
+      message: 'Account deactivated successfully',
+    };
+  } catch (error) {
+    console.error('Deactivate account error:', error);
+    return {
+      success: false,
+      message: 'Failed to deactivate account',
+      error: error.message,
+    };
+  }
+};
+
 exports.main = async (event, context) => {
   const { action, data } = event;
 
@@ -341,6 +373,8 @@ exports.main = async (event, context) => {
       return await getUser(data);
     case 'delete':
       return await deleteUser(data);
+    case 'deactivateAccount':
+      return await deactivateAccount(data);
     case 'list':
       return await listUsers(data);
     case 'syncVip':

@@ -43,6 +43,13 @@ async function loginHandler(data) {
     // 查找用户
     let user = await usersCollection.where({ phone }).get();
 
+    if (user.data.length > 0 && user.data[0].isDelete === true) {
+      return {
+        code: -1,
+        message: '该账户已注销，无法登录',
+      };
+    }
+
     if (user.data.length === 0) {
       // 用户不存在，创建新用户
       const newUser = {
@@ -155,6 +162,10 @@ async function validateTokenHandler(data) {
     if (!userData) {
       console.log('Final user data not found for userId:', userId);
       return { code: -1, message: '用户不存在' };
+    }
+
+    if (userData.isDelete === true) {
+      return { code: -1, message: '该账户已注销，登录已失效' };
     }
 
     return {

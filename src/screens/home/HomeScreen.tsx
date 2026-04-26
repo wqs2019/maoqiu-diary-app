@@ -131,7 +131,7 @@ const HomeScreen: React.FC = () => {
   const minTranslateY = -(height * 0.65); // 向上最多滑动区域
   const maxTranslateY = 0; // 向下最多滑动区域
 
-  const { checkCanWriteDiary } = useVipGuard();
+  const { checkCanWriteDiary, checkCanCreateNotebook } = useVipGuard();
 
   const panResponder = useRef(
     PanResponder.create({
@@ -503,9 +503,9 @@ const HomeScreen: React.FC = () => {
                 <TouchableOpacity
                   style={styles.addNotebookBtn}
                   onPress={async () => {
-                    if (!user?.isVip?.value) {
+                    if (!checkCanCreateNotebook(()=>{
                       setIsNotebookModalVisible(false);
-                      (navigation as any).navigate('Subscription');
+                    })) {
                       return;
                     }
                     const name = newNotebookNameRef.current.trim();
