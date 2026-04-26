@@ -24,6 +24,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { useAuthStore } from '../../store/authStore';
 
 import { useToast } from '@/components/common/Toast';
@@ -108,6 +109,7 @@ const LoginScreen: React.FC = () => {
   const { login, loginWithWechat, sendCode, loading } = useAuthStore();
   const insets = useSafeAreaInsets();
   const toast = useToast();
+  const { isDark, colors } = useAppTheme();
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -154,10 +156,10 @@ const LoginScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: isDark ? colors.background : '#FFF5F8' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+      <StatusBar style={isDark ? 'light' : 'dark'} translucent={true} backgroundColor="transparent" />
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
         keyboardShouldPersistTaps="handled"
@@ -168,7 +170,7 @@ const LoginScreen: React.FC = () => {
           {/* 装饰元素 - 动态模糊渐变光晕背景 */}
           <View style={styles.decoration}>
             <FloatingBlob
-              color="#FFE4E8" // 极其浅的淡粉色
+              color={isDark ? "#3A1B24" : "#FFE4E8"} // 深色模式下为暗粉红
               size={width * 0.6}
               initialTop={-width * 0.1}
               initialLeft={-width * 0.1}
@@ -176,7 +178,7 @@ const LoginScreen: React.FC = () => {
               translateYRange={[-20, 20]}
             />
             <FloatingBlob
-              color="#F6F0FA" // 淡淡的薰衣草紫白
+              color={isDark ? "#2D203A" : "#F6F0FA"} // 深色模式下为暗紫
               size={width * 0.7}
               initialTop={width * 0.2}
               initialLeft={width * 0.3}
@@ -184,7 +186,7 @@ const LoginScreen: React.FC = () => {
               scaleRange={[-0.8, 1.2]}
             />
             <FloatingBlob
-              color="#FFF0F5" // 极浅的迷雾粉白
+              color={isDark ? "#3B202A" : "#FFF0F5"} // 深色模式下为暗粉
               size={width * 0.5}
               initialTop={width * 0.6}
               initialLeft={-width * 0.1}
@@ -193,30 +195,30 @@ const LoginScreen: React.FC = () => {
             />
             
             {/* 增加一点小点缀 */}
-            <Animated.View style={[styles.decorationIcon, { top: 80, right: 50, opacity: 0.5 }]}>
-              <Ionicons name="sparkles" size={24} color="#FFE066" />
+            <Animated.View style={[styles.decorationIcon, { top: 80, right: 50, opacity: isDark ? 0.2 : 0.5 }]}>
+              <Ionicons name="sparkles" size={24} color={isDark ? colors.primary : "#FFE066"} />
             </Animated.View>
-            <Animated.View style={[styles.decorationIcon, { bottom: 180, left: 40, opacity: 0.3 }]}>
-              <Ionicons name="heart" size={18} color="#FFB6C1" />
+            <Animated.View style={[styles.decorationIcon, { bottom: 180, left: 40, opacity: isDark ? 0.15 : 0.3 }]}>
+              <Ionicons name="heart" size={18} color={isDark ? colors.secondary : "#FFB6C1"} />
             </Animated.View>
           </View>
 
           {/* 标题部分 */}
           <View style={styles.header}>
             <Image source={require('../../../assets/logo.png')} style={styles.logo} />
-            <Text style={styles.title}>欢迎回来！</Text>
-            <Text style={styles.subtitle}>登录后开始记录你的美好生活</Text>
+            <Text style={[styles.title, { color: colors.primary, textShadowColor: isDark ? 'rgba(255, 133, 162, 0.2)' : 'rgba(255, 160, 122, 0.3)' }]}>欢迎回来！</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>登录后开始记录你的美好生活</Text>
           </View>
 
           {/* 输入框部分 */}
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="call" size={20} color={COLORS.primary} style={styles.inputIcon} />
+              <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : COLORS.secondary }]}>
+                <Ionicons name="call" size={20} color={colors.primary} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="请输入手机号"
-                  placeholderTextColor={COLORS.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="phone-pad"
                   value={phone}
                   onChangeText={setPhone}
@@ -226,29 +228,37 @@ const LoginScreen: React.FC = () => {
             </View>
 
             <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : COLORS.secondary }]}>
                 <Ionicons
                   name="lock-closed"
                   size={20}
-                  color={COLORS.primary}
+                  color={colors.primary}
                   style={styles.inputIcon}
                 />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="请输入验证码"
-                  placeholderTextColor={COLORS.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="number-pad"
                   value={code}
                   onChangeText={setCode}
                   maxLength={6}
                 />
                 <TouchableOpacity
-                  style={[styles.codeButton, countdown > 0 && styles.codeButtonDisabled]}
+                  style={[
+                    styles.codeButton,
+                    { backgroundColor: colors.primary },
+                    countdown > 0 && [styles.codeButtonDisabled, { backgroundColor: colors.border }]
+                  ]}
                   onPress={handleSendCode}
                   disabled={countdown > 0}
                 >
                   <Text
-                    style={[styles.codeButtonText, countdown > 0 && styles.codeButtonTextDisabled]}
+                    style={[
+                      styles.codeButtonText,
+                      { color: isDark ? '#000' : '#FFF' },
+                      countdown > 0 && [styles.codeButtonTextDisabled, { color: colors.textSecondary }]
+                    ]}
                   >
                     {countdown > 0 ? `${countdown}s` : '获取'}
                   </Text>
@@ -258,25 +268,31 @@ const LoginScreen: React.FC = () => {
 
             {/* 登录按钮 */}
             <TouchableOpacity
-              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              style={[
+                styles.loginButton,
+                { backgroundColor: colors.primary, shadowColor: colors.primary },
+                loading && [styles.loginButtonDisabled, { backgroundColor: colors.primary + '80' }]
+              ]}
               onPress={handleLogin}
               disabled={loading}
             >
-              <Text style={styles.loginButtonText}>{loading ? '登录中...' : '登录'}</Text>
-              <Ionicons name="arrow-forward" size={20} color={COLORS.surface} />
+              <Text style={[styles.loginButtonText, { color: isDark ? '#000' : '#FFF' }]}>
+                {loading ? '登录中...' : '登录'}
+              </Text>
+              <Ionicons name="arrow-forward" size={20} color={isDark ? '#000' : '#FFF'} />
             </TouchableOpacity>
 
             {/* 微信登录（因个人开发者暂无权限，先隐藏以便后续使用） */}
             {false && (
               <>
                 <View style={styles.dividerContainer}>
-                  <View style={styles.divider} />
-                  <Text style={styles.dividerText}>或</Text>
-                  <View style={styles.divider} />
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                  <Text style={[styles.dividerText, { color: colors.textSecondary }]}>或</Text>
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
                 </View>
 
                 <TouchableOpacity
-                  style={styles.wechatButton}
+                  style={[styles.wechatButton, { backgroundColor: colors.surface }]}
                   onPress={async () => {
                     await loginWithWechat();
                     const currentError = useAuthStore.getState().error;

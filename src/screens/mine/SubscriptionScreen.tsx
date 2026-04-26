@@ -77,12 +77,10 @@ const SubscriptionScreen: React.FC = () => {
   ];
 
   const features = [
-    { icon: 'cloud', title: '云端同步', desc: '多设备无缝同步，日记永不丢失' },
     { icon: 'image', title: '更多图片', desc: '日记可上传9张高清图片/视频' },
-    { icon: 'cpu', title: 'AI 智能问答', desc: '解锁无限制 AI 聊天与情感分析' },
+    { icon: 'book', title: '无限日记本', desc: '不限数量创建分类日记本' },
+    { icon: 'cpu', title: 'AI 智能问答', desc: '解锁无限制 AI 聊天与日记分析' },
     { icon: 'shield', title: '专属应用锁', desc: '更高强度的隐私保护功能' },
-    { icon: 'star', title: '专属徽章', desc: '点亮 VIP 专属标识与主题色' },
-    { icon: 'layout', title: '丰富主题', desc: '更多专属主题免费用' },
   ];
 
   useEffect(() => {
@@ -747,29 +745,32 @@ const styles = StyleSheet.create({
   },
   featuresGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   featureItem: {
-    width: '48%',
-    marginBottom: 20,
+    width: '23%',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   featureIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   featureTitle: {
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   featureDesc: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 10,
+    lineHeight: 14,
+    textAlign: 'center',
   },
   plansContainer: {
     flexDirection: 'row',
