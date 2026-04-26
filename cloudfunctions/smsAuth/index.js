@@ -85,7 +85,18 @@ exports.main = async (event, context) => {
 
     // 开发测试使用：万能验证码
     if (code === '123456') {
-      return { code: 0, message: '验证成功' };
+      try {
+        const adminCollection = db.collection('admin_list');
+        const adminRes = await adminCollection.where({ phone }).get();
+        if (adminRes.data && adminRes.data.length > 0) {
+          return { code: 0, message: '验证成功' };
+        } else {
+          return { code: -1, message: '验证码错误或已失效' };
+        }
+      } catch (error) {
+        console.error('Check admin list error:', error);
+        return { code: -1, message: '验证码错误或已失效' };
+      }
     }
 
     try {

@@ -39,11 +39,6 @@ class AliyunSmsService {
    */
   async verifyCode(phoneNumber: string, inputCode: string): Promise<boolean> {
     try {
-      // 为了开发调试方便，如果是万能验证码可以直接通过
-      if (inputCode === '123456') {
-        return true;
-      }
-
       // 通过 TCB 调用云函数 'smsAuth'，在数据库中匹配验证码是否正确且未过期
       const result = await CloudService.callFunction('smsAuth', {
         action: 'verify',
