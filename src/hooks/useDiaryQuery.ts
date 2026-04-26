@@ -46,7 +46,9 @@ export const useDiaryList = (params: DiaryListParams = {}) => {
  * const { data: diary, isLoading } = useDiaryDetail('diary-id-123');
  */
 export const useDiaryDetail = (id: string) => {
-  return useAppQuery(['diaryDetail', id], () => diaryApi.getDiaryDetail(id), {
+  const userId = useAuthStore.getState().user?._id;
+
+  return useAppQuery(['diaryDetail', id], () => diaryApi.getDiaryDetail(id, userId), {
     enabled: !!id, // 仅当 id 存在时启用查询
     staleTime: 1000 * 60 * 10, // 10 分钟
     retry: false, // 失败不重试
@@ -359,10 +361,14 @@ export const useCreateDiary = () => {
  */
 export const useUpdateDiary = () => {
   const queryClient = useQueryClient();
+  const userId = useAuthStore.getState().user?._id;
 
   return useAppMutation(
     ['diary', 'update'],
-    ({ id, ...data }: { id: string } & Partial<diaryApi.Diary>) => diaryApi.updateDiary(id, data),
+    ({ id, ...data }: { id: string } & Partial<diaryApi.Diary>) => {
+      if (!userId) throw new Error('用户未登录');
+      return diaryApi.updateDiary(id, { ...data, userId });
+    },
     {
       onSuccess: (updatedDiaryResult, variables) => {
         // 直接让详情页和列表页重新获取最新数据，不手动维护缓存
@@ -500,8 +506,12 @@ export const useToggleFavorite = () => {
  */
 export const useDeleteDiary = () => {
   const queryClient = useQueryClient();
+  const userId = useAuthStore.getState().user?._id;
 
-  return useAppMutation(['diary', 'delete'], (id: string) => diaryApi.deleteDiary(id), {
+  return useAppMutation(['diary', 'delete'], (id: string) => {
+    if (!userId) throw new Error('用户未登录');
+    return diaryApi.deleteDiary(id, userId);
+  }, {
     onSuccess: (_, deletedId) => {
       // 不立即从缓存中移除日记详情，让其随组件卸载自然过期，避免详情页在退出动画期间闪烁“加载失败”
       // queryClient.removeQueries({ queryKey: ['diaryDetail', deletedId] });

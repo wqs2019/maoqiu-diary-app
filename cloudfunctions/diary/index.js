@@ -155,12 +155,19 @@ const createDiary = async (data) => {
 // 更新日记
 const updateDiary = async (data) => {
   try {
-    const { _id, ...updateData } = data;
+    const { _id, userId, ...updateData } = data;
 
     if (!_id) {
       return {
         success: false,
         message: '日记 ID 不能为空',
+      };
+    }
+
+    if (!userId) {
+      return {
+        success: false,
+        message: '用户 ID 不能为空',
       };
     }
     
@@ -171,6 +178,15 @@ const updateDiary = async (data) => {
       return {
         success: false,
         message: '日记不存在或已被删除',
+      };
+    }
+
+    // 校验权限：只有日记所有者可以更新日记
+    const diaryData = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
+    if (diaryData.userId !== userId) {
+      return {
+        success: false,
+        message: '无权修改他人的日记',
       };
     }
 
@@ -200,7 +216,7 @@ const updateDiary = async (data) => {
 // 获取日记详情
 const getDiaryDetail = async (data) => {
   try {
-    const { _id } = data;
+    const { _id, userId } = data;
 
     if (!_id) {
       return {
@@ -215,6 +231,15 @@ const getDiaryDetail = async (data) => {
       return {
         success: false,
         message: '日记不存在',
+      };
+    }
+
+    // 校验权限：只能查看自己的日记或公开日记
+    const diaryDataRaw = Array.isArray(result.data) ? result.data[0] : result.data;
+    if (diaryDataRaw.userId !== userId && !diaryDataRaw.isPublic) {
+      return {
+        success: false,
+        message: '无权查看他人的日记',
       };
     }
 
@@ -356,12 +381,19 @@ const getDiaryList = async (data) => {
 // 删除日记
 const deleteDiary = async (data) => {
   try {
-    const { _id } = data;
+    const { _id, userId } = data;
 
     if (!_id) {
       return {
         success: false,
         message: '日记 ID 不能为空',
+      };
+    }
+
+    if (!userId) {
+      return {
+        success: false,
+        message: '用户 ID 不能为空',
       };
     }
 
@@ -372,6 +404,15 @@ const deleteDiary = async (data) => {
       return {
         success: false,
         message: '日记不存在或已被删除',
+      };
+    }
+
+    // 校验权限：只有日记所有者可以删除日记
+    const diaryData = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
+    if (diaryData.userId !== userId) {
+      return {
+        success: false,
+        message: '无权删除他人的日记',
       };
     }
 
@@ -404,7 +445,12 @@ const likeDiary = async (data) => {
       return { success: false, message: '日记不存在' };
     }
 
-    const likedUserIds = diaryRes.data.likedUserIds || [];
+    const diaryDataRaw = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
+    if (diaryDataRaw.userId !== userId && !diaryDataRaw.isPublic) {
+      return { success: false, message: '无权操作他人的私密日记' };
+    }
+
+    const likedUserIds = diaryDataRaw.likedUserIds || [];
     
     // 去除空字符串或无效数据，防止由于其他原因导致的意外格式
     const validLikedUserIds = likedUserIds.filter(id => id && typeof id === 'string');
@@ -439,8 +485,18 @@ const likeDiary = async (data) => {
 const commentDiary = async (data) => {
   try {
     const { _id, comment } = data;
-    if (!_id || !comment) {
-      return { success: false, message: '日记 ID 或评论内容不能为空' };
+    if (!_id || !comment || !comment.userId) {
+      return { success: false, message: '参数不完整' };
+    }
+
+    const diaryRes = await db.collection('diaries').doc(_id).get();
+    if (!diaryRes.data) {
+      return { success: false, message: '日记不存在' };
+    }
+
+    const diaryDataRaw = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
+    if (diaryDataRaw.userId !== comment.userId && !diaryDataRaw.isPublic) {
+      return { success: false, message: '无权评论他人的私密日记' };
     }
 
     const _ = db.command;

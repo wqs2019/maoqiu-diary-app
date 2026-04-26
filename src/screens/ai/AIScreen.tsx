@@ -234,7 +234,7 @@ ${statsContext}`;
                 title: { type: 'string', description: '日记标题，如果不提供则根据内容自动生成一个短标题' },
                 content: { type: 'string', description: '日记正文内容' },
                 date: { type: 'string', description: '日记日期，格式 YYYY-MM-DD，如果未提供默认用今天的日期' },
-                mood: { type: 'string', description: '心情，可选值：happy, sad, normal, excited, angry, relaxed, touched' },
+                mood: { type: 'string', description: '心情，可选值：happy, sad, normal, excited, angry, relaxed, touched, speechless' },
                 weather: { type: 'string', description: '天气，可选值：sunny, cloudy, rainy, snowy, windy, foggy' },
                 scenario: { type: 'string', description: '场景，可选值：travel, movie, outing, food, daily, special' },
                 notebookId: { type: 'string', description: '日记本ID，如果不知道可留空' }
@@ -254,8 +254,9 @@ ${statsContext}`;
                 _id: { type: 'string', description: '日记的唯一ID，必须提供真实的ID，如果不知道请先查询' },
                 title: { type: 'string', description: '日记标题' },
                 content: { type: 'string', description: '日记正文内容' },
-                mood: { type: 'string', description: '心情' },
-                weather: { type: 'string', description: '天气' },
+                date: { type: 'string', description: '修改的日期' },
+                mood: { type: 'string', description: '修改的心情，可选值：happy, sad, normal, excited, angry, relaxed, touched, speechless' },
+                weather: { type: 'string', description: '修改的天气，可选值：sunny, cloudy, rainy, snowy, windy, foggy' },
                 scenario: { type: 'string', description: '场景' }
               },
               required: ['_id']
@@ -524,6 +525,7 @@ ${statsContext}`;
               if (args.mood) updateData.mood = args.mood;
               if (args.weather) updateData.weather = args.weather;
               if (args.scenario) updateData.scenario = args.scenario;
+              if (user?._id) updateData.userId = user._id;
 
               await updateDiary(args._id, updateData);
               queryClient.invalidateQueries({ queryKey: ['diaryList'] });
@@ -546,7 +548,8 @@ ${statsContext}`;
             const args = JSON.parse(toolCall.function.arguments || '{}');
             try {
               if (!args._id) throw new Error("缺少日记 ID");
-              await deleteDiary(args._id);
+              if (!user?._id) throw new Error("用户未登录");
+              await deleteDiary(args._id, user._id);
               queryClient.invalidateQueries({ queryKey: ['diaryList'] });
               apiMessages.push({
                 tool_call_id: toolCall.id,

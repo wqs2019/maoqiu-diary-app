@@ -86,10 +86,10 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
 /**
  * 获取日记详情
  */
-export const getDiaryDetail = async (_id: string): Promise<Diary> => {
+export const getDiaryDetail = async (_id: string, userId?: string): Promise<Diary> => {
   const result = await CloudService.callFunction<CloudFunctionResponse<Diary[]>>('diary', {
     action: 'get',
-    data: { _id },
+    data: { _id, userId },
   });
   // 云函数返回的是数组，取第一个元素
   const diary = result.data.data[0];
@@ -126,10 +126,10 @@ export const updateDiary = async (_id: string, data: Partial<Diary>): Promise<Di
 /**
  * 删除日记
  */
-export const deleteDiary = async (_id: string): Promise<void> => {
+export const deleteDiary = async (_id: string, userId: string): Promise<void> => {
   const result = await CloudService.callFunction('diary', {
     action: 'delete',
-    data: { _id },
+    data: { _id, userId },
   });
   return result.data;
 };

@@ -64,6 +64,14 @@ export const MOODS: {
     secondary: '#FF8A80',
     background: '#FFF5F5',
   },
+  {
+    type: 'speechless',
+    emoji: '😑',
+    label: '无语',
+    primary: '#A1A1AA',
+    secondary: '#D1D5DB',
+    background: '#F3F4F6',
+  },
 ];
 
 export const WEATHERS: {

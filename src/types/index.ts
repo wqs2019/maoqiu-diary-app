@@ -44,7 +44,7 @@ export interface ComponentProps {
 export type ScenarioType = 'travel' | 'movie' | 'outing' | 'food' | 'daily' | 'special';
 
 // 心情类型
-export type MoodType = 'happy' | 'sad' | 'normal' | 'excited' | 'angry' | 'relaxed' | 'touched';
+export type MoodType = 'happy' | 'sad' | 'normal' | 'excited' | 'angry' | 'relaxed' | 'touched' | 'speechless';
 
 // 天气类型
 export type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'windy' | 'foggy';
