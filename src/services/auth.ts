@@ -23,6 +23,8 @@ export interface UserInfo {
   birthday?: string;
   unlockedBadges?: Record<string, number>;
   isVip?: VipInfo;
+  aiChatUsage?: { date: string; count: number };
+  createdAt?: string | number;
 }
 
 export interface TokenInfo {

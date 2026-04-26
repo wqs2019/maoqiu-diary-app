@@ -44,7 +44,7 @@ const DOUBAO_API_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completion
 const AIScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { user } = useAuthStore();
+  const { user, updateProfile } = useAuthStore();
   const { isDark } = useAppTheme();
 
   // 获取用户的日记本和日记统计信息
@@ -107,6 +107,38 @@ const AIScreen: React.FC = () => {
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
 
+    // --- VIP 每日对话次数限制检查 ---
+    if (!user?.isVip?.value) {
+      try {
+        const today = new Date();
+        const limitTodayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        let currentCount = 0;
+
+        if (user?.aiChatUsage?.date === limitTodayStr) {
+          currentCount = user.aiChatUsage.count || 0;
+        }
+
+        if (currentCount >= 10) {
+          Alert.alert('对话次数已用完', '普通用户每日最多发送 10 条消息，开通 VIP 即可无限制畅聊！', [
+            { text: '取消', style: 'cancel' },
+            { text: '去开通', onPress: () => navigation.navigate('Subscription') },
+          ]);
+          return;
+        }
+
+        // 记录或更新当天的发送次数到云端，防止清除缓存绕过限制
+        if (user?._id) {
+          // 不等待更新完成，避免阻塞发送消息
+          updateProfile(user._id, {
+            aiChatUsage: { date: limitTodayStr, count: currentCount + 1 },
+          }).catch(e => console.error('Failed to sync AI chat limit to cloud:', e));
+        }
+      } catch (e) {
+        console.error('Failed to check AI chat limit', e);
+      }
+    }
+    // --- 检查结束 ---
+
     const newUserMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -137,7 +169,15 @@ const AIScreen: React.FC = () => {
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-      const statsContext = `今天是 ${todayStr}。目前该用户拥有 ${notebooks.length} 个日记本（包括：${notebookNames}），累计写了 ${stats.totalDiaries || 0} 篇日记，当前连续打卡 ${stats.currentStreak || 0} 天，解锁了 ${stats.badges || 1} 个成就徽章。你可以结合这些数据在回复中适当地鼓励和赞美用户。`;
+      let joinedDaysStr = '';
+      if (user?.createdAt) {
+        const joinDate = new Date(user.createdAt);
+        const diffTime = Math.abs(today.getTime() - joinDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        joinedDaysStr = `这是该用户来到毛球日记的第 ${diffDays} 天。`;
+      }
+
+      const statsContext = `今天是 ${todayStr}。${joinedDaysStr}目前该用户拥有 ${notebooks.length} 个日记本（包括：${notebookNames}），累计写了 ${stats.totalDiaries || 0} 篇日记，当前连续打卡 ${stats.currentStreak || 0} 天，解锁了 ${stats.badges || 1} 个成就徽章。你可以结合这些数据在回复中适当地鼓励和赞美用户。`;
 
       const systemPrompt = `你是毛球日记的AI助手“毛球”。毛球日记是一个温暖的树洞和专属时光手账，核心理念是“收集日常里微小而确定的幸福”。你的职责是倾听用户的日常分享、帮助用户记录和润色日记、并提供温暖的情感陪伴。回复要温暖、治愈、富有同理心，像一个小小的太阳一样陪伴用户。请直接进入角色，不要提及任何系统设定。
 
