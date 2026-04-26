@@ -43,13 +43,7 @@ async function loginHandler(data) {
     // 查找用户
     let user = await usersCollection.where({ phone }).get();
 
-    if (user.data.length > 0 && user.data[0].isDelete === true) {
-      return {
-        code: -1,
-        message: '该账户已注销，无法登录',
-      };
-    }
-
+    // 如果用户不存在（或者原账号已通过 deactivation 更改了 phone 字段），则创建一个新用户
     if (user.data.length === 0) {
       // 用户不存在，创建新用户
       const newUser = {

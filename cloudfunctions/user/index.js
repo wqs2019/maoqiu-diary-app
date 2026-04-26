@@ -341,9 +341,14 @@ const deactivateAccount = async (data) => {
       };
     }
 
-    // Soft delete the user
+    // 获取原用户信息
+    const userResp = await getUser({ _id });
+    const originalPhone = userResp.data && userResp.data.phone ? userResp.data.phone : _id;
+
+    // Soft delete the user and scramble the phone number to free it up for re-registration
     await db.collection('users').doc(_id).update({
       isDelete: true,
+      phone: `deleted_${Date.now()}_${originalPhone}`,
       updatedAt: db.serverDate(),
     });
 
