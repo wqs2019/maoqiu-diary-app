@@ -8,7 +8,6 @@ import * as Linking from 'expo-linking';
 import React from 'react';
 
 import { RootNavigator, RootStackParamList } from './RootNavigator';
-import { routingInstrumentation } from '../config/sentry';
 import { useAppTheme } from '../hooks/useAppTheme';
 
 const linking: LinkingOptions<RootStackParamList> = {
@@ -33,11 +32,6 @@ const linking: LinkingOptions<RootStackParamList> = {
 export const Navigation = () => {
   const { isDark, colors } = useAppTheme();
   const navigationRef = React.useRef<any>(null);
-
-  // 在组件挂载时注册路由的集成
-  React.useEffect(() => {
-    routingInstrumentation.registerNavigationContainer(navigationRef);
-  }, []);
 
   const appTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),

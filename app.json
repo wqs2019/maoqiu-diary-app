@@ -70,14 +70,6 @@
         {
           "faceIDPermission": "允许毛球日记使用面容 ID 进行解锁"
         }
-      ],
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "maoqiu-diary-app",
-          "organization": "maoqiu"
-        }
       ]
     ]
   }

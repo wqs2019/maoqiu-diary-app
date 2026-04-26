@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
@@ -10,7 +9,6 @@ import { AppLockOverlay } from './src/components/AppLockOverlay';
 
 import { PortalProvider } from '@/components/common/Portal';
 import { ToastProvider } from '@/components/common/Toast';
-import { initSentry, setUser, clearUser } from '@/config/sentry';
 import { Navigation } from '@/navigation';
 import { AppQueryProvider } from '@/providers/AppQueryProvider';
 import CustomSplashScreen from '@/screens/common/CustomSplashScreen';
@@ -21,9 +19,6 @@ import { useAuthStore } from '@/store/authStore';
 
 // 保持原生 SplashScreen 阻止隐藏，直到我们的 CustomSplashScreen 准备就绪
 SplashScreen.preventAutoHideAsync().catch(() => {});
-
-// 初始化 Sentry
-initSentry();
 
 const checkAndSyncVIPStatus = async () => {
   try {
@@ -99,19 +94,6 @@ function App() {
     initApp();
   }, []); // Only once on mount
 
-  // 设置 Sentry 用户上下文
-  useEffect(() => {
-    if (user && user._id) {
-      setUser({
-        id: user._id,
-        username: user.nickname || user.phone,
-        email: undefined,
-      });
-    } else {
-      clearUser();
-    }
-  }, [user]);
-
   const systemColorScheme = useColorScheme();
   const actualTheme = theme === 'system' ? systemColorScheme || 'light' : theme;
 
@@ -142,5 +124,4 @@ function App() {
   );
 }
 
-// 将 App 用 Sentry 包裹以捕获渲染层面的错误 (Error Boundary)
-export default Sentry.wrap(App);
+export default App;

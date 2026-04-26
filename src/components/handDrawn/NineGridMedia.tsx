@@ -32,12 +32,12 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
   // 3、5、6、7、8、9张图：3列
   const getLayout = () => {
     if (mediaCount === 1) {
-      return { columns: 1, itemWidth: containerWidth * 0.7 };
+      return { columns: 1, itemWidth: Math.floor(containerWidth * 0.7) };
     }
     if (mediaCount === 2 || mediaCount === 4) {
-      return { columns: 2, itemWidth: (containerWidth - IMAGE_MARGIN) / 2 };
+      return { columns: 2, itemWidth: Math.floor((containerWidth - IMAGE_MARGIN) / 2) };
     }
-    return { columns: 3, itemWidth: (containerWidth - IMAGE_MARGIN * 2) / 3 };
+    return { columns: 3, itemWidth: Math.floor((containerWidth - IMAGE_MARGIN * 2) / 3) };
   };
 
   const { columns, itemWidth } = getLayout();
