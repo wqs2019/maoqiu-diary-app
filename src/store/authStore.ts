@@ -7,6 +7,7 @@ export interface AuthState {
   isLoggedIn: boolean;
   user: UserInfo | null;
   loading: boolean;
+  sendingCode: boolean;
   error: string | null;
   login: (phone: string, code: string) => Promise<void>;
   loginWithWechat: () => Promise<void>;
@@ -21,6 +22,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoggedIn: false,
   user: null,
   loading: false,
+  sendingCode: false,
   error: null,
   login: async (phone, code) => {
     set({ loading: true, error: null });
@@ -63,13 +65,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   sendCode: async (phone) => {
-    set({ loading: true, error: null });
+    set({ sendingCode: true, error: null });
     try {
       const success = await authService.sendVerificationCode(phone);
-      set({ loading: false });
+      set({ sendingCode: false });
       return success;
     } catch (error) {
-      set({ error: '发送验证码失败', loading: false });
+      set({ error: '发送验证码失败', sendingCode: false });
       return false;
     }
   },

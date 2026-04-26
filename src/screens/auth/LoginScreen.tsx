@@ -106,7 +106,7 @@ const LoginScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [countdown, setCountdown] = useState(0);
-  const { login, loginWithWechat, sendCode, loading } = useAuthStore();
+  const { login, loginWithWechat, sendCode, loading, sendingCode } = useAuthStore();
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { isDark, colors } = useAppTheme();
@@ -248,19 +248,19 @@ const LoginScreen: React.FC = () => {
                   style={[
                     styles.codeButton,
                     { backgroundColor: colors.primary },
-                    countdown > 0 && [styles.codeButtonDisabled, { backgroundColor: colors.border }]
+                    (countdown > 0 || sendingCode) && [styles.codeButtonDisabled, { backgroundColor: colors.border }]
                   ]}
                   onPress={handleSendCode}
-                  disabled={countdown > 0}
+                  disabled={countdown > 0 || sendingCode}
                 >
                   <Text
                     style={[
                       styles.codeButtonText,
                       { color: isDark ? '#000' : '#FFF' },
-                      countdown > 0 && [styles.codeButtonTextDisabled, { color: colors.textSecondary }]
+                      (countdown > 0 || sendingCode) && [styles.codeButtonTextDisabled, { color: colors.textSecondary }]
                     ]}
                   >
-                    {countdown > 0 ? `${countdown}s` : '获取'}
+                    {sendingCode ? '发送中' : countdown > 0 ? `${countdown}s` : '获取'}
                   </Text>
                 </TouchableOpacity>
               </View>
