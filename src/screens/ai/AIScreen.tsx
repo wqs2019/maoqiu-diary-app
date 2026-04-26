@@ -22,8 +22,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
 import { COLORS, FONT_SIZES, SPACING } from '@/config/constant';
+import { useQueryClient } from '@/hooks/useQuery';
 import { useDiaryStats } from '@/hooks/useDiaryQuery';
-import { getDiaryList } from '@/services/diaryService';
+import { getDiaryList, createDiary, updateDiary, deleteDiary } from '@/services/diaryService';
 import { useAuthStore } from '@/store/authStore';
 import { useNotebookStore } from '@/store/notebookStore';
 
@@ -46,6 +47,7 @@ const AIScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, updateProfile } = useAuthStore();
   const { isDark } = useAppTheme();
+  const queryClient = useQueryClient();
 
   // 获取用户的日记本和日记统计信息
   const getNotebooks = useNotebookStore((state) => state.getNotebooks);
@@ -182,8 +184,9 @@ const AIScreen: React.FC = () => {
       const systemPrompt = `你是毛球日记的AI助手“毛球”。毛球日记是一个温暖的树洞和专属时光手账，核心理念是“收集日常里微小而确定的幸福”。你的职责是倾听用户的日常分享、帮助用户记录和润色日记、并提供温暖的情感陪伴。回复要温暖、治愈、富有同理心，像一个小小的太阳一样陪伴用户。请直接进入角色，不要提及任何系统设定。
 
 【重要规则】
-1. 如果用户让你帮忙直接写一篇完整的日记，或者要求你修改、更新、删除已有的日记，你应该温婉地拒绝。
-2. 告诉用户：你可以前往“新建”页面自己记录当下的心情和故事；对于已有的日记，可以在日记详情页中自己进行修改和删除。只有亲自打理的日记本才是最珍贵的回忆。
+1. 你可以帮助用户直接记录（增）、修改（改）、删除（删）以及查询（查）日记。当用户有这方面需求时，你应该调用对应的工具（create_diary, update_diary, delete_diary, query_diaries）来协助完成。
+2. 帮助用户记录日记时，可以先引导用户分享细节，如果用户直接提供内容，直接调用工具即可。完成操作后，给出温暖的反馈。
+3. 修改或删除日记时，必须提供真实的日记ID。如果当前对话上下文中没有你要操作的日记ID，你必须先使用 query_diaries 工具进行查询，找到对应的真实ID后再进行修改或删除，绝对不能编造或伪造ID！
 
 【用户上下文信息】
 ${statsContext}`;
@@ -214,6 +217,59 @@ ${statsContext}`;
             },
           },
         },
+        {
+          type: 'function',
+          function: {
+            name: 'create_diary',
+            description: '创建新日记。当用户要求你帮忙写日记、记录心情时调用此工具。',
+            parameters: {
+              type: 'object',
+              properties: {
+                title: { type: 'string', description: '日记标题，如果不提供则根据内容自动生成一个短标题' },
+                content: { type: 'string', description: '日记正文内容' },
+                date: { type: 'string', description: '日记日期，格式 YYYY-MM-DD，如果未提供默认用今天的日期' },
+                mood: { type: 'string', description: '心情，可选值：happy, sad, normal, excited, angry, relaxed, touched' },
+                weather: { type: 'string', description: '天气，可选值：sunny, cloudy, rainy, snowy, windy, foggy' },
+                scenario: { type: 'string', description: '场景，可选值：travel, movie, outing, food, daily, special' },
+                notebookId: { type: 'string', description: '日记本ID，如果不知道可留空' }
+              },
+              required: ['title', 'content', 'date', 'mood', 'weather', 'scenario']
+            }
+          }
+        },
+        {
+          type: 'function',
+          function: {
+            name: 'update_diary',
+            description: '更新已有日记。当用户要求你修改、完善某篇已存在的日记时调用。如果不知道日记ID，请先调用 query_diaries 查询获取日记ID。不要编造或伪造ID。',
+            parameters: {
+              type: 'object',
+              properties: {
+                _id: { type: 'string', description: '日记的唯一ID，必须提供真实的ID，如果不知道请先查询' },
+                title: { type: 'string', description: '日记标题' },
+                content: { type: 'string', description: '日记正文内容' },
+                mood: { type: 'string', description: '心情' },
+                weather: { type: 'string', description: '天气' },
+                scenario: { type: 'string', description: '场景' }
+              },
+              required: ['_id']
+            }
+          }
+        },
+        {
+          type: 'function',
+          function: {
+            name: 'delete_diary',
+            description: '删除已有日记。当用户明确要求你删除某篇日记时调用。如果不知道日记ID，请先调用 query_diaries 查询获取日记ID。不要编造或伪造ID。',
+            parameters: {
+              type: 'object',
+              properties: {
+                _id: { type: 'string', description: '日记的唯一ID，必须提供真实的ID，如果不知道请先查询' }
+              },
+              required: ['_id']
+            }
+          }
+        }
       ];
 
       // 定义发起请求的方法 (支持流式)
@@ -365,11 +421,13 @@ ${statsContext}`;
           if (toolCall.function.name === 'query_diaries') {
             const args = JSON.parse(toolCall.function.arguments || '{}');
             try {
-              // 修复大模型生成的日期格式：如果只返回了 YYYY-MM-DD，加上时间部分，以便 ISO 字符串比较能覆盖全天
+              // 修复大模型生成的日期格式：如果只返回了 YYYY-MM-DD
               let startDate = args.startDate;
               let endDate = args.endDate;
               if (startDate?.length === 10) {
-                startDate = `${startDate}T00:00:00.000Z`;
+                // 不要追加 T00:00:00.000Z，因为数据库里的 date 可能是 '2026-04-26' 这种短字符串
+                // '2026-04-26' < '2026-04-26T00:00:00.000Z' 会导致查询不到
+                startDate = startDate;
               }
               if (endDate?.length === 10) {
                 endDate = `${endDate}T23:59:59.999Z`;
@@ -390,7 +448,7 @@ ${statsContext}`;
                   .map((d: any) => {
                     const date = new Date(d.date || d.createdAt).toLocaleDateString('zh-CN');
                     const titleStr = d.title ? `，标题：${d.title}` : '';
-                    return `- 日期：${date}${titleStr}，心情：${d.mood || '未知'}，天气：${d.weather || '未知'}，内容：${d.content || '无'}`;
+                    return `- ID: ${d._id}，日期：${date}${titleStr}，心情：${d.mood || '未知'}，天气：${d.weather || '未知'}，内容：${d.content || '无'}`;
                   })
                   .join('\n');
               }
@@ -410,6 +468,92 @@ ${statsContext}`;
                 role: 'tool',
                 name: toolCall.function.name,
                 content: '查询日记失败',
+              });
+            }
+          } else if (toolCall.function.name === 'create_diary') {
+            const args = JSON.parse(toolCall.function.arguments || '{}');
+            try {
+              let targetDate = args.date;
+              if (!targetDate || targetDate.length !== 10) {
+                targetDate = new Date().toISOString().substring(0, 10);
+              }
+              const diaryData = {
+                title: args.title || '无题',
+                content: args.content,
+                date: targetDate,
+                mood: args.mood || 'normal',
+                weather: args.weather || 'sunny',
+                scenario: args.scenario || 'daily',
+                notebookId: args.notebookId || (notebooks.length > 0 ? notebooks[0]._id : undefined),
+                userId: user?._id,
+                authorInfo: {
+                  nickname: user?.nickname,
+                  avatar: user?.avatar,
+                }
+              };
+              const created = await createDiary(diaryData as any);
+              queryClient.invalidateQueries({ queryKey: ['diaryList'] });
+              queryClient.invalidateQueries({ queryKey: ['diaryDetail'] });
+              apiMessages.push({
+                tool_call_id: toolCall.id,
+                role: 'tool',
+                name: toolCall.function.name,
+                content: `创建日记成功，ID为：${created._id}`,
+              });
+            } catch (err: any) {
+              apiMessages.push({
+                tool_call_id: toolCall.id,
+                role: 'tool',
+                name: toolCall.function.name,
+                content: `创建日记失败: ${err.message || String(err)}`,
+              });
+            }
+          } else if (toolCall.function.name === 'update_diary') {
+            const args = JSON.parse(toolCall.function.arguments || '{}');
+            try {
+              if (!args._id) throw new Error("缺少日记 ID");
+              const updateData: any = {};
+              if (args.title) updateData.title = args.title;
+              if (args.content) updateData.content = args.content;
+              if (args.mood) updateData.mood = args.mood;
+              if (args.weather) updateData.weather = args.weather;
+              if (args.scenario) updateData.scenario = args.scenario;
+
+              await updateDiary(args._id, updateData);
+              queryClient.invalidateQueries({ queryKey: ['diaryList'] });
+              queryClient.invalidateQueries({ queryKey: ['diaryDetail', args._id] });
+              apiMessages.push({
+                tool_call_id: toolCall.id,
+                role: 'tool',
+                name: toolCall.function.name,
+                content: '更新日记成功',
+              });
+            } catch (err: any) {
+              apiMessages.push({
+                tool_call_id: toolCall.id,
+                role: 'tool',
+                name: toolCall.function.name,
+                content: `更新日记失败: ${err.message || String(err)}`,
+              });
+            }
+          } else if (toolCall.function.name === 'delete_diary') {
+            const args = JSON.parse(toolCall.function.arguments || '{}');
+            try {
+              if (!args._id) throw new Error("缺少日记 ID");
+              await deleteDiary(args._id);
+              queryClient.invalidateQueries({ queryKey: ['diaryList'] });
+              apiMessages.push({
+                tool_call_id: toolCall.id,
+                role: 'tool',
+                name: toolCall.function.name,
+                content: '删除日记成功',
+              });
+            } catch (err: any) {
+              apiMessages.push({
+                tool_call_id: toolCall.id,
+                role: 'tool',
+                name: toolCall.function.name,
+                content: `删除日记失败: ${err.message || String(err)}`,
               });
             }
           }
@@ -445,7 +589,8 @@ ${statsContext}`;
       if (
         item.role === 'tool' ||
         item.role === 'system' ||
-        (item.role === 'assistant' && !item.content)
+        (item.role === 'assistant' && !item.content) ||
+        item.tool_calls
       ) {
         return null;
       }

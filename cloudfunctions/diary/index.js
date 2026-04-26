@@ -119,10 +119,12 @@ const createDiary = async (data) => {
       updatedAt: db.serverDate(),
     });
 
+    console.log('新建日记结果:', result);
+
     return {
       success: true,
       data: {
-        _id: result._id,
+        _id: result.id || result._id,
         notebookId: notebookId,
         title,
         content,
@@ -159,6 +161,16 @@ const updateDiary = async (data) => {
       return {
         success: false,
         message: '日记 ID 不能为空',
+      };
+    }
+    
+    console.log('更新日记ID：', _id)
+
+    const diaryRes = await db.collection('diaries').doc(_id).get();
+    if (!diaryRes.data || (Array.isArray(diaryRes.data) && diaryRes.data.length === 0)) {
+      return {
+        success: false,
+        message: '日记不存在或已被删除',
       };
     }
 
@@ -288,11 +300,24 @@ const getDiaryList = async (data) => {
         regexp: keyword,
         options: 'i',
       });
-      finalQuery = _.and([finalQuery, _.or([{ title: keywordRegex }, { content: keywordRegex }])]);
+      
+      const orQuery = _.or([
+        { title: keywordRegex },
+        { content: keywordRegex }
+      ]);
+      
+      // 如果 finalQuery 为空对象，直接赋值；否则使用 _.and
+      if (Object.keys(finalQuery).length === 0) {
+        finalQuery = orQuery;
+      } else {
+        finalQuery = _.and([finalQuery, orQuery]);
+      }
     }
 
     // 计算分页
     const skip = (page - 1) * pageSize;
+
+    console.log('Query List finalQuery:', JSON.stringify(finalQuery));
 
     // 获取数据
     const result = await db
@@ -337,6 +362,16 @@ const deleteDiary = async (data) => {
       return {
         success: false,
         message: '日记 ID 不能为空',
+      };
+    }
+
+    console.log('删除日记ID：', _id)
+
+    const diaryRes = await db.collection('diaries').doc(_id).get();
+    if (!diaryRes.data || (Array.isArray(diaryRes.data) && diaryRes.data.length === 0)) {
+      return {
+        success: false,
+        message: '日记不存在或已被删除',
       };
     }
 
