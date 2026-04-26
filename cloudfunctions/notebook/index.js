@@ -8,7 +8,7 @@ const db = app.database();
 // 创建日记本
 const createNotebook = async (data) => {
   try {
-    const { userId, name } = data;
+    const { userId, name, isDefault } = data;
 
     if (!userId || !name) {
       return { success: false, message: '用户ID或名称不能为空' };
@@ -17,6 +17,7 @@ const createNotebook = async (data) => {
     const result = await db.collection('notebooks').add({
       userId,
       name,
+      isDefault: isDefault || false,
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),
     });
@@ -27,6 +28,7 @@ const createNotebook = async (data) => {
         _id: result._id,
         userId,
         name,
+        isDefault: isDefault || false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

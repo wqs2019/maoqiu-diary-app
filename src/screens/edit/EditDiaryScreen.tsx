@@ -23,6 +23,7 @@ import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useCreateDiary, useUpdateDiary, useDiaryDetail } from '../../hooks/useDiaryQuery';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { useVipGuard } from '../../hooks/useVipGuard';
 import { useQueryClient } from '../../hooks/useQuery';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
@@ -77,6 +78,7 @@ const EditDiaryScreen: React.FC = () => {
   const updateDiaryMutation = useUpdateDiary();
   const user = useAuthStore((state) => state.user);
   const getCurrentNotebook = useNotebookStore((state) => state.getCurrentNotebook);
+  const { checkCanWriteDiary } = useVipGuard();
 
   const handleSave = () => {
     if (!title.trim() && !content.trim()) {
@@ -84,18 +86,17 @@ const EditDiaryScreen: React.FC = () => {
       return;
     }
 
-    if (!user?._id) {
-      Alert.alert('提示', '用户未登录，请重新登录');
+    if (!checkCanWriteDiary()) {
       return;
     }
 
     // 过滤掉仅在本地使用的状态字段
     const cleanMedia = media.map(({ uploadStatus, uploadError, ...rest }) => rest);
 
-    const currentNotebook = getCurrentNotebook(user._id);
+    const currentNotebook = getCurrentNotebook(user!._id);
 
     const payload = {
-      userId: user._id,
+      userId: user!._id,
       notebookId: currentNotebook._id,
       title: title.trim(),
       content: content.trim(),

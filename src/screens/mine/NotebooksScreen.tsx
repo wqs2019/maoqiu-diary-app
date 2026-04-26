@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { useVipGuard } from '../../hooks/useVipGuard';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 
@@ -25,6 +26,7 @@ const NotebooksScreen: React.FC = () => {
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const user = useAuthStore((state) => state.user);
   const { isDark } = useAppTheme();
+  const { checkCanCreateNotebook } = useVipGuard();
 
   const getNotebooks = useNotebookStore((state) => state.getNotebooks);
   const getCurrentNotebook = useNotebookStore((state) => state.getCurrentNotebook);
@@ -63,6 +65,9 @@ const NotebooksScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => {
+            if (!checkCanCreateNotebook()) {
+              return;
+            }
             setIsAddModalVisible(true);
           }}
         >

@@ -14,6 +14,7 @@ import LoadingScreen from '@/screens/common/LoadingScreen';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
 import * as RNIap from 'react-native-iap';
+import { ensureIAPConnection } from '@/services/iapManager';
 
 // 保持原生 SplashScreen 阻止隐藏，直到我们的 CustomSplashScreen 准备就绪
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -28,7 +29,7 @@ const checkAndSyncVIPStatus = async () => {
     const user = useAuthStore.getState().user;
     if (!user) return;
 
-    await RNIap.initConnection();
+    await ensureIAPConnection();
     const purchases = await RNIap.getAvailablePurchases();
     
     // 如果有有效的订阅记录
@@ -61,10 +62,6 @@ const checkAndSyncVIPStatus = async () => {
     }
   } catch (error) {
     console.error('App Startup IAP Check Error:', error);
-  } finally {
-    try {
-      await RNIap.endConnection();
-    } catch (e) {}
   }
 };
 

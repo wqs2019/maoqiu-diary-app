@@ -13,6 +13,7 @@ import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useDiaryDetail, useDeleteDiary, useToggleFavorite } from '../../hooks/useDiaryQuery';
+import { useVipGuard } from '../../hooks/useVipGuard';
 import { FormatUtil } from '../../utils/format';
 
 const { width } = Dimensions.get('window');
@@ -29,6 +30,7 @@ const DiaryDetailScreen: React.FC = () => {
   const { data: diary, isLoading, error, refetch } = useDiaryDetail(_id);
   const deleteMutation = useDeleteDiary();
   const toggleFavorite = useToggleFavorite();
+  const { checkCanWriteDiary } = useVipGuard();
 
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -75,6 +77,9 @@ const DiaryDetailScreen: React.FC = () => {
   };
 
   const handleDelete = () => {
+    if (!checkCanWriteDiary()) {
+      return;
+    }
     Alert.alert('确认删除', '删除后无法恢复，是否继续？', [
       { text: '取消', style: 'cancel' },
       { 
@@ -222,7 +227,14 @@ const DiaryDetailScreen: React.FC = () => {
           <Ionicons name="share-social-outline" size={24} color="#4B5563" />
           <Text style={styles.bottomBarActionText}>分享</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomBarAction} onPress={() => navigation.navigate('EditDiary', { diaryId: _id })}>
+        <TouchableOpacity 
+          style={styles.bottomBarAction} 
+          onPress={() => {
+            if (checkCanWriteDiary()) {
+              navigation.navigate('EditDiary', { diaryId: _id });
+            }
+          }}
+        >
           <Ionicons name="create-outline" size={24} color="#4B5563" />
           <Text style={styles.bottomBarActionText}>编辑</Text>
         </TouchableOpacity>

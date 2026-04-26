@@ -15,6 +15,7 @@ import {
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as RNIap from 'react-native-iap';
+import { ensureIAPConnection } from '../../services/iapManager';
 
 import { HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -60,9 +61,9 @@ const SubscriptionScreen: React.FC = () => {
 
     const initIAP = async () => {
       try {
-        console.log('IAP: initConnection 开始...');
-        await RNIap.initConnection();
-        console.log('IAP: initConnection 成功');
+        console.log('IAP: 准备建立/复用全局连接...');
+        await ensureIAPConnection();
+        console.log('IAP: 建立/复用全局连接成功');
 
         // 必须先获取商品信息，否则苹果无法弹出支付窗口
         const itemSKUs = plans.map(p => p.id);
@@ -103,28 +104,34 @@ const SubscriptionScreen: React.FC = () => {
       const receipt = purchase.purchaseToken || (purchase as any).transactionReceipt;
       if (receipt) {
         try {
-          console.log('IAP: 开始 finishTransaction...');
-          await RNIap.finishTransaction({ purchase, isConsumable: false });
-          console.log('IAP: finishTransaction 成功');
-          setLoading(false);
-          
           const currentUser = useAuthStore.getState().user;
           if (currentUser) {
             const expiresAt = (purchase as any).expirationDateIOS ? Number((purchase as any).expirationDateIOS) : undefined;
-            useAuthStore.getState().updateProfile(currentUser._id, { isVip: { value: true, type: purchase.productId, expiresAt } }).catch(e => console.log(e));
+            await useAuthStore.getState().updateProfile(currentUser._id, { isVip: { value: true, type: purchase.productId, expiresAt } });
           }
 
           if (isPurchasing.current) {
-            toast.success('购买成功，已为您开通 VIP');
+            if (navigation.isFocused()) {
+              toast.success('购买成功，已为您开通 VIP');
+            } else {
+              console.log('IAP: 购买成功，但用户已离开订阅页面，静默发放VIP');
+            }
             isPurchasing.current = false;
           } else {
             console.log('IAP: 自动恢复/处理了之前的遗留订单，静默完成');
           }
-        } catch (ackErr) {
-          console.error('IAP: ackErr finishTransaction失败', ackErr);
+
+          console.log('IAP: 开始 finishTransaction...');
+          await RNIap.finishTransaction({ purchase, isConsumable: false });
+          console.log('IAP: finishTransaction 成功');
+        } catch (err) {
+          console.error('IAP: 处理订单或 finishTransaction 失败', err);
+        } finally {
+          setLoading(false);
         }
       } else {
         console.warn('IAP: ⚠️ 警告: purchase对象中没有 receipt/purchaseToken 字段');
+        setLoading(false);
       }
     });
 
@@ -160,12 +167,18 @@ const SubscriptionScreen: React.FC = () => {
           errorMessage = error.message || errorMessage;
       }
       
-      toast.error(errorMessage);
+      if (navigation.isFocused()) {
+        toast.error(errorMessage);
+      }
       setLoading(false);
       isPurchasing.current = false;
       // 增加 E_USER_CANCELLED 的容错处理，有时它是作为字符串传递的
       if (errorCode !== 'user-cancelled' && errorCode !== 'E_USER_CANCELLED' && errorCode !== 'PROMISE_BUY_ITEM') {
-        Alert.alert('购买失败', errorMessage);
+        if (navigation.isFocused()) {
+          Alert.alert('购买失败', errorMessage);
+        } else {
+          console.log('IAP: 购买失败，但用户已离开订阅页面，不弹窗打扰', errorMessage);
+        }
       }
     });
 
@@ -193,16 +206,17 @@ const SubscriptionScreen: React.FC = () => {
       // 移除了 Alert.alert('请求中...') 避免与后续的弹窗堆叠
       
       const requestResult = await RNIap.requestPurchase({
-        type: 'subs',
-        request: {
-          apple: { sku: selectedPlan, andDangerouslyFinishTransactionAutomatically: false },
-          google: { skus: [selectedPlan] },
-        },
-      });
-      console.log('IAP: requestPurchase 发起成功，返回信息:', requestResult);
-      // 注意：这里不再直接 alert 成功，因为 requestPurchase 是异步发送请求
-      // 真正的结果会在 purchaseUpdatedListener 或 purchaseErrorListener 里处理
-    } catch (err: any) {
+              type: 'subs',
+              request: {
+                apple: { sku: selectedPlan, andDangerouslyFinishTransactionAutomatically: false },
+                google: { skus: [selectedPlan] },
+              },
+            });
+            console.log('IAP: requestPurchase 发起成功，返回信息:', requestResult);
+            // 苹果支付弹窗关闭后（无论成功或放弃），立刻结束按钮的 loading 状态
+            // 真实的交易结果和发货逻辑由全局的 purchaseUpdatedListener 处理
+            setLoading(false);
+          } catch (err: any) {
       console.error('IAP: requestPurchase 异常:', err);
       setLoading(false);
       isPurchasing.current = false;

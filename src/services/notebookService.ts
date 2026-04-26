@@ -34,10 +34,10 @@ export const getNotebookList = async (userId: string): Promise<Notebook[]> => {
   return [];
 };
 
-export const createNotebook = async (userId: string, name: string): Promise<Notebook> => {
+export const createNotebook = async (userId: string, name: string, isDefault: boolean = false): Promise<Notebook> => {
   const result = await CloudService.callFunction<CloudFunctionResponse<Notebook>>('notebook', {
     action: 'create',
-    data: { userId, name },
+    data: { userId, name, isDefault },
   });
 
   const cloudFunctionResult = result.data;

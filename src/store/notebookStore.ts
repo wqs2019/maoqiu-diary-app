@@ -8,6 +8,7 @@ export interface Notebook {
   _id: string;
   name: string;
   createdAt: string;
+  isDefault?: boolean;
 }
 
 interface NotebookState {
@@ -37,7 +38,7 @@ export const useNotebookStore = create<NotebookState>()(
 
           if (!notebooks || notebooks.length === 0) {
             // 云端如果没有，则创建一个默认的
-            const defaultNb = await notebookService.createNotebook(userId, '毛球日记');
+            const defaultNb = await notebookService.createNotebook(userId, '毛球日记', true);
             notebooks = [defaultNb];
           }
 
@@ -63,7 +64,7 @@ export const useNotebookStore = create<NotebookState>()(
       getNotebooks: (userId: string) => {
         const notebooks = get().notebooksByUserId[userId];
         if (!notebooks || notebooks.length === 0) {
-          return [{ _id: 'default', name: '毛球日记', createdAt: new Date().toISOString() }];
+          return [{ _id: 'default', name: '毛球日记', createdAt: new Date().toISOString(), isDefault: true }];
         }
         return notebooks;
       },

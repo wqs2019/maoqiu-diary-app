@@ -26,6 +26,7 @@ import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { useVipGuard } from '../../hooks/useVipGuard';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 import { ScenarioType, TimelineItem, Diary } from '../../types';
@@ -131,6 +132,8 @@ const HomeScreen: React.FC = () => {
   const minTranslateY = -(height * 0.65); // 向上最多滑动区域
   const maxTranslateY = 0; // 向下最多滑动区域
 
+  const { checkCanWriteDiary } = useVipGuard();
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
@@ -190,6 +193,9 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleCreateDiary = (scenario?: ScenarioType) => {
+    if (!checkCanWriteDiary()) {
+      return;
+    }
     (navigation as any).navigate('EditDiary', { scenario: scenario || 'daily' });
   };
 
