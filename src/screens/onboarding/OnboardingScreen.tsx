@@ -9,11 +9,18 @@ import {
   SafeAreaView,
   FlatList,
   ViewToken,
+  Image,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 
 import { useAppTheme } from '../../hooks/useAppTheme';
 
-import { COLORS, FONT_SIZES } from '@/config/constant';
+import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useAppStore } from '@/store/appStore';
 
 const { width, height } = Dimensions.get('window');
@@ -22,39 +29,110 @@ interface Slide {
   id: string;
   title: string;
   description: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  image: any;
+  color: string;
 }
 
 const SLIDES: Slide[] = [
   {
     id: '1',
-    title: '记录生活点滴',
-    description: '随时随地记录你和宠物的每一个温馨瞬间，留下属于你们的独家记忆。',
-    icon: 'book',
+    title: '记录柔软时光',
+    description: '每一个摇尾巴的瞬间\n都值得被温柔珍藏',
+    image: require('../../../assets/mimi/1.png'),
+    color: HEALING_COLORS.pink[50],
   },
   {
     id: '2',
-    title: '专属照片墙',
-    description: '将美好的瞬间定格，打造属于你们的专属照片墙，珍藏美好。',
-    icon: 'images',
+    title: '专属记忆角落',
+    description: '搭建你们的专属回忆墙\n让爱有迹可循',
+    image: require('../../../assets/mimi/2.png'),
+    color: HEALING_COLORS.blue[50],
   },
   {
     id: '3',
-    title: '智能AI助手',
-    description: '遇到养宠难题？AI助手随时待命，为你提供专业的解答和建议。',
-    icon: 'chatbubbles',
+    title: '毛球智能陪伴',
+    description: '遇到小麻烦？\n毛球AI随时为你答疑解惑',
+    image: require('../../../assets/mimi/3.png'),
+    color: HEALING_COLORS.yellow[50],
+  },
+  {
+    id: '4',
+    title: '毛球圈子',
+    description: '加入毛球圈子\n与其他用户分享记忆',
+    image: require('../../../assets/mimi/4.png'),
+    color: HEALING_COLORS.green[50],
   },
 ];
+
+const SlideItem: React.FC<{ item: Slide; index: number; scrollX: any; isDark: boolean }> = ({ item, index, scrollX, isDark }) => {
+  const animatedImageStyle = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    const scale = interpolate(scrollX.value, inputRange, [0.5, 1, 0.5], Extrapolation.CLAMP);
+    const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollX.value, inputRange, [50, 0, 50], Extrapolation.CLAMP);
+
+    return {
+      opacity,
+      transform: [{ scale }, { translateY }],
+    };
+  });
+
+  const animatedTextStyle = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollX.value, inputRange, [30, 0, 30], Extrapolation.CLAMP);
+
+    return {
+      opacity,
+      transform: [{ translateY }],
+    };
+  });
+
+  return (
+    <View style={[styles.slide, { width }]}>
+      <Animated.View style={[styles.imageContainer, animatedImageStyle]}>
+        <Image source={item.image} style={styles.image} resizeMode="contain" />
+      </Animated.View>
+      <Animated.View style={[styles.textContainer, animatedTextStyle]}>
+        <Text style={[styles.title, { color: isDark ? '#FFF' : '#111827' }]}>{item.title}</Text>
+        <Text style={[styles.description, { color: isDark ? '#AAA' : '#6B7280' }]}>
+          {item.description}
+        </Text>
+      </Animated.View>
+    </View>
+  );
+};
+
+const PaginationDot: React.FC<{ index: number; scrollX: any; isDark: boolean }> = ({ index, scrollX, isDark }) => {
+  const animatedDotStyle = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    const dotWidth = interpolate(scrollX.value, inputRange, [8, 24, 8], Extrapolation.CLAMP);
+    const opacity = interpolate(scrollX.value, inputRange, [0.4, 1, 0.4], Extrapolation.CLAMP);
+    
+    return {
+      width: dotWidth,
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.dot,
+        animatedDotStyle,
+        { backgroundColor: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] }
+      ]}
+    />
+  );
+};
 
 const OnboardingScreen: React.FC = () => {
   const { setFirstLaunch } = useAppStore();
   const { isDark } = useAppTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const slidesRef = useRef<FlatList>(null);
-  const backgroundColor = isDark ? '#1C1C1E' : '#F2F2F7';
-  const surfaceColor = isDark ? '#2C2C2E' : '#FFFFFF';
-  const textColor = isDark ? '#FFFFFF' : '#000000';
-  const textSecondaryColor = '#8E8E93';
+  
+  const scrollX = useSharedValue(0);
 
   const viewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems[0] && viewableItems[0].index !== null) {
@@ -76,72 +154,90 @@ const OnboardingScreen: React.FC = () => {
     await setFirstLaunch(false);
   };
 
-  const renderItem = ({ item }: { item: Slide }) => {
-    return (
-      <View style={[styles.slide, { width }]}>
-        <View style={styles.iconContainer}>
-          <View style={[styles.iconCircle, { backgroundColor: surfaceColor }]}>
-            <Ionicons name={item.icon} size={80} color={COLORS.primary} />
-          </View>
-        </View>
-        <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: textColor }]}>{item.title}</Text>
-          <Text style={[styles.description, { color: textSecondaryColor }]}>
-            {item.description}
-          </Text>
-        </View>
-      </View>
-    );
+  const renderItem = ({ item, index }: { item: Slide; index: number }) => {
+    return <SlideItem item={item} index={index} scrollX={scrollX} isDark={isDark} />;
   };
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <View style={styles.flatListContainer}>
-        <FlatList
-          data={SLIDES}
-          renderItem={renderItem}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          pagingEnabled
-          bounces={false}
-          keyExtractor={(item) => item.id}
-          onViewableItemsChanged={viewableItemsChanged}
-          viewabilityConfig={viewConfig}
-          ref={slidesRef}
-        />
-      </View>
+  // 背景颜色渐变动画
+  const animatedBackgroundStyle = useAnimatedStyle(() => {
+    const isDarkColors = ['#121212', '#1E1E1E', '#121212'];
+    const lightColors = SLIDES.map(s => s.color);
+    const colorsToUse = isDark ? isDarkColors : lightColors;
 
-      <View style={styles.footer}>
-        <View style={styles.paginator}>
-          {SLIDES.map((_, index) => {
-            const isActive = currentIndex === index;
-            return (
-              <View
-                key={index.toString()}
-                style={[
-                  styles.dot,
-                  {
-                    width: isActive ? 20 : 8,
-                    backgroundColor: isActive ? COLORS.primary : COLORS.border,
-                  },
-                ]}
-              />
-            );
-          })}
+    const backgroundColor = interpolateColor(
+      scrollX.value,
+      SLIDES.map((_, i) => i * width),
+      colorsToUse
+    );
+
+    return { backgroundColor };
+  });
+
+  return (
+    <Animated.View style={[styles.container, animatedBackgroundStyle]}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.flatListContainer}>
+          <Animated.FlatList
+            data={SLIDES}
+            renderItem={renderItem}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            pagingEnabled
+            bounces={false}
+            keyExtractor={(item) => item.id}
+            onScroll={(event) => {
+              scrollX.value = event.nativeEvent.contentOffset.x;
+            }}
+            scrollEventThrottle={16}
+            onViewableItemsChanged={viewableItemsChanged}
+            viewabilityConfig={viewConfig}
+            ref={slidesRef}
+          />
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={scrollToNext} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>
-            {currentIndex === SLIDES.length - 1 ? '立即开启' : '下一步'}
-          </Text>
-          {currentIndex === SLIDES.length - 1 && (
-            <Ionicons name="arrow-forward" size={20} color="#FFF" style={styles.buttonIcon} />
-          )}
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        <View style={styles.footer}>
+          <View style={styles.paginator}>
+            {SLIDES.map((_, index) => {
+              const animatedDotStyle = useAnimatedStyle(() => {
+                const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+                const dotWidth = interpolate(scrollX.value, inputRange, [8, 24, 8], Extrapolation.CLAMP);
+                const opacity = interpolate(scrollX.value, inputRange, [0.4, 1, 0.4], Extrapolation.CLAMP);
+                
+                return {
+                  width: dotWidth,
+                  opacity,
+                };
+              });
+
+              return (
+                <Animated.View
+                  key={index.toString()}
+                  style={[
+                    styles.dot,
+                    animatedDotStyle,
+                    { backgroundColor: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] }
+                  ]}
+                />
+              );
+            })}
+          </View>
+
+          <TouchableOpacity style={[styles.button, { backgroundColor: isDark ? HEALING_COLORS.pink[500] : HEALING_COLORS.pink[400] }]} onPress={scrollToNext} activeOpacity={0.8}>
+            <Text style={styles.buttonText}>
+              {currentIndex === SLIDES.length - 1 ? '开启毛球日记' : '继续'}
+            </Text>
+            {currentIndex === SLIDES.length - 1 && (
+              <Ionicons name="paw" size={20} color="#FFF" style={styles.buttonIcon} />
+            )}
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </Animated.View>
   );
 };
+
+// ... helper function for color interpolation
+import { interpolateColor } from 'react-native-reanimated';
 
 const styles = StyleSheet.create({
   container: {
@@ -156,21 +252,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 30,
   },
-  iconContainer: {
+  imageContainer: {
     alignItems: 'center',
     marginBottom: 40,
+    width: width * 0.8,
+    height: width * 0.8,
   },
-  iconCircle: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 5,
+  image: {
+    width: '100%',
+    height: '100%',
   },
   textContainer: {
     alignItems: 'center',
@@ -182,7 +272,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   description: {
-    fontSize: FONT_SIZES.large,
+    fontSize: 16,
     textAlign: 'center',
     lineHeight: 26,
     paddingHorizontal: 20,
@@ -205,16 +295,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   button: {
-    backgroundColor: COLORS.primary,
     flexDirection: 'row',
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 5,
   },
   buttonText: {
