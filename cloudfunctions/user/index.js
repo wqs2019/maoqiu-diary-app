@@ -435,7 +435,7 @@ const getProfile = async (data) => {
     // check if current user is following
     let isFollowing = false;
     if (currentUserId && Array.isArray(userData.followers)) {
-      isFollowing = userData.followers.includes(currentUserId);
+      isFollowing = userData.followers.some(item => (typeof item === 'string' ? item : item.userId) === currentUserId);
     }
 
     return {
@@ -490,11 +490,20 @@ const follow = async (data) => {
     let following = Array.isArray(followerUser.following) ? followerUser.following : [];
 
     if (action === 'follow') {
-      if (!followers.includes(followerId)) followers.push(followerId);
-      if (!following.includes(followingId)) following.push(followingId);
+      const followerExists = followers.some(item => (typeof item === 'string' ? item : item.userId) === followerId);
+      const followingExists = following.some(item => (typeof item === 'string' ? item : item.userId) === followingId);
+
+      const timestamp = Date.now();
+      
+      if (!followerExists) {
+        followers.push({ userId: followerId, followedAt: timestamp });
+      }
+      if (!followingExists) {
+        following.push({ userId: followingId, followedAt: timestamp });
+      }
     } else {
-      followers = followers.filter(id => id !== followerId);
-      following = following.filter(id => id !== followingId);
+      followers = followers.filter(item => (typeof item === 'string' ? item : item.userId) !== followerId);
+      following = following.filter(item => (typeof item === 'string' ? item : item.userId) !== followingId);
     }
 
     await usersColl.doc(followingId).update({ followers, updatedAt: db.serverDate() });
@@ -503,6 +512,91 @@ const follow = async (data) => {
     return { success: true };
   } catch (error) {
     console.error('Follow error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+// Get followers list
+const getFollowersList = async (data) => {
+  try {
+    const { userId, page = 1, pageSize = 20 } = data;
+    if (!userId) {
+      return { success: false, message: 'userId is required' };
+    }
+
+    const userRes = await db.collection('users').doc(userId).get();
+    const user = userRes.data ? (Array.isArray(userRes.data) ? userRes.data[0] : userRes.data) : null;
+    
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+
+    let followers = Array.isArray(user.followers) ? user.followers : [];
+    
+    // Reverse to get newest first
+    followers.reverse();
+
+    const total = followers.length;
+    const skip = (page - 1) * pageSize;
+    const pagedFollowers = followers.slice(skip, skip + pageSize);
+
+    if (pagedFollowers.length === 0) {
+      return { success: true, data: { list: [], total } };
+    }
+
+    // Extract userIds
+    const followerIds = pagedFollowers.map(f => typeof f === 'string' ? f : f.userId);
+
+    // Fetch user details in batch
+    const MAX_LIMIT = 100; // tcb limit
+    const tasks = [];
+    for (let i = 0; i < followerIds.length; i += MAX_LIMIT) {
+      const batchIds = followerIds.slice(i, i + MAX_LIMIT);
+      tasks.push(
+        db.collection('users').where({
+          _id: db.command.in(batchIds)
+        }).field({
+          _id: true,
+          nickname: true,
+          avatar: true,
+          isDelete: true
+        }).get()
+      );
+    }
+
+    const results = await Promise.all(tasks);
+    const usersMap = {};
+    for (const res of results) {
+      if (res.data) {
+        const users = Array.isArray(res.data) ? res.data : [res.data];
+        users.forEach(u => {
+          usersMap[u._id] = u;
+        });
+      }
+    }
+
+    // Map back to original order and attach followedAt
+    const list = pagedFollowers.map(f => {
+      const id = typeof f === 'string' ? f : f.userId;
+      const userDetail = usersMap[id] || {};
+      return {
+        _id: id,
+        nickname: userDetail.nickname,
+        avatar: userDetail.avatar,
+        isDelete: userDetail.isDelete,
+        followedAt: typeof f === 'object' && f.followedAt ? f.followedAt : null
+      };
+    }).filter(u => !u.isDelete); // optionally filter out deleted users
+
+    return {
+      success: true,
+      data: {
+        list,
+        total
+      }
+    };
+  } catch (error) {
+    console.error('Get followers list error:', error);
     return { success: false, message: error.message };
   }
 };
@@ -531,6 +625,8 @@ exports.main = async (event, context) => {
       return await getProfile(data);
     case 'follow':
       return await follow(data);
+    case 'getFollowersList':
+      return await getFollowersList(data);
     default:
       return {
         success: false,

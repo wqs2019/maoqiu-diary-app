@@ -128,6 +128,33 @@ export class UserService {
       throw error;
     }
   }
+
+  /**
+   * 获取粉丝列表
+   */
+  async getFollowers(userId: string, page = 1, pageSize = 20): Promise<any> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'getFollowersList',
+        data: {
+          userId,
+          page,
+          pageSize,
+        },
+      });
+
+      if (response.code === 0 && response.data) {
+        const cloudResult = response.data;
+        if (cloudResult.success && cloudResult.data) {
+          return cloudResult.data;
+        }
+      }
+      return { list: [], total: 0 };
+    } catch (error) {
+      console.error('UserService.getFollowers error:', error);
+      return { list: [], total: 0 };
+    }
+  }
 }
 
 export default new UserService();

@@ -28,6 +28,7 @@ import SettingsScreen from '@/screens/mine/SettingsScreen';
 import SubscriptionScreen from '@/screens/mine/SubscriptionScreen';
 import AccountSecurityScreen from '@/screens/mine/AccountSecurityScreen';
 import WebScreen from '@/screens/mine/WebScreen';
+import FollowersScreen from '@/screens/circle/FollowersScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
@@ -54,6 +55,7 @@ export type RootStackParamList = {
   Subscription: undefined;
   AppLockSetting: undefined;
   Web: { url: string; title?: string };
+  Followers: { userId: string };
 };
 
 export type AuthStackParamList = {
@@ -275,6 +277,13 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="AppLockSetting"
             component={AppLockSettingScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="Followers"
+            component={FollowersScreen}
             options={{
               headerShown: false,
             }}

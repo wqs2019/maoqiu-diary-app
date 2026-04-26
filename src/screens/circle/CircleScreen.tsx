@@ -207,10 +207,25 @@ const CircleScreen: React.FC = () => {
       ]}
     >
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>圈子</Text>
-        <Text style={[styles.headerSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>
-          探索大家分享的美好瞬间
-        </Text>
+        <View style={styles.headerTextContainer}>
+          <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>圈子</Text>
+          <Text style={[styles.headerSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>
+            探索大家分享的美好瞬间
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.myProfileBtn, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}
+          onPress={() => {
+            if (!user) {
+              Alert.alert('提示', '请先登录！');
+              return;
+            }
+            navigation.navigate('UserProfile', { userId: user._id });
+          }}
+        >
+          <Ionicons name="person-circle-outline" size={20} color={isDark ? '#FFF' : '#111827'} />
+          <Text style={[styles.myProfileText, { color: isDark ? '#FFF' : '#111827' }]}>我的主页</Text>
+        </TouchableOpacity>
       </View>
 
       {isLoading ? (
@@ -259,9 +274,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  myProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  myProfileText: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 4,
   },
   headerTitle: {
     fontSize: 28,

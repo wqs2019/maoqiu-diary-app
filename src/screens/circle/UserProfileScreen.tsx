@@ -172,12 +172,16 @@ const UserProfileScreen: React.FC = () => {
                 </Text>
                 <Text style={[styles.statLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>公开日记</Text>
               </View>
-              <View style={styles.statItem}>
+              <TouchableOpacity 
+                style={styles.statItem}
+                onPress={() => isSelf && navigation.navigate('Followers', { userId: targetUserId })}
+                disabled={!isSelf}
+              >
                 <Text style={[styles.statValue, { color: isDark ? '#FFF' : '#111827' }]}>
                   {formatCount(profile.followersCount)}
                 </Text>
                 <Text style={[styles.statLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>粉丝</Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: isDark ? '#FFF' : '#111827' }]}>
                   {formatCount(profile.totalLikes)}
