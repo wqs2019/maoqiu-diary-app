@@ -18,6 +18,7 @@
       "bundleIdentifier": "com.maoqiu.diary",
       "appleTeamId": "592UG636F5",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "毛球日记需要访问您的相册以选择照片和视频，记录美好时光",
         "NSCameraUsageDescription": "毛球日记需要使用相机拍摄照片和视频",
         "NSMicrophoneUsageDescription": "毛球日记需要访问麦克风以录制视频声音"
@@ -39,11 +40,8 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ],
       "package": "com.maoqiudiary"
     },
@@ -71,6 +69,11 @@
           "faceIDPermission": "允许毛球日记使用面容 ID 进行解锁"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "958ea01f-077f-4804-9416-df237d2f3888"
+      }
+    }
   }
 }
