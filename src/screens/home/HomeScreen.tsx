@@ -251,9 +251,8 @@ const HomeScreen: React.FC = () => {
   };
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FFFFFF' }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Background Blobs */}
       {!isDark && <AnimatedBackgroundBlobs />}
@@ -602,7 +601,10 @@ const HomeScreen: React.FC = () => {
 
       {/* Year Selector / Timeline Scrubber on the Right */}
       {availableYears.length > 0 && (
-        <View style={[styles.yearSelectorContainer, { backgroundColor: 'transparent' }]}>
+        <View
+          style={[styles.yearSelectorContainer, { backgroundColor: 'transparent' }]}
+          pointerEvents="box-none"
+        >
           {availableYears.map((year) => (
             <TouchableOpacity
               key={year}
@@ -652,7 +654,7 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.fabIcon}>+</Text>
         </TouchableOpacity>
       </Animated.View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
