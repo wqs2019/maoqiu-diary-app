@@ -11,6 +11,8 @@ import {
   Dimensions,
   Image,
   Pressable,
+  Animated,
+  PanResponder,
 } from 'react-native';
 
 import { MediaResource } from '../../types';
@@ -91,6 +93,61 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const flatListRef = useRef<FlatList>(null);
 
+  // 手势相关动画值
+  const panY = useRef(new Animated.Value(0)).current;
+  const scale = panY.interpolate({
+    inputRange: [0, height],
+    outputRange: [1, 0.5],
+    extrapolate: 'clamp',
+  });
+  const bgOpacity = panY.interpolate({
+    inputRange: [0, height],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // 只有向下滑动且滑动距离超过一定阈值时才触发下拉关闭
+        return gestureState.dy > 5 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 150 || gestureState.vy > 1.5) {
+          // 滑动距离超过 150 或者速度很快，执行关闭动画
+          Animated.timing(panY, {
+            toValue: height,
+            duration: 200,
+            useNativeDriver: false,
+          }).start(() => {
+            onClose();
+          });
+        } else {
+          // 否则回弹
+          Animated.spring(panY, {
+            toValue: 0,
+            friction: 7,
+            tension: 40,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  // 每次 Modal 显示时重置动画值
+  useEffect(() => {
+    if (visible) {
+      panY.setValue(0);
+    }
+  }, [visible, panY]);
+
   // Configure audio to play even if the device is in silent mode
   useEffect(() => {
     const configureAudio = async () => {
@@ -151,7 +208,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.container}>
+      <Animated.View style={[styles.container, { backgroundColor: 'black', opacity: bgOpacity }]}>
         <View style={styles.header}>
           <Text style={styles.counterText}>
             {currentIndex + 1} / {media.length}
@@ -161,24 +218,29 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          ref={flatListRef}
-          data={media}
-          keyExtractor={(item, index) => `${item.uri}-${index}`}
-          renderItem={renderItem}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          getItemLayout={(_, index) => ({
-            length: width,
-            offset: width * index,
-            index,
-          })}
-          initialScrollIndex={initialIndex >= 0 && initialIndex < media.length ? initialIndex : 0}
-        />
-      </View>
+        <Animated.View
+          style={{ flex: 1, transform: [{ translateY: panY }, { scale }] }}
+          {...panResponder.panHandlers}
+        >
+          <FlatList
+            ref={flatListRef}
+            data={media}
+            keyExtractor={(item, index) => `${item.uri}-${index}`}
+            renderItem={renderItem}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
+            getItemLayout={(_, index) => ({
+              length: width,
+              offset: width * index,
+              index,
+            })}
+            initialScrollIndex={initialIndex >= 0 && initialIndex < media.length ? initialIndex : 0}
+          />
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 };
