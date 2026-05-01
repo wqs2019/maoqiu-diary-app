@@ -159,6 +159,9 @@ const EditDiaryScreen: React.FC = () => {
 
   const template1 = SCENARIO_TEMPLATES[scenario];
 
+  // 处理拖动时的滚动禁用
+  const [scrollEnabled, setScrollEnabled] = React.useState(true);
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F7F8FA' }]}
@@ -168,6 +171,7 @@ const EditDiaryScreen: React.FC = () => {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        scrollEnabled={scrollEnabled}
       >
         {/* 场景选择 */}
         <View style={styles.scenarioWrapper}>
@@ -251,7 +255,14 @@ const EditDiaryScreen: React.FC = () => {
             styles.mediaCard,
           ]}
         >
-          <MediaSelector media={media} onMediaChange={setMedia} maxCount={user?.isVip?.value ? 9 : 3} draggable />
+          <MediaSelector
+            media={media}
+            onMediaChange={setMedia}
+            maxCount={user?.isVip?.value ? 9 : 3}
+            draggable
+            onDragStart={() => setScrollEnabled(false)}
+            onDragEnd={() => setScrollEnabled(true)}
+          />
           {!user?.isVip?.value && (
             <Text style={[styles.vipHintText, { color: isDark ? '#888' : '#999' }]}>
               开通 VIP 可上传最多 9 张图片/视频

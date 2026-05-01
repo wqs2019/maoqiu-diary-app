@@ -25,6 +25,8 @@ interface MediaSelectorProps {
   maxCount?: number;
   hideHeader?: boolean;
   draggable?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
 export const MediaSelector: React.FC<MediaSelectorProps> = ({
@@ -33,6 +35,8 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   maxCount = 9,
   hideHeader = false,
   draggable = false,
+  onDragStart,
+  onDragEnd,
 }) => {
   const isUploading = useRef(false);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -566,6 +570,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         renderItem={renderGridItem}
         itemHeight={110}
         delayLongPress={200}
+        onDragStart={onDragStart}
         onItemPress={(item: any) => {
           if (item.isAddButton) {
             if (!isUploading.current) {
@@ -584,6 +589,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           }
         }}
         onDragRelease={(newData) => {
+          onDragEnd?.();
           const newMedia = newData
             .filter((i: any) => !i.isAddButton)
             .map((i: any) => {
