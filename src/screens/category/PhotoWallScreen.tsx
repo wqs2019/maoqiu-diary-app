@@ -134,7 +134,8 @@ const PhotoWallScreen: React.FC = () => {
         )}
         {item.type === 'livePhoto' && (
           <View style={styles.liveBadge}>
-            <Text style={styles.liveBadgeText}>LIVE</Text>
+            <Ionicons name="aperture" size={12} color="#FFF" />
+            <Text style={styles.liveBadgeText}>实况</Text>
           </View>
         )}
 
@@ -281,6 +282,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     left: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: 6,
     paddingVertical: 3,
@@ -290,6 +293,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 10,
     fontWeight: 'bold',
+    marginLeft: 2,
   },
   diaryTitleBadge: {
     position: 'absolute',

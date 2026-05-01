@@ -119,7 +119,8 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
             )}
             {coverImage.type === 'livePhoto' && (
               <View style={styles.liveBadge}>
-                <Text style={styles.liveText}>LIVE</Text>
+                <Ionicons name="aperture" size={12} color="#FFF" />
+                <Text style={styles.liveText}>实况</Text>
               </View>
             )}
           </View>
@@ -263,6 +264,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -272,6 +275,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: 'bold',
+    marginLeft: 2,
   },
   footer: {
     flexDirection: 'row',
