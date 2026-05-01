@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useToast } from '../../components/common/Toast';
 import { CommentList } from '../../components/handDrawn/CommentList';
-import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 import { NineGridMedia } from '../../components/handDrawn/NineGridMedia';
 import { ShareCardModal } from '../../components/handDrawn/ShareCardModal';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
@@ -41,8 +40,6 @@ const DiaryDetailScreen: React.FC = () => {
   const toggleFavorite = useToggleFavorite();
   const { checkVipPermission } = useVipGuard();
 
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState(0);
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -217,10 +214,6 @@ const DiaryDetailScreen: React.FC = () => {
               <NineGridMedia
                 media={diary.media}
                 containerWidth={width - 40}
-                onPreview={(_, index) => {
-                  setPreviewIndex(index);
-                  setPreviewVisible(true);
-                }}
               />
             </View>
           )}
@@ -260,18 +253,6 @@ const DiaryDetailScreen: React.FC = () => {
           <Text style={[styles.bottomBarActionText, { color: '#EF4444' }]}>删除</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Media Previewer */}
-      {diary.media && diary.media.length > 0 && (
-        <MediaPreviewer
-          visible={previewVisible}
-          media={diary.media}
-          initialIndex={previewIndex}
-          onClose={() => {
-            setPreviewVisible(false);
-          }}
-        />
-      )}
 
       {/* Share Modal */}
       <ShareCardModal

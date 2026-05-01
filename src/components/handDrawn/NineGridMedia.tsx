@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Dimensions, Text } from 'react-native';
 
 import { LoadableImage } from './PhotoWall';
+import { MediaPreviewer } from './MediaPreviewer';
 
 import { MediaResource } from '@/types';
 
@@ -10,7 +11,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface NineGridMediaProps {
   media: MediaResource[];
-  onPreview: (media: MediaResource[], index: number) => void;
   containerWidth?: number;
 }
 
@@ -20,9 +20,11 @@ const IMAGE_MARGIN = 4;
  */
 export const NineGridMedia: React.FC<NineGridMediaProps> = ({
   media,
-  onPreview,
   containerWidth = SCREEN_WIDTH - 64, // 默认宽度减去一些 padding
 }) => {
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
+
   if (!media || media.length === 0) return null;
 
   const mediaCount = media.length;
@@ -53,7 +55,8 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
             key={index}
             activeOpacity={0.8}
             onPress={() => {
-              onPreview(media, index);
+              setPreviewIndex(index);
+              setPreviewVisible(true);
             }}
             style={[
               styles.mediaWrapper,
@@ -84,6 +87,15 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
           </TouchableOpacity>
         );
       })}
+
+      <MediaPreviewer
+        visible={previewVisible}
+        media={media}
+        initialIndex={previewIndex}
+        onClose={() => {
+          setPreviewVisible(false);
+        }}
+      />
     </View>
   );
 };

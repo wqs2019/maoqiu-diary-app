@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 
 import { CommentList } from '@/components/handDrawn/CommentList';
-import { MediaPreviewer } from '@/components/handDrawn/MediaPreviewer';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
 import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useDiaryDetail, useLikeDiary, useCommentDiary } from '@/hooks/useDiaryQuery';
@@ -40,9 +39,6 @@ const CircleDetailScreen: React.FC = () => {
 
   const likeMutation = useLikeDiary();
   const commentMutation = useCommentDiary();
-
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState(0);
 
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<any[]>([]);
@@ -190,10 +186,6 @@ const CircleDetailScreen: React.FC = () => {
             <NineGridMedia
               media={diary.media}
               containerWidth={width - 32} // 左右各 16 的 padding
-              onPreview={(_, index) => {
-                setPreviewIndex(index);
-                setPreviewVisible(true);
-              }}
             />
           </View>
         )}
@@ -246,15 +238,6 @@ const CircleDetailScreen: React.FC = () => {
           </View>
         </View>
       </KeyboardAvoidingView>
-
-      <MediaPreviewer
-        visible={previewVisible}
-        media={diary.media || []}
-        initialIndex={previewIndex}
-        onClose={() => {
-          setPreviewVisible(false);
-        }}
-      />
     </View>
   );
 };

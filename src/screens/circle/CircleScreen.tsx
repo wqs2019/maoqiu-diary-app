@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MediaPreviewer } from '@/components/handDrawn/MediaPreviewer';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
 import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -60,16 +59,6 @@ const CircleScreen: React.FC = () => {
 
   const handleDiaryPress = (item: Diary) => {
     navigation.navigate('CircleDetail', { _id: item._id });
-  };
-
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewMedia, setPreviewMedia] = useState<any[]>([]);
-  const [previewIndex, setPreviewIndex] = useState(0);
-
-  const handlePreview = (media: any[], index: number) => {
-    setPreviewMedia(media);
-    setPreviewIndex(index);
-    setPreviewVisible(true);
   };
 
   const handleLike = (item: Diary) => {
@@ -151,9 +140,6 @@ const CircleScreen: React.FC = () => {
                 <NineGridMedia
                   media={item.media!}
                   containerWidth={CONTENT_WIDTH - 32} // 减去内边距 16 * 2
-                  onPreview={(media, index) => {
-                    handlePreview(media, index);
-                  }}
                 />
               </View>
             )}
@@ -255,15 +241,6 @@ const CircleScreen: React.FC = () => {
           </Text>
         </View>
       )}
-
-      <MediaPreviewer
-        visible={previewVisible}
-        media={previewMedia}
-        initialIndex={previewIndex}
-        onClose={() => {
-          setPreviewVisible(false);
-        }}
-      />
     </View>
   );
 };

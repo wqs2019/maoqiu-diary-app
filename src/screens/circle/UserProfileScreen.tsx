@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MediaPreviewer } from '@/components/handDrawn/MediaPreviewer';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
 import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -129,15 +128,7 @@ const UserProfileScreen: React.FC = () => {
     });
   };
 
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewMedia, setPreviewMedia] = useState<any[]>([]);
-  const [previewIndex, setPreviewIndex] = useState(0);
 
-  const handlePreview = (media: any[], index: number) => {
-    setPreviewMedia(media);
-    setPreviewIndex(index);
-    setPreviewVisible(true);
-  };
 
   const renderHeader = () => {
     if (profileLoading) {
@@ -264,9 +255,6 @@ const UserProfileScreen: React.FC = () => {
                 <NineGridMedia
                   media={item.media!}
                   containerWidth={CONTENT_WIDTH - 32}
-                  onPreview={(media, index) => {
-                    handlePreview(media, index);
-                  }}
                 />
               </View>
             )}
@@ -358,15 +346,6 @@ const UserProfileScreen: React.FC = () => {
           }
         />
       )}
-
-      <MediaPreviewer
-        visible={previewVisible}
-        media={previewMedia}
-        initialIndex={previewIndex}
-        onClose={() => {
-          setPreviewVisible(false);
-        }}
-      />
     </View>
   );
 };
