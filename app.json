@@ -17,7 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.maoqiu.diary",
       "appleTeamId": "592UG636F5",
-      "buildNumber": "2",
+      "buildNumber": "5",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "毛球日记需要访问您的相册以选择照片和视频，记录美好时光",
