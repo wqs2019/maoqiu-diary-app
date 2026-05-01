@@ -1,7 +1,7 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,8 +26,14 @@ import { imageService } from '../../services/imageService';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore, Notebook } from '../../store/notebookStore';
 
+type NotebooksScreenRouteProp = RouteProp<
+  { Notebooks: { openAddModal?: boolean } },
+  'Notebooks'
+>;
+
 const NotebooksScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<NotebooksScreenRouteProp>();
   const insets = useSafeAreaInsets();
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const user = useAuthStore((state) => state.user);
@@ -43,11 +51,20 @@ const NotebooksScreen: React.FC = () => {
 
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState('');
+  const [newNotebookDesc, setNewNotebookDesc] = useState('');
   const [notebookCover, setNotebookCover] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingNotebookId, setEditingNotebookId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+
+  useEffect(() => {
+    if (route.params?.openAddModal) {
+      openAddModal();
+      // 清除参数，避免重复触发
+      navigation.setParams({ openAddModal: undefined });
+    }
+  }, [route.params?.openAddModal]);
 
   const handlePickCover = async () => {
     try {
@@ -89,11 +106,12 @@ const NotebooksScreen: React.FC = () => {
     try {
       setIsAdding(true);
       if (isEditMode && editingNotebookId) {
-        await updateNotebook(user._id, editingNotebookId, newNotebookName.trim(), notebookCover);
+        await updateNotebook(user._id, editingNotebookId, newNotebookName.trim(), notebookCover, newNotebookDesc.trim());
       } else {
-        await addNotebook(user._id, newNotebookName.trim(), notebookCover);
+        await addNotebook(user._id, newNotebookName.trim(), notebookCover, newNotebookDesc.trim());
       }
       setNewNotebookName('');
+      setNewNotebookDesc('');
       setNotebookCover('');
       setIsAddModalVisible(false);
     } catch (error) {
@@ -109,6 +127,7 @@ const NotebooksScreen: React.FC = () => {
     setIsEditMode(false);
     setEditingNotebookId(null);
     setNewNotebookName('');
+    setNewNotebookDesc('');
     setNotebookCover('');
     setIsAddModalVisible(true);
   };
@@ -117,6 +136,7 @@ const NotebooksScreen: React.FC = () => {
     setIsEditMode(true);
     setEditingNotebookId(notebook._id);
     setNewNotebookName(notebook.name);
+    setNewNotebookDesc(notebook.desc || '');
     setNotebookCover(notebook.cover || '');
     setIsAddModalVisible(true);
   };
@@ -257,6 +277,18 @@ const NotebooksScreen: React.FC = () => {
                   >
                     {notebook.name}
                   </Text>
+                  {!!notebook.desc && (
+                    <Text
+                      style={[
+                        styles.notebookDesc,
+                        { color: isDark ? '#AAA' : HEALING_COLORS.gray[500] },
+                      ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {notebook.desc}
+                    </Text>
+                  )}
                   <Text
                     style={[
                       styles.notebookDate,
@@ -310,16 +342,20 @@ const NotebooksScreen: React.FC = () => {
           }}
         >
           <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.modalContent,
-                  {
-                    borderRadius: themeStyle.borderRadius,
-                    backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                  },
-                ]}
-              >
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}
+            >
+              <TouchableWithoutFeedback>
+                <View
+                  style={[
+                    styles.modalContent,
+                    {
+                      borderRadius: themeStyle.borderRadius,
+                      backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                    },
+                  ]}
+                >
                 <Text
                   style={[styles.modalTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
                 >
@@ -358,6 +394,22 @@ const NotebooksScreen: React.FC = () => {
                   maxLength={20}
                   autoFocus
                 />
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      borderRadius: themeStyle.borderRadius,
+                      backgroundColor: isDark ? '#121212' : '#FAFAFA',
+                      color: isDark ? '#FFF' : '#333',
+                      marginTop: -8, // 减少与标题的间距
+                    },
+                  ]}
+                  placeholder="给这本日记本添加一点描述吧 (可选)..."
+                  placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
+                  value={newNotebookDesc}
+                  onChangeText={setNewNotebookDesc}
+                  maxLength={50}
+                />
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
                     style={[
@@ -385,6 +437,7 @@ const NotebooksScreen: React.FC = () => {
                 </View>
               </View>
             </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -462,6 +515,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: HEALING_COLORS.gray[800],
+    marginBottom: 4,
+  },
+  notebookDesc: {
+    fontSize: 13,
+    color: HEALING_COLORS.gray[500],
     marginBottom: 4,
   },
   notebookNameActive: {

@@ -52,8 +52,6 @@ const HomeScreen: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | undefined>(undefined);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [isNotebookModalVisible, setIsNotebookModalVisible] = useState(false);
-  const newNotebookNameRef = useRef('');
-  const newNotebookInputRef = useRef<TextInput>(null);
 
   // 记录是否是代码触发的滚动，避免 onScroll 冲突
   const isProgrammaticScroll = useRef(false);
@@ -464,15 +462,29 @@ const HomeScreen: React.FC = () => {
                         />
                       </View>
                     )}
-                    <Text
-                      style={[
-                        styles.notebookItemText,
-                        { color: isDark ? '#FFF' : '#333' },
-                        currentNotebook._id === notebook._id && styles.notebookItemTextActive,
-                      ]}
-                    >
-                      {notebook.name}
-                    </Text>
+                    <View style={styles.notebookItemInfo}>
+                      <Text
+                        style={[
+                          styles.notebookItemText,
+                          { color: isDark ? '#FFF' : '#333' },
+                          currentNotebook._id === notebook._id && styles.notebookItemTextActive,
+                        ]}
+                      >
+                        {notebook.name}
+                      </Text>
+                      {!!notebook.desc && (
+                        <Text
+                          style={[
+                            styles.notebookItemDesc,
+                            { color: isDark ? '#AAA' : '#999' },
+                          ]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {notebook.desc}
+                        </Text>
+                      )}
+                    </View>
                     {currentNotebook._id === notebook._id && (
                       <Ionicons name="checkmark" size={20} color={HEALING_COLORS.pink[500]} />
                     )}
@@ -481,54 +493,21 @@ const HomeScreen: React.FC = () => {
               </ScrollView>
 
               <View style={styles.addNotebookContainer}>
-                <TextInput
-                  ref={newNotebookInputRef}
-                  style={[
-                    styles.addNotebookInput,
-                    {
-                      color: isDark ? '#FFF' : '#333',
-                      backgroundColor: isDark ? '#2C2C2C' : '#F9F9F9',
-                      borderColor: isDark ? '#444' : '#E5E5EA',
-                    },
-                  ]}
-                  placeholder="新日记本名称..."
-                  placeholderTextColor={isDark ? '#888' : '#999'}
-                  defaultValue=""
-                  onChangeText={(text) => {
-                    newNotebookNameRef.current = text;
-                  }}
-                  maxLength={20}
-                />
                 <TouchableOpacity
-                  style={styles.addNotebookBtn}
-                  onPress={async () => {
-                    if (!checkVipPermission('createNotebook', ()=>{
+                  style={[styles.addNotebookBtn, { width: '100%', borderRadius: 12, height: 48 }]}
+                  onPress={() => {
+                    if (!checkVipPermission('createNotebook', () => {
                       setIsNotebookModalVisible(false);
                     })) {
                       return;
                     }
-                    const name = newNotebookNameRef.current.trim();
-                    if (!name) {
-                      toast.info('请输入日记本名称');
-                      return;
-                    }
-                    if (userId) {
-                      try {
-                        const newNb = await addNotebook(userId, name);
-                        setCurrentNotebook(userId, newNb._id);
-                        newNotebookNameRef.current = '';
-                        newNotebookInputRef.current?.clear();
-                        setIsNotebookModalVisible(false);
-                      } catch (e) {
-                        console.error('新建日记本失败', e);
-                        toast.error('新建日记本失败');
-                      }
-                    } else {
-                      toast.error('请先登录');
-                    }
+                    setIsNotebookModalVisible(false);
+                    // 由于 HomeScreen 在 MainTab 内，而 NotebooksScreen 在 RootStack 内
+                    // 我们可以直接 navigate 到 Notebooks，因为它们都在 NavigationContainer 下
+                    (navigation.navigate as any)('Notebooks', { openAddModal: true });
                   }}
                 >
-                  <Text style={styles.addNotebookBtnText}>新建</Text>
+                  <Text style={[styles.addNotebookBtnText, { fontSize: 16 }]}>+ 新建日记本</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -935,11 +914,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF0F5',
     borderColor: HEALING_COLORS.pink[200],
   },
-  notebookItemText: {
+  notebookItemInfo: {
     flex: 1,
+    marginLeft: 12,
+  },
+  notebookItemText: {
     fontSize: 16,
     color: '#333',
-    marginLeft: 12,
+  },
+  notebookItemDesc: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
   },
   notebookItemTextActive: {
     color: HEALING_COLORS.pink[500],
@@ -952,13 +938,15 @@ const styles = StyleSheet.create({
     borderTopColor: '#F5F5F5',
     paddingTop: 16,
   },
-  addNotebookInput: {
+  addNotebookInputs: {
     flex: 1,
+    marginRight: 12,
+  },
+  addNotebookInput: {
     height: 44,
     backgroundColor: '#F5F5F5',
     borderRadius: 22,
     paddingHorizontal: 16,
-    marginRight: 12,
     fontSize: 14,
   },
   addNotebookBtn: {

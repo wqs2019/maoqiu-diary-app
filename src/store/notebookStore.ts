@@ -7,6 +7,7 @@ import * as notebookService from '../services/notebookService';
 export interface Notebook {
   _id: string;
   name: string;
+  desc?: string;
   cover?: string;
   createdAt: string;
   isDefault?: boolean;
@@ -20,8 +21,8 @@ interface NotebookState {
   fetchNotebooks: (userId: string) => Promise<void>;
   getNotebooks: (userId: string) => Notebook[];
   getCurrentNotebook: (userId: string) => Notebook;
-  addNotebook: (userId: string, name: string, cover?: string) => Promise<Notebook>;
-  updateNotebook: (userId: string, notebookId: string, name: string, cover?: string) => Promise<void>;
+  addNotebook: (userId: string, name: string, cover?: string, desc?: string) => Promise<Notebook>;
+  updateNotebook: (userId: string, notebookId: string, name: string, cover?: string, desc?: string) => Promise<void>;
   deleteNotebook: (userId: string, notebookId: string) => Promise<void>;
   setCurrentNotebook: (userId: string, notebookId: string) => void;
 }
@@ -86,9 +87,9 @@ export const useNotebookStore = create<NotebookState>()(
         return notebook || notebooks[0];
       },
 
-      addNotebook: async (userId: string, name: string, cover?: string) => {
+      addNotebook: async (userId: string, name: string, cover?: string, desc?: string) => {
         // 先调用云端
-        const newNotebook = await notebookService.createNotebook(userId, name, false, cover);
+        const newNotebook = await notebookService.createNotebook(userId, name, false, cover, desc);
 
         // 更新本地 store
         const notebooks = get().getNotebooks(userId);
@@ -105,14 +106,14 @@ export const useNotebookStore = create<NotebookState>()(
         return newNotebook;
       },
 
-      updateNotebook: async (userId: string, notebookId: string, name: string, cover?: string) => {
-        await notebookService.updateNotebook(notebookId, name, cover);
+      updateNotebook: async (userId: string, notebookId: string, name: string, cover?: string, desc?: string) => {
+        await notebookService.updateNotebook(notebookId, name, cover, desc);
         const notebooks = get().getNotebooks(userId);
         set((state) => ({
           notebooksByUserId: {
             ...state.notebooksByUserId,
             [userId]: notebooks.map((nb) => 
-              nb._id === notebookId ? { ...nb, name, cover: cover !== undefined ? cover : nb.cover } : nb
+              nb._id === notebookId ? { ...nb, name, cover: cover !== undefined ? cover : nb.cover, desc: desc !== undefined ? desc : nb.desc } : nb
             ),
           },
         }));

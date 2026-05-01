@@ -4,6 +4,7 @@ export interface Notebook {
   _id: string;
   userId: string;
   name: string;
+  desc?: string;
   cover?: string;
   createdAt: string;
   updatedAt?: string;
@@ -39,11 +40,12 @@ export const createNotebook = async (
   userId: string,
   name: string,
   isDefault: boolean = false,
-  cover?: string
+  cover?: string,
+  desc?: string
 ): Promise<Notebook> => {
   const result = await CloudService.callFunction<CloudFunctionResponse<Notebook>>('notebook', {
     action: 'create',
-    data: { userId, name, isDefault, cover },
+    data: { userId, name, isDefault, cover, desc },
   });
 
   const cloudFunctionResult = result.data;
@@ -53,10 +55,10 @@ export const createNotebook = async (
   throw new Error(cloudFunctionResult?.message || '创建日记本失败');
 };
 
-export const updateNotebook = async (_id: string, name: string, cover?: string): Promise<void> => {
+export const updateNotebook = async (_id: string, name: string, cover?: string, desc?: string): Promise<void> => {
   const result = await CloudService.callFunction<CloudFunctionResponse<any>>('notebook', {
     action: 'update',
-    data: { _id, name, cover },
+    data: { _id, name, cover, desc },
   });
 
   if (!result.data?.success) {
