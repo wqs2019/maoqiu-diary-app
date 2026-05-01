@@ -137,11 +137,26 @@ const MineScreen: React.FC = () => {
             ]}
           />
           <View style={styles.userDetails}>
-            <Text
-              style={[styles.userName, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
-            >
-              {user?.nickname || '毛球日记'}
-            </Text>
+            <View style={styles.userNameRow}>
+              <Text
+                style={[styles.userName, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
+              >
+                {user?.nickname || '毛球日记'}
+              </Text>
+              {user?.isVip?.value && (
+                <TouchableOpacity
+                  style={[styles.vipBadge, { backgroundColor: isDark ? '#374151' : '#FEF3C7' }]}
+                  onPress={() => {
+                    navigation.navigate('Subscription' as any);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="award" size={14} color="#F59E0B" style={styles.vipBadgeIcon} />
+                  <Text style={[styles.vipBadgeText, { color: '#F59E0B' }]}>尊贵会员</Text>
+                  <Feather name="chevron-right" size={14} color="#F59E0B" style={{ marginLeft: 2 }} />
+                </TouchableOpacity>
+              )}
+            </View>
             <Text
               style={[
                 styles.userPhone,
@@ -188,65 +203,57 @@ const MineScreen: React.FC = () => {
         </View>
 
         {/* VIP 开通入口 */}
-        <TouchableOpacity
-          style={[
-            styles.vipBanner,
-            {
-              backgroundColor: isDark
-                ? '#2C1B24'
-                : user?.isVip?.value
-                  ? '#FEF3C7'
-                  : currentHealingColors.pink[50],
-              borderColor: isDark ? '#333' : user?.isVip?.value ? '#FDE68A' : '#FFF0F3',
-            },
-          ]}
-          activeOpacity={0.8}
-          onPress={() => {
-            navigation.navigate('Subscription' as any);
-          }}
-        >
-          <View style={styles.vipBannerLeft}>
-            <View style={[styles.vipIconWrap, { backgroundColor: isDark ? '#374151' : '#FFF' }]}>
-              <Feather
-                name="award"
-                size={20}
-                color={user?.isVip?.value ? '#F59E0B' : currentHealingColors.pink[500]}
-              />
-            </View>
-            <View style={styles.vipBannerTextContainer}>
-              <Text
-                style={[
-                  styles.vipBannerTitle,
-                  { color: isDark ? '#FFF' : currentHealingColors.gray[800] },
-                ]}
-              >
-                {user?.isVip?.value ? '毛球日记 尊贵会员' : '毛球日记 高级会员'}
-              </Text>
-              <Text
-                style={[
-                  styles.vipBannerSubtitle,
-                  { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
-                ]}
-              >
-                {user?.isVip?.value
-                  ? user.isVip.expiresAt
-                    ? `${new Date(user.isVip.expiresAt).toLocaleDateString('zh-CN')} 到期`
-                    : '已解锁所有专属特权'
-                  : '解锁云同步、无限图片与专属贴纸'}
-              </Text>
-            </View>
-          </View>
-          <View
+        {!user?.isVip?.value && (
+          <TouchableOpacity
             style={[
-              styles.vipBannerButton,
-              { backgroundColor: user?.isVip?.value ? '#F59E0B' : currentHealingColors.pink[500] },
+              styles.vipBanner,
+              {
+                backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
+                borderColor: isDark ? '#333' : '#FFF0F3',
+              },
             ]}
+            activeOpacity={0.8}
+            onPress={() => {
+              navigation.navigate('Subscription' as any);
+            }}
           >
-            <Text style={styles.vipBannerButtonText}>
-              {user?.isVip?.value ? '会员中心' : '立即开通'}
-            </Text>
-          </View>
-        </TouchableOpacity>
+            <View style={styles.vipBannerLeft}>
+              <View style={[styles.vipIconWrap, { backgroundColor: isDark ? '#374151' : '#FFF' }]}>
+                <Feather
+                  name="award"
+                  size={20}
+                  color={currentHealingColors.pink[500]}
+                />
+              </View>
+              <View style={styles.vipBannerTextContainer}>
+                <Text
+                  style={[
+                    styles.vipBannerTitle,
+                    { color: isDark ? '#FFF' : currentHealingColors.gray[800] },
+                  ]}
+                >
+                  毛球日记 高级会员
+                </Text>
+                <Text
+                  style={[
+                    styles.vipBannerSubtitle,
+                    { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                  ]}
+                >
+                  解锁云同步、无限图片与专属贴纸
+                </Text>
+              </View>
+            </View>
+            <View
+              style={[
+                styles.vipBannerButton,
+                { backgroundColor: currentHealingColors.pink[500] },
+              ]}
+            >
+              <Text style={styles.vipBannerButtonText}>立即开通</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* 统计数据区 */}
         <View
@@ -507,11 +514,30 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 16,
   },
+  userNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   userName: {
     fontSize: 20,
     fontWeight: '700',
     color: HEALING_COLORS.gray[800],
-    marginBottom: 4,
+  },
+  vipBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  vipBadgeIcon: {
+    marginRight: 4,
+  },
+  vipBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   userPhone: {
     fontSize: 13,
