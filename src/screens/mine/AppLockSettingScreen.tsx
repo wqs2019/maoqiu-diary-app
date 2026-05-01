@@ -1,7 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, TextInput } from 'react-native';
+import * as LocalAuthentication from 'expo-local-authentication';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
@@ -13,151 +14,86 @@ const AppLockSettingScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
 
-  const appLockEnabled = useAppStore((state) => state.appLockEnabled);
-  const appLockPassword = useAppStore((state) => state.appLockPassword);
-  const setAppLock = useAppStore((state) => state.setAppLock);
+  const biometricEnabled = useAppStore((state) => state.biometricEnabled);
+  const setBiometricEnabled = useAppStore((state) => state.setBiometricEnabled);
 
-  const [passwordInput, setPasswordInput] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [step, setStep] = useState<'initial' | 'set_password' | 'confirm_password' | 'verify_close'>('initial');
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [biometricName, setBiometricName] = useState('面容解锁');
 
-  const handleToggle = (val: boolean) => {
+  useEffect(() => {
+    const checkBiometric = async () => {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      if (compatible && enrolled) {
+        setIsBiometricSupported(true);
+      }
+    };
+    checkBiometric();
+  }, []);
+
+  const handleBiometricToggle = async (val: boolean) => {
     if (val) {
-      setStep('set_password');
+      try {
+        const result = await LocalAuthentication.authenticateAsync({
+          promptMessage: '验证以开启生物识别解锁',
+          fallbackLabel: '使用密码',
+          cancelLabel: '取消',
+        });
+        if (result.success) {
+          setBiometricEnabled(true);
+        }
+      } catch (e) {
+        console.log('Biometric setup error:', e);
+        Alert.alert('提示', '生物识别验证失败');
+      }
     } else {
-      setStep('verify_close');
+      setBiometricEnabled(false);
     }
-  };
-
-  const handleVerifyClose = () => {
-    if (passwordInput !== appLockPassword) {
-      Alert.alert('提示', '密码不正确');
-      setPasswordInput('');
-      return;
-    }
-    setAppLock(false, null);
-    setStep('initial');
-    setPasswordInput('');
-    Alert.alert('提示', '应用密码锁已关闭');
-  };
-
-  const handleSetPassword = () => {
-    if (passwordInput.length !== 4) {
-      Alert.alert('提示', '请输入4位数字密码');
-      return;
-    }
-    setStep('confirm_password');
-  };
-
-  const handleConfirmPassword = () => {
-    if (confirmPassword !== passwordInput) {
-      Alert.alert('提示', '两次密码输入不一致，请重新输入');
-      setConfirmPassword('');
-      setStep('set_password');
-      setPasswordInput('');
-      return;
-    }
-    setAppLock(true, passwordInput);
-    setStep('initial');
-    setPasswordInput('');
-    setConfirmPassword('');
-    Alert.alert('提示', '密码锁已开启');
-  };
-
-  const handleCancelSetup = () => {
-    setStep('initial');
-    setPasswordInput('');
-    setConfirmPassword('');
   };
 
   const renderContent = () => {
-    if (step === 'initial') {
+    if (!isBiometricSupported) {
       return (
         <View style={styles.menuSection}>
-          <View style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <View
-                style={[
-                  styles.menuIconContainer,
-                  { backgroundColor: HEALING_COLORS.yellow[600] + '15' },
-                ]}
-              >
-                <Feather name="lock" size={20} color={HEALING_COLORS.yellow[600]} />
-              </View>
-              <Text
-                style={[
-                  styles.menuItemText,
-                  { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[800] },
-                ]}
-              >
-                应用密码锁
-              </Text>
-            </View>
-            <View style={styles.menuItemRight}>
-              <Switch
-                value={appLockEnabled}
-                onValueChange={handleToggle}
-                trackColor={{
-                  false: isDark ? '#333' : HEALING_COLORS.gray[200],
-                  true: HEALING_COLORS.pink[400],
-                }}
-                thumbColor={isDark && !appLockEnabled ? '#888' : '#FFFFFF'}
-              />
-            </View>
-          </View>
+          <Text style={[styles.notSupportedText, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}>
+            当前设备不支持面容解锁
+          </Text>
         </View>
       );
     }
 
-    const isConfirm = step === 'confirm_password';
-    const isVerifyClose = step === 'verify_close';
-
-    const getTitle = () => {
-      if (isVerifyClose) return '请输入原密码以关闭';
-      if (isConfirm) return '请再次输入密码';
-      return '请设置4位数字密码';
-    };
-
     return (
-      <View style={styles.setupContainer}>
-        <Text style={[styles.setupTitle, { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[800] }]}>
-          {getTitle()}
-        </Text>
-        <TextInput
-          style={[
-            styles.passwordInput,
-            {
-              backgroundColor: isDark ? '#1E1E1E' : '#FFF',
-              color: isDark ? '#FFF' : HEALING_COLORS.gray[800],
-              borderColor: isDark ? '#333' : '#FFF0F3',
-            },
-          ]}
-          keyboardType="number-pad"
-          maxLength={4}
-          secureTextEntry
-          autoFocus
-          value={isConfirm ? confirmPassword : passwordInput}
-          onChangeText={isConfirm ? setConfirmPassword : setPasswordInput}
-        />
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton]}
-            onPress={handleCancelSetup}
-          >
-            <Text style={styles.cancelButtonText}>取消</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.confirmButton]}
-            onPress={
-              isVerifyClose
-                ? handleVerifyClose
-                : isConfirm
-                  ? handleConfirmPassword
-                  : handleSetPassword
-            }
-          >
-            <Text style={styles.confirmButtonText}>确定</Text>
-          </TouchableOpacity>
+      <View style={styles.menuSection}>
+        <View style={styles.menuItem}>
+          <View style={styles.menuItemLeft}>
+            <View
+              style={[
+                styles.menuIconContainer,
+                { backgroundColor: HEALING_COLORS.blue[500] + '15' },
+              ]}
+            >
+              <Feather name="smile" size={20} color={HEALING_COLORS.blue[500]} />
+            </View>
+            <Text
+              style={[
+                styles.menuItemText,
+                { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[800] },
+              ]}
+            >
+              {biometricName}
+            </Text>
+          </View>
+          <View style={styles.menuItemRight}>
+            <Switch
+              value={biometricEnabled}
+              onValueChange={handleBiometricToggle}
+              trackColor={{
+                false: isDark ? '#333' : HEALING_COLORS.gray[200],
+                true: HEALING_COLORS.pink[400],
+              }}
+              thumbColor={isDark && !biometricEnabled ? '#888' : '#FFFFFF'}
+            />
+          </View>
         </View>
       </View>
     );
@@ -186,7 +122,7 @@ const AppLockSettingScreen: React.FC = () => {
         <Text
           style={[styles.headerTitle, { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[800] }]}
         >
-          应用密码锁
+          隐私安全
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -254,52 +190,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  setupContainer: {
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  setupTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 20,
-  },
-  passwordInput: {
-    width: 200,
-    height: 50,
-    borderWidth: 2,
-    borderRadius: 12,
-    fontSize: 24,
+  notSupportedText: {
+    paddingVertical: 20,
     textAlign: 'center',
-    letterSpacing: 10,
-    marginBottom: 30,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    borderWidth: 2,
-  },
-  cancelButton: {
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-  },
-  cancelButtonText: {
-    color: '#4B5563',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  confirmButton: {
-    borderColor: HEALING_COLORS.pink[400],
-    backgroundColor: HEALING_COLORS.pink[400],
-  },
-  confirmButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
   },
 });
 

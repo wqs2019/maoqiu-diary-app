@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { useAppStore } from './appStore';
 import authService, { UserInfo } from '../services/auth';
 import userService from '../services/userService';
 
@@ -31,6 +32,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authService.saveToken(token);
       await authService.saveUserInfo(user);
       set({ isLoggedIn: true, user, loading: false });
+
+      if (user.biometricEnabled !== undefined) {
+        await useAppStore.getState().syncAppLockFromUser(user.biometricEnabled);
+      }
     } catch (error: any) {
       console.error('Login failed in store:', error);
       set({ error: error.message || '登录失败', loading: false });
@@ -100,6 +105,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const user = await authService.fetchUserInfoFromServer();
           if (user) {
             set({ isLoggedIn: true, user, loading: false });
+            if (user.biometricEnabled !== undefined) {
+              await useAppStore.getState().syncAppLockFromUser(user.biometricEnabled);
+            }
             return true;
           }
         } catch (fetchError) {
@@ -120,6 +128,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await authService.fetchUserInfoFromServer();
       if (user) {
         set({ user });
+        if (user.biometricEnabled !== undefined) {
+          await useAppStore.getState().syncAppLockFromUser(user.biometricEnabled);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch user info', error);

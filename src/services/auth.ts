@@ -25,6 +25,7 @@ export interface UserInfo {
   isVip?: VipInfo;
   aiChatUsage?: { date: string; count: number };
   createdAt?: string | number;
+  biometricEnabled?: boolean;
 }
 
 export interface TokenInfo {

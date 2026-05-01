@@ -199,7 +199,7 @@ const AccountSecurityScreen: React.FC = () => {
           )}
           {renderSettingItem(
             'lock',
-            '隐私密码',
+            '隐私安全',
             currentHealingColors.yellow[600],
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text

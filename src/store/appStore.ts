@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { ThemeType } from '../config/theme';
 import StorageUtil from '../utils/storage';
+import { useAuthStore } from './authStore';
 
 export type I18nLangType = 'zh-CN' | 'en-US';
 export type { ThemeType };
@@ -12,20 +13,20 @@ export interface AppState {
   isLoading: boolean;
   isFirstLaunch: boolean;
   notificationsEnabled: boolean;
-  appLockEnabled: boolean;
-  appLockPassword: string | null;
+  biometricEnabled: boolean;
   isUnlocked: boolean; // Runtime only state
   setTheme: (theme: ThemeType) => void;
   setLanguage: (language: I18nLangType) => void;
   setLoading: (loading: boolean) => void;
   setNotificationsEnabled: (enabled: boolean) => Promise<void>;
   setFirstLaunch: (isFirst: boolean) => Promise<void>;
-  setAppLock: (enabled: boolean, password?: string | null) => Promise<void>;
+  setBiometricEnabled: (enabled: boolean) => Promise<void>;
   setUnlocked: (unlocked: boolean) => void;
   initFirstLaunch: () => Promise<void>;
   initTheme: () => Promise<void>;
   initNotifications: () => Promise<void>;
   initAppLock: () => Promise<void>;
+  syncAppLockFromUser: (biometricEnabled?: boolean) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -34,8 +35,7 @@ export const useAppStore = create<AppState>((set) => ({
   isLoading: false,
   isFirstLaunch: true, // Default to true until checked
   notificationsEnabled: false,
-  appLockEnabled: false,
-  appLockPassword: null,
+  biometricEnabled: false,
   isUnlocked: false,
   setTheme: async (theme) => {
     await StorageUtil.set('theme', theme);
@@ -55,13 +55,12 @@ export const useAppStore = create<AppState>((set) => ({
     await StorageUtil.set('isFirstLaunch', isFirst);
     set({ isFirstLaunch: isFirst });
   },
-  setAppLock: async (enabled, password) => {
-    await StorageUtil.set('appLockEnabled', enabled);
-    if (password !== undefined) {
-      await StorageUtil.set('appLockPassword', password);
-      set({ appLockEnabled: enabled, appLockPassword: password, isUnlocked: true });
-    } else {
-      set({ appLockEnabled: enabled, isUnlocked: true });
+  setBiometricEnabled: async (enabled) => {
+    await StorageUtil.set('biometricEnabled', enabled);
+    set({ biometricEnabled: enabled });
+    const userId = useAuthStore.getState().user?._id;
+    if (userId) {
+      useAuthStore.getState().updateProfile(userId, { biometricEnabled: enabled });
     }
   },
   setUnlocked: (unlocked) => {
@@ -89,13 +88,15 @@ export const useAppStore = create<AppState>((set) => ({
     }
   },
   initAppLock: async () => {
-    const enabled = await StorageUtil.get<boolean>('appLockEnabled');
-    const password = await StorageUtil.get<string>('appLockPassword');
-    if (enabled !== null) {
-      set({ appLockEnabled: enabled, isUnlocked: !enabled });
+    const biometricEnabled = await StorageUtil.get<boolean>('biometricEnabled');
+    if (biometricEnabled !== null) {
+      set({ biometricEnabled, isUnlocked: !biometricEnabled });
     }
-    if (password !== null) {
-      set({ appLockPassword: password });
+  },
+  syncAppLockFromUser: async (biometricEnabled) => {
+    if (biometricEnabled !== undefined) {
+      await StorageUtil.set('biometricEnabled', biometricEnabled);
+      set({ biometricEnabled, isUnlocked: !biometricEnabled });
     }
   },
 }));
