@@ -195,11 +195,11 @@ const NotebooksScreen: React.FC = () => {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.listContainer}>
-          {notebooks.map((notebook) => {
+          {notebooks.map((notebook, index) => {
             const isActive = currentNotebook?._id === notebook._id;
             return (
               <TouchableOpacity
-                key={notebook._id}
+                key={notebook._id || `fallback-key-${index}`}
                 style={[
                   styles.notebookItem,
                   {

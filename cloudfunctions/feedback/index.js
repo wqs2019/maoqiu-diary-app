@@ -29,7 +29,7 @@ const addFeedback = async (data) => {
     return {
       success: true,
       data: {
-        _id: result._id,
+        _id: result.id || result._id,
         ...data,
         status: 'pending',
       },

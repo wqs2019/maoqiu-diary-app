@@ -33,7 +33,7 @@ const addUser = async (data) => {
     return {
       success: true,
       data: {
-        _id: result._id,
+        _id: result.id || result._id,
         phoneNumber,
         nickname,
         avatar,

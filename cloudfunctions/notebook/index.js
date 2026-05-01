@@ -31,7 +31,7 @@ const createNotebook = async (data) => {
     return {
       success: true,
       data: {
-        _id: result._id,
+        _id: result.id || result._id,
         userId,
         name,
         isDefault: isDefault || false,
