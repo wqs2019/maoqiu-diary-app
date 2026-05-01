@@ -184,6 +184,49 @@ export const SCENARIO_TEMPLATES: Record<ScenarioType, ScenarioTemplate> = {
       { id: 'tags', label: '标签', type: 'tags', required: false },
     ],
   },
+  learning: {
+    id: 'learning',
+    type: 'learning',
+    name: '学习成长',
+    icon: '📚',
+    color: '#5E5CE6',
+    placeholder: '今天学到了什么新知识？',
+    prompts: [
+      '学习了什么内容？',
+      '有什么心得体会？',
+      '遇到了什么困难？',
+      '是如何解决的？',
+      '下一步的计划是什么？',
+    ],
+    fields: [
+      { id: 'subject', label: '学习主题', type: 'text', required: true, placeholder: '书名/技能/课程...' },
+      { id: 'duration', label: '专注时长', type: 'text', required: false, placeholder: '花了多长时间？' },
+      { id: 'summary', label: '总结感悟', type: 'text', required: false, placeholder: '写下你的收获' },
+      { id: 'photos', label: '照片', type: 'image', required: false },
+      { id: 'tags', label: '标签', type: 'tags', required: false },
+    ],
+  },
+  inspiration: {
+    id: 'inspiration',
+    type: 'inspiration',
+    name: '灵感闪念',
+    icon: '💡',
+    color: '#FFCC00',
+    placeholder: '捕捉转瞬即逝的想法...',
+    prompts: [
+      '脑海中闪过了什么？',
+      '为什么会有这个想法？',
+      '有什么新奇的发现？',
+      '想到了什么好主意？',
+      '此刻的情绪是怎样的？',
+    ],
+    fields: [
+      { id: 'idea', label: '灵感记录', type: 'text', required: true, placeholder: '快速记下你的想法' },
+      { id: 'mood', label: '心情', type: 'text', required: false, placeholder: '此刻的心情' },
+      { id: 'photos', label: '照片', type: 'image', required: false },
+      { id: 'tags', label: '标签', type: 'tags', required: false },
+    ],
+  },
 };
 
 // 获取场景模板

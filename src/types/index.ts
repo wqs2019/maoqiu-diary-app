@@ -41,7 +41,7 @@ export interface ComponentProps {
 }
 
 // 场景类型
-export type ScenarioType = 'travel' | 'movie' | 'outing' | 'food' | 'daily' | 'special';
+export type ScenarioType = 'travel' | 'movie' | 'outing' | 'food' | 'daily' | 'special' | 'learning' | 'inspiration';
 
 // 心情类型
 export type MoodType = 'happy' | 'sad' | 'normal' | 'excited' | 'angry' | 'relaxed' | 'touched' | 'speechless';

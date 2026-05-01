@@ -175,8 +175,12 @@ const EditDiaryScreen: React.FC = () => {
       >
         {/* 场景选择 */}
         <View style={styles.scenarioWrapper}>
-          <View style={styles.scenarioGrid}>
-            {(Object.keys(SCENARIO_TEMPLATES) as ScenarioType[]).map((type) => {
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.scenarioScrollContainer}
+          >
+            {(Object.keys(SCENARIO_TEMPLATES) as ScenarioType[]).map((type, index, array) => {
               const template = SCENARIO_TEMPLATES[type];
               const isSelected = type === scenario;
               // 简短的名称，去掉"记录"或"时刻"以节省空间
@@ -185,7 +189,10 @@ const EditDiaryScreen: React.FC = () => {
               return (
                 <TouchableOpacity
                   key={type}
-                  style={styles.compactChip}
+                  style={[
+                    styles.compactChip,
+                    index !== array.length - 1 && { marginRight: 16 }
+                  ]}
                   onPress={() => {
                     setScenario(type);
                   }}
@@ -219,7 +226,7 @@ const EditDiaryScreen: React.FC = () => {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
         </View>
 
         {/* 编辑器卡片 */}
@@ -364,14 +371,12 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   scenarioWrapper: {
-    paddingHorizontal: 20,
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  scenarioGrid: {
+  scenarioScrollContainer: {
+    paddingHorizontal: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
   },
   compactChip: {
     alignItems: 'center',
