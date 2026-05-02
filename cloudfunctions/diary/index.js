@@ -111,7 +111,7 @@ const createDiary = async (data) => {
       isPublic: isPublic || false, // 世界功能
       // 扩展字段（预留，后续实现）
       isFavorite: false, // 收藏功能
-      isPrivate: false, // TODO: 私密日记 - 需要密码查看
+      isPrivate: data.isPrivate || false, // TODO: 私密日记 - 需要密码查看，共享日记本中对伴侣不可见
       likedUserIds: [],
       comments: [],
       authorInfo: data.authorInfo || null,
@@ -138,7 +138,7 @@ const createDiary = async (data) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isFavorite: false,
-        isPrivate: false,
+        isPrivate: data.isPrivate || false,
         authorInfo: data.authorInfo || null,
       },
     };
@@ -234,9 +234,26 @@ const getDiaryDetail = async (data) => {
       };
     }
 
-    // 校验权限：只能查看自己的日记或公开日记
+    // 校验权限：只能查看自己的日记或公开日记，或者是活跃共享日记本中伴侣的非私密日记
     const diaryDataRaw = Array.isArray(result.data) ? result.data[0] : result.data;
-    if (diaryDataRaw.userId !== userId && !diaryDataRaw.isPublic) {
+    let hasPermission = false;
+
+    if (diaryDataRaw.userId === userId || diaryDataRaw.isPublic) {
+      hasPermission = true;
+    } else if (diaryDataRaw.notebookId) {
+      const notebookRes = await db.collection('notebooks').doc(diaryDataRaw.notebookId).get();
+      if (notebookRes.data && notebookRes.data.length > 0) {
+        const nb = Array.isArray(notebookRes.data) ? notebookRes.data[0] : notebookRes.data;
+        if (nb.type === 'shared' && nb.status === 'active' && !diaryDataRaw.isPrivate) {
+          const otherUserId = nb.userId === userId ? nb.partnerId : nb.userId;
+          if (otherUserId === diaryDataRaw.userId) {
+            hasPermission = true;
+          }
+        }
+      }
+    }
+
+    if (!hasPermission) {
       return {
         success: false,
         message: '无权查看他人的日记',
@@ -275,50 +292,67 @@ const getDiaryList = async (data) => {
     }
 
     // 构建查询条件
-    let query = {};
-    
-    // 如果指定了 userId 且不是查询全局公开，则限制为当前用户
-    // 如果既有 userId 又有 isPublic，可以认为是查询某个用户的公开日记，或者根据业务需要调整
-    if (userId) {
-      query.userId = userId;
-    } else if (isPublic) {
-      // 全局公开查询不需要限制 userId
-    }
+    let queryConditions = [];
 
-    if (isPublic !== undefined) {
-      query.isPublic = isPublic;
-      // 如果既传了 userId 又传了 isPublic=true，说明是在看特定用户的公开日记，保留 userId
-      if (isPublic === true && !userId) {
-        delete query.userId; // 确保世界频道展示所有人
+    if (notebookId) {
+      queryConditions.push({ notebookId: notebookId });
+
+      // 查询日记本状态以决定权限
+      const notebookRes = await db.collection('notebooks').doc(notebookId).get();
+      let isSharedActive = false;
+      let otherUserId = null;
+
+      if (notebookRes.data && notebookRes.data.length > 0) {
+        const nb = Array.isArray(notebookRes.data) ? notebookRes.data[0] : notebookRes.data;
+        if (nb.type === 'shared' && nb.status === 'active') {
+          isSharedActive = true;
+          otherUserId = nb.userId === userId ? nb.partnerId : nb.userId;
+        }
+      }
+
+      if (isSharedActive && otherUserId) {
+        queryConditions.push(
+          _.or([
+            { userId: userId },
+            {
+              userId: otherUserId,
+              isPrivate: _.neq(true)
+            }
+          ])
+        );
+      } else {
+        queryConditions.push({ userId: userId });
+      }
+    } else {
+      if (userId && !isPublic) {
+        queryConditions.push({ userId: userId });
+      } else if (isPublic === true && userId) {
+        // 特定用户的公开日记
+        queryConditions.push({ userId: userId });
+        queryConditions.push({ isPublic: true });
+      } else if (isPublic === true) {
+        // 世界频道
+        queryConditions.push({ isPublic: true });
       }
     }
 
     if (scenario) {
-      query.scenario = scenario;
+      queryConditions.push({ scenario: scenario });
     }
 
     if (mood) {
-      query.mood = mood;
+      queryConditions.push({ mood: mood });
     }
 
     if (isFavorite !== undefined) {
-      query.isFavorite = isFavorite;
+      queryConditions.push({ isFavorite: isFavorite });
     }
 
     if (startDate || endDate) {
-      query.date = {};
-      if (startDate) {
-        query.date.$gte = startDate;
-      }
-      if (endDate) {
-        query.date.$lte = endDate;
-      }
-    }
-
-    let finalQuery = query;
-
-    if (notebookId) {
-      finalQuery.notebookId = notebookId;
+      const dateCondition = {};
+      if (startDate) dateCondition.$gte = startDate;
+      if (endDate) dateCondition.$lte = endDate;
+      queryConditions.push({ date: dateCondition });
     }
 
     if (keyword) {
@@ -326,19 +360,15 @@ const getDiaryList = async (data) => {
         regexp: keyword,
         options: 'i',
       });
-      
-      const orQuery = _.or([
-        { title: keywordRegex },
-        { content: keywordRegex }
-      ]);
-      
-      // 如果 finalQuery 为空对象，直接赋值；否则使用 _.and
-      if (Object.keys(finalQuery).length === 0) {
-        finalQuery = orQuery;
-      } else {
-        finalQuery = _.and([finalQuery, orQuery]);
-      }
+      queryConditions.push(
+        _.or([
+          { title: keywordRegex },
+          { content: keywordRegex }
+        ])
+      );
     }
+
+    let finalQuery = queryConditions.length > 0 ? _.and(queryConditions) : {};
 
     // 计算分页
     const skip = (page - 1) * pageSize;
@@ -447,7 +477,24 @@ const likeDiary = async (data) => {
     }
 
     const diaryDataRaw = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
-    if (diaryDataRaw.userId !== userId && !diaryDataRaw.isPublic) {
+    
+    let hasPermission = false;
+    if (diaryDataRaw.userId === userId || diaryDataRaw.isPublic) {
+      hasPermission = true;
+    } else if (diaryDataRaw.notebookId) {
+      const notebookRes = await db.collection('notebooks').doc(diaryDataRaw.notebookId).get();
+      if (notebookRes.data && notebookRes.data.length > 0) {
+        const nb = Array.isArray(notebookRes.data) ? notebookRes.data[0] : notebookRes.data;
+        if (nb.type === 'shared' && nb.status === 'active' && !diaryDataRaw.isPrivate) {
+          const otherUserId = nb.userId === userId ? nb.partnerId : nb.userId;
+          if (otherUserId === diaryDataRaw.userId) {
+            hasPermission = true;
+          }
+        }
+      }
+    }
+
+    if (!hasPermission) {
       return { success: false, message: '无权操作他人的私密日记' };
     }
 
@@ -496,7 +543,24 @@ const commentDiary = async (data) => {
     }
 
     const diaryDataRaw = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
-    if (diaryDataRaw.userId !== comment.userId && !diaryDataRaw.isPublic) {
+
+    let hasPermission = false;
+    if (diaryDataRaw.userId === comment.userId || diaryDataRaw.isPublic) {
+      hasPermission = true;
+    } else if (diaryDataRaw.notebookId) {
+      const notebookRes = await db.collection('notebooks').doc(diaryDataRaw.notebookId).get();
+      if (notebookRes.data && notebookRes.data.length > 0) {
+        const nb = Array.isArray(notebookRes.data) ? notebookRes.data[0] : notebookRes.data;
+        if (nb.type === 'shared' && nb.status === 'active' && !diaryDataRaw.isPrivate) {
+          const otherUserId = nb.userId === comment.userId ? nb.partnerId : nb.userId;
+          if (otherUserId === diaryDataRaw.userId) {
+            hasPermission = true;
+          }
+        }
+      }
+    }
+
+    if (!hasPermission) {
       return { success: false, message: '无权评论他人的私密日记' };
     }
 

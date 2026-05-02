@@ -1,14 +1,5 @@
 import CloudService from './tcb';
-
-export interface Notebook {
-  _id: string;
-  userId: string;
-  name: string;
-  desc?: string;
-  cover?: string;
-  createdAt: string;
-  updatedAt?: string;
-}
+import { Notebook } from '../types';
 
 interface CloudFunctionResponse<T> {
   success: boolean;
@@ -41,11 +32,13 @@ export const createNotebook = async (
   name: string,
   isDefault: boolean = false,
   cover?: string,
-  desc?: string
+  desc?: string,
+  type?: 'private' | 'shared',
+  inviteePhone?: string
 ): Promise<Notebook> => {
   const result = await CloudService.callFunction<CloudFunctionResponse<Notebook>>('notebook', {
     action: 'create',
-    data: { userId, name, isDefault, cover, desc },
+    data: { userId, name, isDefault, cover, desc, type, inviteePhone },
   });
 
   const cloudFunctionResult = result.data;
@@ -53,6 +46,40 @@ export const createNotebook = async (
     return cloudFunctionResult.data;
   }
   throw new Error(cloudFunctionResult?.message || '创建日记本失败');
+};
+
+export const respondInvitation = async (invitationId: string, action: 'accept' | 'reject', userId: string): Promise<void> => {
+  const result = await CloudService.callFunction<CloudFunctionResponse<any>>('notebook', {
+    action: 'respondInvitation',
+    data: { invitationId, action, userId },
+  });
+
+  if (!result.data?.success) {
+    throw new Error(result.data?.message || '处理邀请失败');
+  }
+};
+
+export const unbindSharedNotebook = async (notebookId: string, userId: string): Promise<void> => {
+  const result = await CloudService.callFunction<CloudFunctionResponse<any>>('notebook', {
+    action: 'unbindSharedNotebook',
+    data: { notebookId, userId },
+  });
+
+  if (!result.data?.success) {
+    throw new Error(result.data?.message || '解绑日记本失败');
+  }
+};
+
+export const getInvitations = async (userId: string): Promise<any[]> => {
+  const result = await CloudService.callFunction<CloudFunctionResponse<any[]>>('notebook', {
+    action: 'getInvitations',
+    data: { userId },
+  });
+
+  if (result.data?.success && Array.isArray(result.data.data)) {
+    return result.data.data;
+  }
+  return [];
 };
 
 export const updateNotebook = async (_id: string, name: string, cover?: string, desc?: string): Promise<void> => {

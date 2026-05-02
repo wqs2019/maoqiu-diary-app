@@ -193,6 +193,18 @@ export const SCENARIO_COLORS = {
     background: '#F9F0FF',
     icon: '🎉',
   },
+  learning: {
+    primary: '#009688',
+    secondary: '#B2EBF2',
+    background: '#F3E5F5',
+    icon: '📚',
+  },
+  inspiration: {
+    primary: '#FF9800',
+    secondary: '#FFE0B2',
+    background: '#FFF3E0',
+    icon: '💡',
+  },
 };
 
 // 深色模式适配

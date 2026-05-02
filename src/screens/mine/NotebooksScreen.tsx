@@ -23,8 +23,10 @@ import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useVipGuard } from '../../hooks/useVipGuard';
 import { imageService } from '../../services/imageService';
+import * as notebookService from '../../services/notebookService';
 import { useAuthStore } from '../../store/authStore';
-import { useNotebookStore, Notebook } from '../../store/notebookStore';
+import { useNotebookStore } from '../../store/notebookStore';
+import { Notebook } from '../../types';
 
 type NotebooksScreenRouteProp = RouteProp<
   { Notebooks: { openAddModal?: boolean } },
@@ -53,10 +55,40 @@ const NotebooksScreen: React.FC = () => {
   const [newNotebookName, setNewNotebookName] = useState('');
   const [newNotebookDesc, setNewNotebookDesc] = useState('');
   const [notebookCover, setNotebookCover] = useState('');
+  const [notebookType, setNotebookType] = useState<'private' | 'shared'>('private');
+  const [inviteePhone, setInviteePhone] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingNotebookId, setEditingNotebookId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [invitations, setInvitations] = useState<any[]>([]);
+
+  const fetchInvitations = async () => {
+    if (!user?._id) return;
+    try {
+      const invs = await notebookService.getInvitations(user._id);
+      setInvitations(invs);
+    } catch (error) {
+      console.error('Fetch invitations error:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvitations();
+  }, [user?._id]);
+
+  const handleRespondInvitation = async (invitationId: string, action: 'accept' | 'reject') => {
+    if (!user?._id) return;
+    try {
+      await notebookService.respondInvitation(invitationId, action, user._id);
+      Alert.alert('提示', action === 'accept' ? '已加入日记本' : '已拒绝邀请');
+      // 刷新列表
+      await useNotebookStore.getState().fetchNotebooks(user._id);
+      fetchInvitations();
+    } catch (error: any) {
+      Alert.alert('提示', error.message || '处理邀请失败');
+    }
+  };
 
   useEffect(() => {
     if (route.params?.openAddModal) {
@@ -103,20 +135,31 @@ const NotebooksScreen: React.FC = () => {
 
   const handleSaveNotebook = async () => {
     if (!newNotebookName.trim() || !user?._id) return;
+    if (notebookType === 'shared' && !inviteePhone.trim()) {
+      Alert.alert('提示', '共享日记本需要输入对方手机号哦');
+      return;
+    }
+    if (notebookType === 'shared' && inviteePhone.trim() === user.phone) {
+      Alert.alert('提示', '不能邀请自己哦');
+      return;
+    }
+
     try {
       setIsAdding(true);
       if (isEditMode && editingNotebookId) {
         await updateNotebook(user._id, editingNotebookId, newNotebookName.trim(), notebookCover, newNotebookDesc.trim());
       } else {
-        await addNotebook(user._id, newNotebookName.trim(), notebookCover, newNotebookDesc.trim());
+        await addNotebook(user._id, newNotebookName.trim(), notebookCover, newNotebookDesc.trim(), notebookType, inviteePhone.trim());
       }
       setNewNotebookName('');
       setNewNotebookDesc('');
       setNotebookCover('');
+      setNotebookType('private');
+      setInviteePhone('');
       setIsAddModalVisible(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save notebook', error);
-      Alert.alert('提示', isEditMode ? '修改日记本失败，请重试' : '创建日记本失败，请重试');
+      Alert.alert('提示', error.message || (isEditMode ? '修改日记本失败，请重试' : '创建日记本失败，请重试'));
     } finally {
       setIsAdding(false);
     }
@@ -129,6 +172,8 @@ const NotebooksScreen: React.FC = () => {
     setNewNotebookName('');
     setNewNotebookDesc('');
     setNotebookCover('');
+    setNotebookType('private');
+    setInviteePhone('');
     setIsAddModalVisible(true);
   };
 
@@ -164,6 +209,25 @@ const NotebooksScreen: React.FC = () => {
     ]);
   };
 
+  const confirmUnbind = (notebook: Notebook) => {
+    Alert.alert('解除共享', `解除后，你将无法再看到对方的日记，且该日记本无法再邀请其他人加入，确定解除吗？`, [
+      { text: '取消', style: 'cancel' },
+      { 
+        text: '解除', 
+        style: 'destructive', 
+        onPress: async () => {
+          if (!user?._id) return;
+          try {
+            await useNotebookStore.getState().unbindNotebook(user._id, notebook._id);
+            Alert.alert('提示', '已解除共享');
+          } catch (error: any) {
+            Alert.alert('提示', error.message || '解除失败，请重试');
+          }
+        } 
+      },
+    ]);
+  };
+
   const handleMoreOptions = (notebook: Notebook) => {
     if (!checkVipPermission('manageNotebook')) return;
 
@@ -171,6 +235,10 @@ const NotebooksScreen: React.FC = () => {
       { text: '取消', style: 'cancel' },
       { text: '编辑', onPress: () => openEditModal(notebook) },
     ];
+
+    if (notebook.type === 'shared' && notebook.status === 'active') {
+      options.push({ text: '解除共享', style: 'destructive', onPress: () => confirmUnbind(notebook) });
+    }
 
     if (!notebook.isDefault) {
       options.push({ text: '删除', style: 'destructive', onPress: () => confirmDelete(notebook) });
@@ -214,6 +282,27 @@ const NotebooksScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {invitations.length > 0 && (
+          <View style={styles.invitationsContainer}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>新的邀请</Text>
+            {invitations.map((inv) => (
+              <View key={inv._id} style={[styles.invitationCard, { backgroundColor: isDark ? '#1E1E1E' : '#FFF0F3' }]}>
+                <Text style={[styles.invitationText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
+                  <Text style={{ fontWeight: 'bold' }}>{inv.inviterName}</Text> 邀请你共写日记本 <Text style={{ fontWeight: 'bold' }}>{inv.notebookName}</Text>
+                </Text>
+                <View style={styles.invitationButtons}>
+                  <TouchableOpacity style={[styles.invBtn, styles.invBtnReject]} onPress={() => handleRespondInvitation(inv._id, 'reject')}>
+                    <Text style={styles.invBtnRejectText}>拒绝</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.invBtn, styles.invBtnAccept]} onPress={() => handleRespondInvitation(inv._id, 'accept')}>
+                    <Text style={styles.invBtnAcceptText}>同意</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         <View style={styles.listContainer}>
           {notebooks.map((notebook, index) => {
             const isActive = currentNotebook?._id === notebook._id;
@@ -265,18 +354,25 @@ const NotebooksScreen: React.FC = () => {
                   )}
                 </View>
                 <View style={styles.notebookInfo}>
-                  <Text
-                    style={[
-                      styles.notebookName,
-                      { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] },
-                      isActive && [
-                        styles.notebookNameActive,
-                        { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] },
-                      ],
-                    ]}
-                  >
-                    {notebook.name}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                    <Text
+                      style={[
+                        styles.notebookName,
+                        { color: isDark ? '#FFF' : HEALING_COLORS.gray[800], marginBottom: 0 },
+                        isActive && [
+                          styles.notebookNameActive,
+                          { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] },
+                        ],
+                      ]}
+                    >
+                      {notebook.name}
+                    </Text>
+                    {notebook.type === 'shared' && (
+                      <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]}>
+                        <Text style={[styles.sharedTagText, { color: HEALING_COLORS.pink[500] }]}>👥 共享</Text>
+                      </View>
+                    )}
+                  </View>
                   {!!notebook.desc && (
                     <Text
                       style={[
@@ -410,6 +506,84 @@ const NotebooksScreen: React.FC = () => {
                   onChangeText={setNewNotebookDesc}
                   maxLength={50}
                 />
+
+                {!isEditMode && (
+                  <View style={styles.typeSelectorContainer}>
+                    <Text style={[styles.typeLabel, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>类型</Text>
+                    <View style={styles.typeButtons}>
+                      <TouchableOpacity
+                        style={[
+                          styles.typeButton,
+                          notebookType === 'private' && styles.typeButtonActive,
+                          { borderRadius: themeStyle.borderRadius }
+                        ]}
+                        onPress={() => setNotebookType('private')}
+                      >
+                        <Text style={[
+                          styles.typeButtonText,
+                          notebookType === 'private' && styles.typeButtonTextActive
+                        ]}>私密日记本</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.typeButton,
+                          notebookType === 'shared' && styles.typeButtonActive,
+                          !user?.isVip?.value && styles.typeButtonDisabled,
+                          { borderRadius: themeStyle.borderRadius }
+                        ]}
+                        onPress={() => {
+                          if (!user?.isVip?.value) {
+                            Alert.alert('VIP 专属特权', '共享日记本是 VIP 用户的专属功能哦，升级即可解锁与 TA 共同记录美好回忆～', [
+                              { text: '取消', style: 'cancel' },
+                              { text: '去升级', onPress: () => navigation.navigate('Subscription') },
+                            ]);
+                            return;
+                          }
+                          setNotebookType('shared');
+                        }}
+                        activeOpacity={!user?.isVip?.value ? 1 : 0.7}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={[
+                            styles.typeButtonText,
+                            notebookType === 'shared' && styles.typeButtonTextActive,
+                            !user?.isVip?.value && styles.typeButtonTextDisabled
+                          ]}>共享日记本</Text>
+                          {!user?.isVip?.value && (
+                            <View style={styles.vipBadge}>
+                              <Text style={styles.vipBadgeText}>VIP</Text>
+                            </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                    {notebookType === 'shared' && (
+                      <Text style={[styles.typeHintText, { color: isDark ? '#888' : HEALING_COLORS.gray[500] }]}>
+                        💡 适合记录情侣日常、闺蜜旅行、家庭账本等共同回忆。
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+                {!isEditMode && notebookType === 'shared' && (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        borderRadius: themeStyle.borderRadius,
+                        backgroundColor: isDark ? '#121212' : '#FAFAFA',
+                        color: isDark ? '#FFF' : '#333',
+                      },
+                    ]}
+                    placeholder="输入对方手机号..."
+                    placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
+                    value={inviteePhone}
+                    onChangeText={setInviteePhone}
+                    keyboardType="phone-pad"
+                    maxLength={11}
+                  />
+                )}
+
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
                     style={[
@@ -525,6 +699,16 @@ const styles = StyleSheet.create({
   notebookNameActive: {
     color: HEALING_COLORS.pink[600],
   },
+  sharedTag: {
+    marginLeft: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  sharedTagText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
   notebookDate: {
     fontSize: 12,
     color: HEALING_COLORS.gray[400],
@@ -628,6 +812,108 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  typeSelectorContainer: {
+    marginBottom: 16,
+  },
+  typeLabel: {
+    fontSize: 14,
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  typeButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  typeButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  typeButtonActive: {
+    backgroundColor: HEALING_COLORS.pink[50],
+    borderColor: HEALING_COLORS.pink[300],
+  },
+  typeButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  typeButtonTextActive: {
+    color: HEALING_COLORS.pink[600],
+    fontWeight: '600',
+  },
+  typeHintText: {
+    fontSize: 12,
+    marginTop: 8,
+    lineHeight: 18,
+  },
+  typeButtonDisabled: {
+    backgroundColor: '#FAFAFA',
+    opacity: 0.8,
+  },
+  typeButtonTextDisabled: {
+    color: '#AAA',
+  },
+  vipBadge: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 6,
+  },
+  vipBadgeText: {
+    fontSize: 9,
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  invitationsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  invitationCard: {
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  invitationText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  invitationButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  invBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  invBtnReject: {
+    backgroundColor: '#E5E5E5',
+  },
+  invBtnRejectText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  invBtnAccept: {
+    backgroundColor: HEALING_COLORS.pink[500],
+  },
+  invBtnAcceptText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
   },
 });
 

@@ -78,6 +78,7 @@ const EditDiaryScreen: React.FC = () => {
   const updateDiaryMutation = useUpdateDiary();
   const user = useAuthStore((state) => state.user);
   const getCurrentNotebook = useNotebookStore((state) => state.getCurrentNotebook);
+  const currentNotebook = user ? getCurrentNotebook(user._id) : null;
   const { checkVipPermission } = useVipGuard();
 
   const handleSave = () => {
@@ -93,7 +94,10 @@ const EditDiaryScreen: React.FC = () => {
     // 过滤掉仅在本地使用的状态字段
     const cleanMedia = media.map(({ uploadStatus, uploadError, ...rest }) => rest);
 
-    const currentNotebook = getCurrentNotebook(user!._id);
+    if (!currentNotebook) {
+      Alert.alert('提示', '未找到当前日记本');
+      return;
+    }
 
     const payload = {
       userId: user!._id,

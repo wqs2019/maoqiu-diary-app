@@ -9,6 +9,44 @@ export interface UserInfo {
   unlockedBadges?: Record<string, number>;
 }
 
+export interface Notebook {
+  _id: string;
+  name: string;
+  cover?: string;
+  desc?: string;
+  isDefault?: boolean;
+  type?: 'private' | 'shared';
+  userId?: string;
+  partnerId?: string;
+  status?: 'pending' | 'active' | 'unbound';
+  createdAt: number | string;
+  updatedAt?: number | string;
+}
+
+export interface Invitation {
+  _id: string;
+  notebookId: string;
+  inviterId: string;
+  inviteePhone: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: number;
+  expiresAt: number;
+}
+
+export interface Notification {
+  _id: string;
+  receiverId: string;
+  senderId?: string;
+  type: 'invite_shared_notebook' | 'unbind_shared_notebook' | 'like' | 'comment' | 'system';
+  title: string;
+  content: string;
+  relatedId?: string;
+  extraData?: any;
+  isRead: boolean;
+  actionStatus?: 'pending' | 'accepted' | 'rejected';
+  createdAt: number;
+}
+
 export interface TokenInfo {
   token: string;
   expiresAt: number;
@@ -158,6 +196,10 @@ export interface TimelineItem {
   mood?: MoodType;
   weather?: WeatherType;
   location?: string;
+  authorInfo?: {
+    nickname?: string;
+    avatar?: string;
+  };
 }
 
 // 分类接口

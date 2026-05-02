@@ -53,6 +53,7 @@ const FavoritesScreen: React.FC = () => {
       weather: diary.weather,
       location: diary.location,
       media: diary.media,
+      authorInfo: diary.authorInfo,
     };
   };
 

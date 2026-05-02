@@ -56,10 +56,26 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
       {/* 顶部状态栏：日期 & 场景标签 */}
       <View style={styles.topBar}>
         <View style={styles.dateContainer}>
+          {item.authorInfo?.avatar ? (
+            <Image source={{ uri: item.authorInfo.avatar }} style={styles.authorAvatar} />
+          ) : item.authorInfo?.nickname ? (
+            <Ionicons
+              name="person-circle-outline"
+              size={16}
+              color={isDark ? '#AAA' : HEALING_COLORS.gray[400]}
+              style={{ marginRight: 4 }}
+            />
+          ) : null}
+          {item.authorInfo?.nickname && (
+            <Text style={[styles.authorName, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}>
+              {item.authorInfo.nickname}
+            </Text>
+          )}
           <Ionicons
             name="time-outline"
             size={14}
             color={isDark ? '#AAA' : HEALING_COLORS.gray[400]}
+            style={item.authorInfo?.nickname ? { marginLeft: 8 } : {}}
           />
           <Text style={[styles.dateText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[500] }]}>
             {formatCardDate(item.date)}
@@ -195,6 +211,16 @@ const styles = StyleSheet.create({
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  authorAvatar: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 4,
+  },
+  authorName: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   dateText: {
     fontSize: 12,

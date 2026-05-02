@@ -213,6 +213,7 @@ const HomeScreen: React.FC = () => {
       weather: diary.weather,
       location: diary.location,
       media: diary.media,
+      authorInfo: diary.authorInfo,
     };
   };
 
@@ -268,6 +269,11 @@ const HomeScreen: React.FC = () => {
               <Text style={[styles.title, { color: isDark ? '#FFF' : '#333' }]}>
                 {currentNotebook.name}
               </Text>
+              {currentNotebook.type === 'shared' && (
+                <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]}>
+                  <Text style={[styles.sharedTagText, { color: HEALING_COLORS.pink[500] }]}>👥 共享</Text>
+                </View>
+              )}
               <Ionicons name="chevron-down" size={20} color={isDark ? '#FFF' : '#333'} />
             </TouchableOpacity>
             <Text style={styles.dateText}>{getFormattedDate()}</Text>
@@ -318,6 +324,15 @@ const HomeScreen: React.FC = () => {
             )}
           </TouchableOpacity>
         </View>
+
+        {currentNotebook.type === 'shared' && currentNotebook.status === 'pending' && (
+          <View style={[styles.pendingBanner, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]}>
+            <Ionicons name="time-outline" size={16} color={HEALING_COLORS.pink[500]} />
+            <Text style={[styles.pendingBannerText, { color: HEALING_COLORS.pink[600] }]}>
+              等待对方加入中...
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* 场景筛选 Overlay */}
@@ -463,15 +478,22 @@ const HomeScreen: React.FC = () => {
                       </View>
                     )}
                     <View style={styles.notebookItemInfo}>
-                      <Text
-                        style={[
-                          styles.notebookItemText,
-                          { color: isDark ? '#FFF' : '#333' },
-                          currentNotebook._id === notebook._id && styles.notebookItemTextActive,
-                        ]}
-                      >
-                        {notebook.name}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text
+                          style={[
+                            styles.notebookItemText,
+                            { color: isDark ? '#FFF' : '#333' },
+                            currentNotebook._id === notebook._id && styles.notebookItemTextActive,
+                          ]}
+                        >
+                          {notebook.name}
+                        </Text>
+                        {notebook.type === 'shared' && (
+                          <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3', marginLeft: 8 }]}>
+                            <Text style={[styles.sharedTagText, { color: HEALING_COLORS.pink[500] }]}>👥 共享</Text>
+                          </View>
+                        )}
+                      </View>
                       {!!notebook.desc && (
                         <Text
                           style={[
@@ -676,6 +698,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginRight: 4,
+  },
+  sharedTag: {
+    marginRight: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  sharedTagText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  pendingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  pendingBannerText: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 6,
   },
   dateText: {
     fontSize: 12,

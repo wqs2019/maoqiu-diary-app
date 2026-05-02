@@ -4,14 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 import * as notebookService from '../services/notebookService';
 
-export interface Notebook {
-  _id: string;
-  name: string;
-  desc?: string;
-  cover?: string;
-  createdAt: string;
-  isDefault?: boolean;
-}
+import { Notebook } from '../types';
 
 interface NotebookState {
   notebooksByUserId: Record<string, Notebook[]>;
@@ -21,9 +14,10 @@ interface NotebookState {
   fetchNotebooks: (userId: string) => Promise<void>;
   getNotebooks: (userId: string) => Notebook[];
   getCurrentNotebook: (userId: string) => Notebook;
-  addNotebook: (userId: string, name: string, cover?: string, desc?: string) => Promise<Notebook>;
+  addNotebook: (userId: string, name: string, cover?: string, desc?: string, type?: 'private' | 'shared', inviteePhone?: string) => Promise<Notebook>;
   updateNotebook: (userId: string, notebookId: string, name: string, cover?: string, desc?: string) => Promise<void>;
   deleteNotebook: (userId: string, notebookId: string) => Promise<void>;
+  unbindNotebook: (userId: string, notebookId: string) => Promise<void>;
   setCurrentNotebook: (userId: string, notebookId: string) => void;
 }
 
@@ -87,9 +81,9 @@ export const useNotebookStore = create<NotebookState>()(
         return notebook || notebooks[0];
       },
 
-      addNotebook: async (userId: string, name: string, cover?: string, desc?: string) => {
+      addNotebook: async (userId: string, name: string, cover?: string, desc?: string, type?: 'private' | 'shared', inviteePhone?: string) => {
         // 先调用云端
-        const newNotebook = await notebookService.createNotebook(userId, name, false, cover, desc);
+        const newNotebook = await notebookService.createNotebook(userId, name, false, cover, desc, type, inviteePhone);
 
         // 更新本地 store
         const notebooks = get().getNotebooks(userId);
@@ -144,6 +138,19 @@ export const useNotebookStore = create<NotebookState>()(
             },
           };
         });
+      },
+
+      unbindNotebook: async (userId: string, notebookId: string) => {
+        await notebookService.unbindSharedNotebook(notebookId, userId);
+        const notebooks = get().getNotebooks(userId);
+        set((state) => ({
+          notebooksByUserId: {
+            ...state.notebooksByUserId,
+            [userId]: notebooks.map((nb) => 
+              nb._id === notebookId ? { ...nb, status: 'unbound' } : nb
+            ),
+          },
+        }));
       },
 
       setCurrentNotebook: (userId: string, notebookId: string) => {

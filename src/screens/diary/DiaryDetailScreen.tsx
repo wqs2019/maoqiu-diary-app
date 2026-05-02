@@ -24,6 +24,8 @@ import { useDiaryDetail, useDeleteDiary, useToggleFavorite } from '../../hooks/u
 import { useVipGuard } from '../../hooks/useVipGuard';
 import { FormatUtil } from '../../utils/format';
 
+import { useAuthStore } from '../../store/authStore';
+
 const { width } = Dimensions.get('window');
 
 type DiaryDetailRouteProp = RouteProp<{ params: { _id: string } }, 'params'>;
@@ -39,6 +41,7 @@ const DiaryDetailScreen: React.FC = () => {
   const deleteMutation = useDeleteDiary();
   const toggleFavorite = useToggleFavorite();
   const { checkVipPermission } = useVipGuard();
+  const user = useAuthStore((state) => state.user);
 
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -237,21 +240,25 @@ const DiaryDetailScreen: React.FC = () => {
           <Ionicons name="share-social-outline" size={24} color="#4B5563" />
           <Text style={styles.bottomBarActionText}>分享</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bottomBarAction}
-          onPress={() => {
-            if (checkVipPermission('writeDiary')) {
-              navigation.navigate('EditDiary', { diaryId: _id });
-            }
-          }}
-        >
-          <Ionicons name="create-outline" size={24} color="#4B5563" />
-          <Text style={styles.bottomBarActionText}>编辑</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomBarAction} onPress={handleDelete}>
-          <Ionicons name="trash-outline" size={24} color="#EF4444" />
-          <Text style={[styles.bottomBarActionText, { color: '#EF4444' }]}>删除</Text>
-        </TouchableOpacity>
+        {diary.userId === user?._id && (
+          <>
+            <TouchableOpacity
+              style={styles.bottomBarAction}
+              onPress={() => {
+                if (checkVipPermission('writeDiary')) {
+                  navigation.navigate('EditDiary', { diaryId: _id });
+                }
+              }}
+            >
+              <Ionicons name="create-outline" size={24} color="#4B5563" />
+              <Text style={styles.bottomBarActionText}>编辑</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.bottomBarAction} onPress={handleDelete}>
+              <Ionicons name="trash-outline" size={24} color="#EF4444" />
+              <Text style={[styles.bottomBarActionText, { color: '#EF4444' }]}>删除</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {/* Share Modal */}

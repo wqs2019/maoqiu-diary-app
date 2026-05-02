@@ -22,7 +22,7 @@
 
 ### 3. 内容权限与互动（共享本内规则）
 当状态为「已绑定共享（Active）」时：
-- **可见性**：双方均可查看该日记本内的所有日记（除单独设为私密的日记外）。
+- **可见性**：双方均可查看该日记本内的所有日记。
 - **内容创作**：双方都可以随时新增日记。
 - **内容修改**：只能编辑、删除**自己**发布的日记，**绝对不可删除或修改对方的日记**（保护数据，减少纠纷）。
 - **社交互动**：可以对对方的日记进行点赞、评论。
@@ -34,10 +34,6 @@
   - **数据保留**：双方各自保留自己在这个本子里写的日记。
   - **权限隔离**：双方再也看不到对方的任何内容（相当于变成两个独立的单人本）。
   - **不可逆性**：退出后，该日记本**不能再重新邀请或加入任何人**，永久固化为个人的「半私密本」。
-
-### 5. 隐私兜底（高级体验）
-- 即使在共享日记本中，发布单篇日记时，依然可以单独勾选**「仅自己可见」**。
-- 设置后，该篇日记对共享伴侣隐藏。满足用户在亲密关系中依然需要保留一点个人树洞的诉求。
 
 ---
 
@@ -77,13 +73,12 @@ interface Invitation {
 ```
 
 ### 3. Diaries 集合 (日记)
-现有模型基本满足，需强调利用 `isPrivate` 字段：
+现有模型基本满足需求：
 ```typescript
 interface Diary {
   // ... 其他字段
   notebookId: string; 
   userId: string; // 作者
-  isPrivate?: boolean; // 隐私兜底：为 true 时，即使是 shared 伴侣也不可见
 }
 ```
 
@@ -121,13 +116,10 @@ const notebook = await db.collection('Notebooks').doc(notebookId).get();
 let queryCondition = { notebookId: notebookId };
 
 if (notebook.data.status === 'active') {
-  // 共享状态：自己写的，或者是对方写且非私密的
+  // 共享状态：自己写的，或者是对方写的
   queryCondition = _.or([
     { userId: currentUser },
-    { 
-      userId: notebook.data.partnerId, 
-      isPrivate: _.neq(true) // 过滤掉对方设置仅自己可见的日记
-    }
+    { userId: notebook.data.partnerId }
   ]);
 } else if (notebook.data.status === 'unbound') {
   // 解绑状态：只能看自己的
@@ -165,7 +157,6 @@ const diaries = await db.collection('Diaries').where(queryCondition).get();
 
 ### 4. 日记列表与详情
 - 列表页：日记卡片需明确显示作者头像/昵称，以区分是谁写的。
-- 日记发布页：增加 `Switch` 选项「仅自己可见」。
 
 ### 5. 设置页 (日记本管理)
 - 增加「解除共享」红色危险按钮。
@@ -189,4 +180,3 @@ const diaries = await db.collection('Diaries').where(queryCondition).get();
 - [ ] **安全与测试**：
   - 测试防越权删除：确保前端和后端均拦截「删除/编辑对方日记」的操作。
   - 测试解绑逻辑：确保解绑后对方数据严格不可见。
-  - 测试隐私兜底：确保 `isPrivate` 默认值为 `false`（共享可见），但当用户手动设置为 `true` 时，伴侣无法通过任何接口获取该日记。
