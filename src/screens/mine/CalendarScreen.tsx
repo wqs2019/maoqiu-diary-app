@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import React, { useState, useMemo } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -44,13 +44,19 @@ const CalendarScreen: React.FC = () => {
   }, [currentDate]);
 
   // 查询当前月份的所有日记
-  const { data: diaryData, isLoading } = useDiaryList({
+  const { data: diaryData, isLoading, refetch } = useDiaryList({
     page: 1,
     pageSize: 100, // 假设一个月最多写100篇
     userId: user?._id,
     startDate,
     endDate,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   // 获取统计数据（包括准确计算跨月连续打卡）
   const { currentStreak } = useDiaryStats(user?._id);

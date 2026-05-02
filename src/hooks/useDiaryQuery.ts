@@ -513,9 +513,6 @@ export const useDeleteDiary = () => {
     return diaryApi.deleteDiary(id, userId);
   }, {
     onSuccess: (_, deletedId) => {
-      // 不立即从缓存中移除日记详情，让其随组件卸载自然过期，避免详情页在退出动画期间闪烁“加载失败”
-      // queryClient.removeQueries({ queryKey: ['diaryDetail', deletedId] });
-
       // 从列表中移除该日记（不触发网络查询，直接更新本地缓存刷新首页）
       queryClient.setQueriesData({ queryKey: ['diaryList'] }, (oldData: any) => {
         if (!oldData?.list) return oldData;
@@ -524,6 +521,8 @@ export const useDeleteDiary = () => {
           list: oldData.list.filter((item: any) => item._id !== deletedId),
         };
       });
+      // 同时触发后台重新获取最新数据，确保不同条件下的查询都更新
+      queryClient.invalidateQueries({ queryKey: ['diaryList'] });
     },
   });
 };
