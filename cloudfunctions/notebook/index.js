@@ -230,6 +230,13 @@ const deleteNotebook = async (data) => {
       return { success: false, message: '默认日记本不允许删除' };
     }
 
+    // 删除日记本下的所有日记
+    await db.collection('diaries').where({ notebookId: _id }).remove();
+
+    // 删除日记本相关的邀请
+    await db.collection('invitations').where({ notebookId: _id }).remove();
+
+    // 删除日记本
     await db.collection('notebooks').doc(_id).remove();
 
     return {

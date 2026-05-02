@@ -476,7 +476,7 @@ const NotebooksScreen: React.FC = () => {
                     <Image source={{ uri: notebookCover }} style={styles.coverImage} />
                   ) : (
                     <View style={[styles.coverPlaceholder, { backgroundColor: isDark ? '#333' : '#F5F5F5' }]}>
-                      <Feather name="image" size={24} color={isDark ? '#AAA' : HEALING_COLORS.gray[400]} />
+                      <Feather name="image" size={20} color={isDark ? '#AAA' : HEALING_COLORS.gray[400]} />
                       <Text style={[styles.coverText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[400] }]}>上传封面</Text>
                     </View>
                   )}
@@ -762,8 +762,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   coverSelector: {
-    width: 140,
-    height: 140,
+    width: 100,
+    height: 100,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 20,
@@ -785,8 +785,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   coverText: {
-    marginTop: 8,
-    fontSize: 14,
+    marginTop: 6,
+    fontSize: 12,
   },
   uploadingOverlay: {
     ...StyleSheet.absoluteFillObject,
