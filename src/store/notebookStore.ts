@@ -141,16 +141,39 @@ export const useNotebookStore = create<NotebookState>()(
       },
 
       unbindNotebook: async (userId: string, notebookId: string) => {
-        await notebookService.unbindSharedNotebook(notebookId, userId);
         const notebooks = get().getNotebooks(userId);
-        set((state) => ({
-          notebooksByUserId: {
-            ...state.notebooksByUserId,
-            [userId]: notebooks.map((nb) => 
-              nb._id === notebookId ? { ...nb, status: 'unbound' } : nb
-            ),
-          },
-        }));
+        const targetNotebook = notebooks.find((nb) => nb._id === notebookId);
+        const isCreator = targetNotebook?.userId === userId;
+
+        await notebookService.unbindSharedNotebook(notebookId, userId);
+        
+        if (isCreator) {
+          // 如果是创建者解绑，保留该日记本，仅改变其状态
+          set((state) => ({
+            notebooksByUserId: {
+              ...state.notebooksByUserId,
+              [userId]: notebooks.map((nb) => 
+                nb._id === notebookId ? { ...nb, status: 'unbound' } : nb
+              ),
+            },
+          }));
+        } else {
+          // 如果是非创建者（被邀请者）解绑，该日记本应直接消失，切换到第一个（或default）
+          const newNotebooks = notebooks.filter((nb) => nb._id !== notebookId);
+          set((state) => {
+            const currentId = state.currentNotebookIdByUserId[userId];
+            return {
+              notebooksByUserId: {
+                ...state.notebooksByUserId,
+                [userId]: newNotebooks,
+              },
+              currentNotebookIdByUserId: {
+                ...state.currentNotebookIdByUserId,
+                [userId]: currentId === notebookId ? (newNotebooks[0]?._id || 'default') : currentId,
+              },
+            };
+          });
+        }
       },
 
       setCurrentNotebook: (userId: string, notebookId: string) => {

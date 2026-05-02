@@ -16,6 +16,8 @@ import { useJoinDays } from '../../hooks/useJoinDays';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
+import { getUnreadNotificationCount } from '../../services/notificationService';
+import { useIsFocused } from '@react-navigation/native';
 
 type MineScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -34,6 +36,8 @@ const MineScreen: React.FC = () => {
   const getNotebooks = useNotebookStore((state) => state.getNotebooks);
   const fetchNotebooks = useNotebookStore((state) => state.fetchNotebooks);
   const notebookCount = user?._id ? getNotebooks(user._id).length : 0;
+  const isFocused = useIsFocused();
+  const [unreadCount, setUnreadCount] = React.useState(0);
 
   // 使用 hook 计算加入天数
   const joinDays = useJoinDays(user);
@@ -46,6 +50,12 @@ const MineScreen: React.FC = () => {
       fetchNotebooks(user._id);
     }
   }, [fetchUserInfo, user, fetchNotebooks]);
+
+  useEffect(() => {
+    if (user?._id && isFocused) {
+      getUnreadNotificationCount(user._id).then(setUnreadCount).catch(console.error);
+    }
+  }, [user?._id, isFocused]);
 
   const handleLogout = async () => {
     await logout();
@@ -99,6 +109,26 @@ const MineScreen: React.FC = () => {
         ]}
       />
 
+      {/* 顶部操作区 */}
+      <View style={[styles.topActions, { paddingTop: insets.top }]}>
+        <View style={[styles.topActionsTitleContainer, { top: insets.top }]}>
+          <Text style={[styles.topActionsTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
+            个人中心
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.bellButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.6)' }]}
+          onPress={() => navigation.navigate('NotificationCenter' as any)}
+        >
+          <Feather name="bell" size={20} color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[800]} />
+          {unreadCount > 0 && (
+            <View style={styles.redDot}>
+              <Text style={styles.redDotText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -108,7 +138,7 @@ const MineScreen: React.FC = () => {
         <View
           style={[
             styles.userCard,
-            { marginTop: insets.top + 20 },
+            { marginTop: 10 },
             {
               borderRadius: themeStyle.borderRadius,
               shadowColor: isDark ? '#000' : themeStyle.shadowColor,
@@ -488,6 +518,56 @@ const styles = StyleSheet.create({
     backgroundColor: HEALING_COLORS.pink[100],
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
+  },
+  topActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+    zIndex: 10,
+    position: 'relative',
+  },
+  topActionsTitleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: -1,
+  },
+  topActionsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  bellButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  redDot: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#EF4444',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#FFF',
+  },
+  redDotText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,

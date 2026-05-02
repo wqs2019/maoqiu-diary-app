@@ -27,10 +27,12 @@ import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
+import { useNotificationWatcher } from '../../hooks/useNotificationWatcher';
 import { useVipGuard } from '../../hooks/useVipGuard';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 import { ScenarioType, TimelineItem, Diary } from '../../types';
+import { registerForPushNotificationsAsync } from '../../utils/notifications';
 
 const { width, height } = Dimensions.get('window');
 
@@ -47,6 +49,9 @@ const HomeScreen: React.FC = () => {
   const [activeYear, setActiveYear] = useState<string | null>(null);
 
   const { themeName, isDark } = useAppTheme();
+
+  // 开启邀请通知监听
+  useNotificationWatcher();
 
   // 场景筛选状态
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | undefined>(undefined);
@@ -122,6 +127,25 @@ const HomeScreen: React.FC = () => {
       fetchUserInfo();
     }
   }, [fetchUserInfo, user]);
+
+  // 获取并同步推送 Token
+  useEffect(() => {
+    const syncPushToken = async () => {
+      if (user?._id) {
+        const token = await registerForPushNotificationsAsync();
+        // @ts-ignore
+        if (token && token !== user.pushToken) {
+          try {
+            await useAuthStore.getState().updateProfile(user._id, { pushToken: token } as any);
+            console.log('Push token synced successfully');
+          } catch (e) {
+            console.log('Failed to sync push token', e);
+          }
+        }
+      }
+    };
+    syncPushToken();
+  }, [user?._id]);
 
   // 悬浮按钮拖动
   const panY = useRef(new Animated.Value(0)).current;

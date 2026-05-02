@@ -30,7 +30,8 @@ export const useVipGuard = () => {
 
   const checkVipPermission = (
     action: keyof typeof VIP_MESSAGES,
-    onConfirm?: () => void
+    onConfirm?: () => void,
+    context?: { isSharedNotebook?: boolean }
   ): boolean => {
     if (!user) {
       Alert.alert('提示', '用户未登录，请重新登录');
@@ -41,10 +42,17 @@ export const useVipGuard = () => {
       return true;
     }
 
-    // 特殊处理：写日记时，如果是默认日记本则允许免费用户操作
+    // 特殊处理：如果操作涉及共享日记本（比如解除共享），允许普通用户操作
+    if (context?.isSharedNotebook) {
+      return true;
+    }
+
+    // 特殊处理：写日记时，如果是默认日记本或者是共享日记本，则允许操作
+    // 因为如果是共享日记本，说明创建者是 VIP（或者他被邀请加入了一个合法的共享日记本），
+    // 被邀请者（即使不是 VIP）也应该能在里面写日记。
     if (action === 'writeDiary') {
       const currentNotebook = getCurrentNotebook(user._id);
-      if (currentNotebook.isDefault) {
+      if (currentNotebook.isDefault || currentNotebook.type === 'shared') {
         return true;
       }
     }

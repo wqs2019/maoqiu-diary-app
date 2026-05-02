@@ -29,6 +29,7 @@ import SubscriptionScreen from '@/screens/mine/SubscriptionScreen';
 import AccountSecurityScreen from '@/screens/mine/AccountSecurityScreen';
 import WebScreen from '@/screens/mine/WebScreen';
 import FollowersScreen from '@/screens/circle/FollowersScreen';
+import NotificationCenterScreen from '@/screens/mine/NotificationCenterScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
@@ -56,6 +57,7 @@ export type RootStackParamList = {
   AppLockSetting: undefined;
   Web: { url: string; title?: string };
   Followers: { userId: string };
+  NotificationCenter: undefined;
 };
 
 export type AuthStackParamList = {
@@ -284,6 +286,13 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="Followers"
             component={FollowersScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="NotificationCenter"
+            component={NotificationCenterScreen}
             options={{
               headerShown: false,
             }}

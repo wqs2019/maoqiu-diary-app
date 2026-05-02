@@ -1,9 +1,51 @@
-// Cloud function for notebook management
 const cloud = require('@cloudbase/node-sdk');
+const https = require('https');
+
 const app = cloud.init({
   env: cloud.SYMBOL_CURRENT_ENV,
 });
 const db = app.database();
+
+// 发送 Expo 推送通知
+const sendPushNotification = (expoPushToken, title, body, data = {}) => {
+  return new Promise((resolve, reject) => {
+    if (!expoPushToken) {
+      resolve();
+      return;
+    }
+
+    const message = {
+      to: expoPushToken,
+      sound: 'default',
+      title: title,
+      body: body,
+      data: data,
+    };
+
+    const req = https.request({
+      hostname: 'exp.host',
+      path: '/--/api/v2/push/send',
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Accept-encoding': 'application/json',
+        'Content-Type': 'application/json',
+      }
+    }, (res) => {
+      let responseData = '';
+      res.on('data', (chunk) => { responseData += chunk; });
+      res.on('end', () => { resolve(responseData); });
+    });
+
+    req.on('error', (e) => {
+      console.error('Push notification error:', e);
+      reject(e);
+    });
+
+    req.write(JSON.stringify(message));
+    req.end();
+  });
+};
 
 // 创建日记本
 const createNotebook = async (data) => {
@@ -36,10 +78,16 @@ const createNotebook = async (data) => {
     const notebookId = result.id || result._id;
 
     if (type === 'shared' && inviteePhone) {
+      // get inviter info to record their phone
+      const inviterRes = await db.collection('users').doc(userId).get();
+      const inviterPhone = inviterRes.data[0]?.phone || '';
+      const inviterName = inviterRes.data[0]?.nickname || '有人';
+
       // 1. Create invitation
       const invitationResult = await db.collection('invitations').add({
         notebookId,
         inviterId: userId,
+        inviterPhone, // 记录邀请人的手机号
         inviteePhone,
         status: 'pending',
         createdAt: db.serverDate(),
@@ -49,24 +97,36 @@ const createNotebook = async (data) => {
       // 2. Find invitee user by phone to create notification
       const inviteeRes = await db.collection('users').where({ phone: inviteePhone }).get();
       if (inviteeRes.data && inviteeRes.data.length > 0) {
-        const inviteeId = inviteeRes.data[0]._id;
+        const inviteeUser = inviteeRes.data[0];
+        const inviteeId = inviteeUser._id;
         
-        // get inviter info
-        const inviterRes = await db.collection('users').doc(userId).get();
-        const inviterName = inviterRes.data[0]?.nickname || '有人';
+        const title = '日记本共享邀请';
+        const body = `「${inviterName}」邀请你共写日记本《${name}》`;
 
         await db.collection('notifications').add({
           receiverId: inviteeId,
           senderId: userId,
           type: 'invite_shared_notebook',
-          title: '日记本共享邀请',
-          content: `「${inviterName}」邀请你共写日记本《${name}》`,
+          title,
+          content: body,
           relatedId: invitationResult.id || invitationResult._id,
           extraData: { notebookId, notebookName: name },
           isRead: false,
           actionStatus: 'pending',
           createdAt: db.serverDate()
         });
+
+        // 触发 App 推送通知
+        if (inviteeUser.pushToken) {
+          try {
+            await sendPushNotification(inviteeUser.pushToken, title, body, {
+              type: 'invite_shared_notebook',
+              notebookId
+            });
+          } catch (e) {
+            console.error('Failed to send push notification to invitee:', e);
+          }
+        }
       }
     }
 
@@ -108,7 +168,7 @@ const getNotebookList = async (data) => {
           { isDelete: _.neq(true) }, // 未删除
           _.or([
             { userId }, // 自己创建的
-            { partnerId: userId, status: 'active' } // 或者自己是受邀者且已绑定
+            { partnerId: userId } // 受邀者且已绑定（注意：包含 pending 状态，前端过滤）
           ])
         ])
       )
@@ -233,6 +293,13 @@ const respondInvitation = async (data) => {
         updatedAt: db.serverDate()
       });
 
+      // 1.5 Update corresponding notification status
+      await db.collection('notifications').where({ relatedId: invitationId, receiverId: userId }).update({
+        actionStatus: 'accepted',
+        isRead: true,
+        updatedAt: db.serverDate()
+      });
+
       // 2. Update notebook
       await db.collection('notebooks').doc(notebookId).update({
         partnerId: userId,
@@ -243,16 +310,35 @@ const respondInvitation = async (data) => {
       // 3. Notify inviter
       const userRes = await db.collection('users').doc(userId).get();
       const userName = userRes.data[0]?.nickname || '对方';
+      const title = '共享邀请已接受';
+      const body = `「${userName}」接受了你的日记本共享邀请`;
+
       await db.collection('notifications').add({
         receiverId: invitation.inviterId,
         senderId: userId,
         type: 'system',
-        title: '共享邀请已接受',
-        content: `「${userName}」接受了你的日记本共享邀请`,
+        title,
+        content: body,
         extraData: { notebookId },
         isRead: false,
         createdAt: db.serverDate()
       });
+
+      // 触发 App 推送通知
+      const inviterRes = await db.collection('users').doc(invitation.inviterId).get();
+      if (inviterRes.data && inviterRes.data.length > 0) {
+        const inviterUser = inviterRes.data[0];
+        if (inviterUser.pushToken) {
+          try {
+            await sendPushNotification(inviterUser.pushToken, title, body, {
+              type: 'system',
+              notebookId
+            });
+          } catch (e) {
+            console.error('Failed to send push notification to inviter (accept):', e);
+          }
+        }
+      }
 
       return { success: true, message: '已接受邀请' };
     } else if (action === 'reject') {
@@ -261,6 +347,53 @@ const respondInvitation = async (data) => {
         status: 'rejected',
         updatedAt: db.serverDate()
       });
+
+      // Update corresponding notification status
+      await db.collection('notifications').where({ relatedId: invitationId, receiverId: userId }).update({
+        actionStatus: 'rejected',
+        isRead: true,
+        updatedAt: db.serverDate()
+      });
+
+      // Update notebook status to unbound so inviter can invite again
+      await db.collection('notebooks').doc(notebookId).update({
+        status: 'unbound',
+        updatedAt: db.serverDate()
+      });
+
+      // Notify inviter about rejection
+      const userRes = await db.collection('users').doc(userId).get();
+      const userName = userRes.data[0]?.nickname || '对方';
+      const title = '共享邀请已拒绝';
+      const body = `「${userName}」拒绝了你的日记本共享邀请`;
+
+      await db.collection('notifications').add({
+        receiverId: invitation.inviterId,
+        senderId: userId,
+        type: 'system',
+        title,
+        content: body,
+        extraData: { notebookId },
+        isRead: false,
+        createdAt: db.serverDate()
+      });
+
+      // 触发 App 推送通知
+      const inviterRes = await db.collection('users').doc(invitation.inviterId).get();
+      if (inviterRes.data && inviterRes.data.length > 0) {
+        const inviterUser = inviterRes.data[0];
+        if (inviterUser.pushToken) {
+          try {
+            await sendPushNotification(inviterUser.pushToken, title, body, {
+              type: 'system',
+              notebookId
+            });
+          } catch (e) {
+            console.error('Failed to send push notification to inviter (reject):', e);
+          }
+        }
+      }
+
       return { success: true, message: '已拒绝邀请' };
     }
 
@@ -291,6 +424,7 @@ const unbindSharedNotebook = async (data) => {
 
     await db.collection('notebooks').doc(notebookId).update({
       status: 'unbound',
+      partnerId: '', // 清除受邀者信息
       updatedAt: db.serverDate()
     });
 
@@ -299,16 +433,35 @@ const unbindSharedNotebook = async (data) => {
     if (otherId) {
       const userRes = await db.collection('users').doc(userId).get();
       const userName = userRes.data[0]?.nickname || '对方';
+      const title = '日记本已解绑';
+      const content = `「${userName}」解除了与你的日记本《${notebook.name}》的共享关系`;
+      
       await db.collection('notifications').add({
         receiverId: otherId,
         senderId: userId,
         type: 'unbind_shared_notebook',
-        title: '日记本已解绑',
-        content: `「${userName}」解除了与你的日记本《${notebook.name}》的共享关系`,
+        title,
+        content,
         extraData: { notebookId },
         isRead: false,
         createdAt: db.serverDate()
       });
+
+      // 触发 App 推送通知
+      const otherUserRes = await db.collection('users').doc(otherId).get();
+      if (otherUserRes.data && otherUserRes.data.length > 0) {
+        const otherUser = otherUserRes.data[0];
+        if (otherUser.pushToken) {
+          try {
+            await sendPushNotification(otherUser.pushToken, title, content, {
+              type: 'unbind_shared_notebook',
+              notebookId
+            });
+          } catch (e) {
+            console.error('Failed to send push notification for unbind:', e);
+          }
+        }
+      }
     }
 
     return { success: true, message: '解绑成功' };

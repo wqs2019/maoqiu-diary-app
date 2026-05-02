@@ -229,18 +229,23 @@ const NotebooksScreen: React.FC = () => {
   };
 
   const handleMoreOptions = (notebook: Notebook) => {
-    if (!checkVipPermission('manageNotebook')) return;
+    if (!checkVipPermission('manageNotebook', undefined, { isSharedNotebook: notebook.type === 'shared' })) return;
 
     const options: any[] = [
       { text: '取消', style: 'cancel' },
-      { text: '编辑', onPress: () => openEditModal(notebook) },
     ];
+    
+    // 只有非共享日记本或者是创建者才能编辑
+    if (notebook.type !== 'shared' || notebook.userId === user?._id) {
+      options.push({ text: '编辑', onPress: () => openEditModal(notebook) });
+    }
 
     if (notebook.type === 'shared' && notebook.status === 'active') {
       options.push({ text: '解除共享', style: 'destructive', onPress: () => confirmUnbind(notebook) });
     }
 
-    if (!notebook.isDefault) {
+    // 默认日记本不能删除，其余日记本只要是创建者就可以删除（包括已解除的共享日记本）
+    if (!notebook.isDefault && (notebook.type !== 'shared' || notebook.userId === user?._id)) {
       options.push({ text: '删除', style: 'destructive', onPress: () => confirmDelete(notebook) });
     }
 

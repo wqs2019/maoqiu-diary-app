@@ -1,4 +1,6 @@
+import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // 全局通知行为配置
@@ -6,7 +8,7 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
   }),
@@ -15,6 +17,8 @@ Notifications.setNotificationHandler({
 export const DAILY_REMINDER_IDENTIFIER = 'daily-diary-reminder';
 
 export async function registerForPushNotificationsAsync() {
+  let token;
+
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
@@ -24,29 +28,43 @@ export async function registerForPushNotificationsAsync() {
     });
   }
 
-  // 本地定时通知在 iOS 模拟器上是可以工作的，所以我们不强制要求物理设备
-  // 仅在需要获取远程推送 token 时（即 ExpoPushToken）才严格要求物理设备
-  // if (Device.isDevice) {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+  if (Device.isDevice) {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      console.log('Failed to get push token for push notification!');
+      return null;
+    }
+    
+    try {
+      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+      if (!projectId) {
+        token = (await Notifications.getExpoPushTokenAsync()).data;
+      } else {
+        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      }
+      console.log('Expo Push Token:', token);
+    } catch (e) {
+      console.log('Failed to get Expo push token:', e);
+    }
+  } else {
+    console.log('Must use physical device for Push Notifications');
   }
-  if (finalStatus !== 'granted') {
-    console.log('Failed to get push token for push notification!');
-    return false;
-  }
-  return true;
-  // } else {
-  //   console.log('Must use physical device for Push Notifications');
-  //   return false;
-  // }
+
+  return token;
 }
 
 export async function scheduleDailyReminder() {
-  const hasPermission = await registerForPushNotificationsAsync();
-  if (!hasPermission) return false;
+  // 仅检查权限，不强制要求 push token（因为是本地通知）
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'granted') {
+    const { status: newStatus } = await Notifications.requestPermissionsAsync();
+    if (newStatus !== 'granted') return false;
+  }
 
   // 取消旧的，防止重复
   await cancelDailyReminder();

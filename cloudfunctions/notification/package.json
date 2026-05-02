@@ -1,0 +1,9 @@
+{
+  "name": "notification",
+  "version": "1.0.0",
+  "description": "Notification center cloud function",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest"
+  }
+}
