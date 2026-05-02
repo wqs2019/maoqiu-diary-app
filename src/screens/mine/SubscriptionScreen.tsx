@@ -104,9 +104,11 @@ const SubscriptionScreen: React.FC = () => {
         }
 
         console.log('IAP: 开始初始检查用户历史订阅状态...');
-        const availablePurchases = await RNIap.getAvailablePurchases();
+        const availablePurchases = await RNIap.getAvailablePurchases({ onlyIncludeActiveItemsIOS: true });
         console.log('IAP: 初始检查获取到的有效订阅记录数量:', availablePurchases?.length);
         if (availablePurchases && availablePurchases.length > 0) {
+          // Sort to get the most recent purchase
+          availablePurchases.sort((a, b) => Number(b.transactionDate) - Number(a.transactionDate));
           const activePurchase = availablePurchases[0] as any;
           console.log('IAP: => 发现有效订阅！该用户当前拥有VIP。', availablePurchases);
           const currentUser = useAuthStore.getState().user;
@@ -151,6 +153,18 @@ const SubscriptionScreen: React.FC = () => {
       const receipt = purchase.purchaseToken || (purchase as any).transactionReceipt;
       if (receipt) {
         try {
+          if (purchase.purchaseState === 'pending') {
+            console.log('IAP: 订单仍在 pending 状态，暂不发放VIP');
+            if (isPurchasing.current) {
+              if (navigation.isFocused()) {
+                toast.success('订单处理中，请稍后查看');
+              }
+              isPurchasing.current = false;
+              setLoading(false);
+            }
+            return;
+          }
+
           const currentUser = useAuthStore.getState().user;
           if (currentUser) {
             const expiresAt = (purchase as any).expirationDateIOS
@@ -288,10 +302,12 @@ const SubscriptionScreen: React.FC = () => {
     // 移除了 Alert.alert('恢复购买...') 避免与结果弹窗重叠显示
     try {
       console.log('IAP: 正在调用 getAvailablePurchases()...');
-      const purchases = await RNIap.getAvailablePurchases();
+      const purchases = await RNIap.getAvailablePurchases({ onlyIncludeActiveItemsIOS: true });
       console.log('IAP: 恢复购买获取到的有效订阅记录:', purchases?.length);
 
       if (purchases && purchases.length > 0) {
+        // Sort to get the most recent purchase
+        purchases.sort((a, b) => Number(b.transactionDate) - Number(a.transactionDate));
         console.log('IAP: 恢复成功，找到了历史订阅', purchases);
         const activePurchase = purchases[0] as any;
         const currentUser = useAuthStore.getState().user;
