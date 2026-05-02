@@ -66,19 +66,11 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
               style={{ marginRight: 4 }}
             />
           ) : null}
-          {item.authorInfo?.nickname && (
-            <Text 
-              style={[styles.authorName, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}
-              numberOfLines={1}
-            >
-              {item.authorInfo.nickname}
-            </Text>
-          )}
           <Ionicons
             name="time-outline"
             size={14}
             color={isDark ? '#AAA' : HEALING_COLORS.gray[400]}
-            style={item.authorInfo?.nickname ? { marginLeft: 8 } : {}}
+            style={item.authorInfo?.nickname ? { marginLeft: 4 } : {}}
           />
           <Text 
             style={[styles.dateText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[500] }]}
@@ -221,15 +213,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   authorAvatar: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     marginRight: 4,
-  },
-  authorName: {
-    fontSize: 12,
-    fontWeight: '500',
-    maxWidth: 80,
   },
   dateText: {
     fontSize: 12,

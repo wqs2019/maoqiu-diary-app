@@ -105,8 +105,11 @@ const EditDiaryScreen: React.FC = () => {
       }
     }
 
-    // 过滤掉仅在本地使用的状态字段
-    const cleanMedia = media.map(({ uploadStatus, uploadError, ...rest }) => rest);
+    // 过滤掉未上传成功和仅在本地使用的状态字段
+    // 尤其是兜底删除那些因为违规等原因上传失败，且用户没有主动删除的媒体
+    const cleanMedia = media
+      .filter((m) => m.uploadStatus === 'success')
+      .map(({ uploadStatus, subUploadStatus, uploadError, ...rest }) => rest);
 
     if (!currentNotebook) {
       Alert.alert('提示', '未找到当前日记本');

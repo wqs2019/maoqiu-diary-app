@@ -54,12 +54,30 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     updatedMedia[index] = {
       ...item,
       uploadStatus: 'loading',
+      subUploadStatus: undefined,
       uploadError: undefined,
     };
     onMediaChange(updatedMedia);
 
     try {
       console.log(`[MediaUpload] Retrying upload for media at index ${index}`);
+
+      // 安全检测
+      const isSafe = await ImageSafetyService.checkImageSafety(item.uri);
+      
+      if (!isSafe) {
+        console.log(`[MediaUpload] Retry rejected by safety check`);
+        const failMedia = [...media];
+        failMedia[index] = {
+          ...item,
+          uploadStatus: 'fail',
+          subUploadStatus: 'violation',
+          uploadError: '图片违规，禁止上传',
+        };
+        onMediaChange(failMedia);
+        Alert.alert('提示', '该图片包含不合规内容，无法上传。');
+        return;
+      }
 
       // 生成唯一的云存储路径（上传到 diary 目录）
       const extension = item.mimeType?.split('/')[1] || 'jpg';
@@ -116,6 +134,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           thumbnail: thumbnailUrl,
           livePhotoVideoUri: uploadedLivePhotoVideoUri,
           uploadStatus: 'success',
+          subUploadStatus: undefined,
           uploadError: undefined,
         };
         onMediaChange(successMedia);
@@ -126,10 +145,13 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       console.error('[MediaUpload] Retry failed:', error);
       // 更新错误信息
       const failMedia = [...media];
+      const errorMessage = error.message || '上传失败';
+      const isViolation = errorMessage.includes('违规') || errorMessage.includes('不合规') || errorMessage.includes('禁止上传');
       failMedia[index] = {
         ...item,
         uploadStatus: 'fail',
-        uploadError: error.message || '上传失败',
+        subUploadStatus: isViolation ? 'violation' : 'network',
+        uploadError: errorMessage,
       };
       onMediaChange(failMedia);
     }
@@ -209,6 +231,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
             thumbnail: thumbnailUrl,
             livePhotoVideoUri: uploadedLivePhotoVideoUri,
             uploadStatus: 'success',
+            subUploadStatus: undefined,
             uploadError: undefined,
           };
         } else {
@@ -218,10 +241,13 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         currentTry++;
         console.error(`[MediaUpload] Upload failed (Try ${currentTry}/${retryCount}):`, error);
         if (currentTry >= retryCount) {
+          const errorMessage = error.message || '上传失败';
+          const isViolation = errorMessage.includes('违规') || errorMessage.includes('不合规') || errorMessage.includes('禁止上传');
           return {
             ...item,
             uploadStatus: 'fail',
-            uploadError: error.message || '上传失败',
+            subUploadStatus: isViolation ? 'violation' : 'network',
+            uploadError: errorMessage,
           };
         }
       }
@@ -229,6 +255,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     return {
       ...item,
       uploadStatus: 'fail',
+      subUploadStatus: 'network',
       uploadError: '超出最大重试次数',
     };
   };
@@ -272,78 +299,101 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         JSON.stringify(result.assets, null, 2)
       );
 
-      // 提前进行图片安全检测
-      const safeAssets = [];
-      for (const asset of result.assets) {
-        const isSafe = await ImageSafetyService.checkImageSafety(asset.uri);
-        if (isSafe) {
-          safeAssets.push(asset);
-        } else {
-          Alert.alert('内容违规', '检测到选取的图片包含不合规内容（如涉黄等），已自动拦截上传。');
-        }
-      }
+      // 提取安全检测和上传逻辑为一个异步函数
+      const processAssetsAsync = async (assets: any[], currentMediaList: MediaResource[]) => {
+        const localMedia: MediaResource[] = assets.map((asset) => {
+          const pairedVideo = asset.pairedVideoAsset;
+          const liveVideoUri = pairedVideo?.uri || asset.livePhotoVideoUri;
+          const isLivePhoto = !!liveVideoUri;
 
-      if (safeAssets.length === 0) {
-        return; // 如果所有选中的图片都违规，直接退出
-      }
-
-      // 先添加本地媒体（带 loading 状态）
-      const localMedia: MediaResource[] = safeAssets.map((asset) => {
-        // Expo ImagePicker 17.0+ 中，如果指定了 livePhotos 并且未经过 allowsEditing 处理，
-        // 会返回 `pairedVideoAsset` 包含对应的视频。
-        // 为了兼容不同的返回格式，我们同时检查 pairedVideoAsset 和 livePhotoVideoUri
-        const pairedVideo = (asset as any).pairedVideoAsset;
-        const liveVideoUri = pairedVideo?.uri || (asset as any).livePhotoVideoUri;
-        const isLivePhoto = !!liveVideoUri;
-
-        return {
-          type: isLivePhoto ? 'livePhoto' : 'image',
-          uri: asset.uri,
-          size: asset.fileSize ?? undefined,
-          mimeType: asset.mimeType ?? undefined,
-          livePhotoVideoUri: liveVideoUri,
-        };
-      });
-
-      // 合并到现有媒体
-      const allMedia = [...media, ...localMedia];
-      onMediaChange(allMedia);
-
-      // 上传到云端
-      isUploading.current = true;
-
-      // 设置为 loading 状态
-      const loadingMedia: MediaResource[] = allMedia.map((m, idx) => {
-        if (idx >= media.length) {
           return {
-            ...m,
-            uploadStatus: 'loading',
+            type: isLivePhoto ? 'livePhoto' : 'image',
+            uri: asset.uri,
+            size: asset.fileSize ?? undefined,
+            mimeType: asset.mimeType ?? undefined,
+            livePhotoVideoUri: liveVideoUri,
+            uploadStatus: 'loading', // 初始状态为 loading
           };
-        }
-        return m;
-      });
-      onMediaChange(loadingMedia);
+        });
 
-      const uploadedMedia = await uploadAllMedia(localMedia);
+        // 1. 将刚选中的本地媒体立刻显示在界面上
+        let latestMediaState = [...currentMediaList, ...localMedia];
+        onMediaChange(latestMediaState);
+        isUploading.current = true;
 
-      // 替换已上传的媒体（保持顺序）
-      const finalMedia: MediaResource[] = allMedia.map((m, idx) => {
-        if (idx >= media.length) {
-          // 这是新上传的媒体
-          const uploadedIdx = idx - media.length;
-          const uploadedItem = uploadedMedia[uploadedIdx];
-          if (uploadedItem) {
-            return {
-              ...uploadedItem,
-              uploadStatus: uploadedItem.uploadError ? 'fail' : 'success',
-            };
+        // 2. 逐个进行安全检测和上传
+        for (let i = 0; i < assets.length; i++) {
+          const asset = assets[i];
+          const localItem = localMedia[i];
+          
+          try {
+            // 安全检测
+            const isSafe = await ImageSafetyService.checkImageSafety(asset.uri);
+            
+            if (!isSafe) {
+              console.log(`[MediaUpload] Image ${i+1} rejected by safety check`);
+              // 更新状态为违规失败
+              const newMedia = [...latestMediaState];
+              const targetIndex = newMedia.findIndex(m => m.uri === asset.uri);
+              if (targetIndex >= 0) {
+                newMedia[targetIndex] = {
+                  ...newMedia[targetIndex],
+                  uploadStatus: 'fail',
+                  subUploadStatus: 'violation',
+                  uploadError: '图片违规，禁止上传',
+                };
+              }
+              latestMediaState = newMedia;
+              onMediaChange(latestMediaState);
+              continue; // 跳过当前违规图片，继续处理下一张
+            }
+
+            // 安全检测通过，执行上传
+            const uploadedItem = await uploadMediaItem(localItem);
+            
+            // 更新当前图片的上传结果
+            const newMedia = [...latestMediaState];
+            const targetIndex = newMedia.findIndex(m => m.uri === asset.uri);
+            if (targetIndex >= 0) {
+              newMedia[targetIndex] = {
+                ...uploadedItem,
+                uploadStatus: uploadedItem.uploadError ? 'fail' : 'success',
+              };
+            }
+            latestMediaState = newMedia;
+            onMediaChange(latestMediaState);
+            
+          } catch (err: any) {
+            console.error(`[MediaUpload] Error processing asset ${i+1}:`, err);
+            // 发生异常，更新状态为失败
+            const newMedia = [...latestMediaState];
+            const targetIndex = newMedia.findIndex(m => m.uri === asset.uri);
+            if (targetIndex >= 0) {
+              const errorMessage = err.message || '处理异常';
+              const isViolation = errorMessage.includes('违规') || errorMessage.includes('不合规') || errorMessage.includes('禁止上传');
+              newMedia[targetIndex] = {
+                ...newMedia[targetIndex],
+                uploadStatus: 'fail',
+                subUploadStatus: isViolation ? 'violation' : 'unknown',
+                uploadError: errorMessage,
+              };
+            }
+            latestMediaState = newMedia;
+            onMediaChange(latestMediaState);
           }
         }
-        return m;
-      });
+        
+        isUploading.current = false;
+        
+        // 检查是否有违规被拦截的图片，给个提示
+        const hasViolation = latestMediaState.some(m => m.subUploadStatus === 'violation');
+        if (hasViolation) {
+          Alert.alert('提示', '部分选取的图片因包含不合规内容已被拦截上传。');
+        }
+      };
 
-      onMediaChange(finalMedia);
-      isUploading.current = false;
+      // 启动异步处理流，不阻塞当前主线程（UI 立刻关闭选择器并显示 loading）
+      processAssetsAsync(result.assets, media);
     }
   };
 
@@ -480,8 +530,8 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           <Ionicons name="close-circle" size={24} color="#FF4444" />
         </TouchableOpacity>
 
-        {/* 重试按钮（仅失败时显示） */}
-        {isFailed && (
+        {/* 重试按钮（仅失败且不是违规图片时显示） */}
+        {isFailed && item.subUploadStatus !== 'violation' && (
           <TouchableOpacity style={styles.retryButton} onPress={() => retryUpload(currentIndex)}>
             <Ionicons name="refresh" size={24} color="#FFF" />
           </TouchableOpacity>
@@ -494,10 +544,12 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           </Text>
         </View>
 
-        {/* 上传失败提示 */}
+        {/* 上传失败或违规提示 */}
         {isFailed && (
-          <View style={styles.errorOverlay}>
-            <Text style={styles.errorText}>上传失败</Text>
+          <View style={[styles.errorOverlay, item.subUploadStatus === 'violation' && { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+            <Text style={styles.errorText}>
+              {item.subUploadStatus === 'violation' ? '图片违规' : '上传失败'}
+            </Text>
           </View>
         )}
       </View>
