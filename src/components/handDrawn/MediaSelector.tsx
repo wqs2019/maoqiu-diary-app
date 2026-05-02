@@ -16,6 +16,7 @@ import { DraggableGrid } from 'react-native-draggable-grid';
 import { MediaPreviewer } from './MediaPreviewer';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import ImageSafetyService from '../../services/imageSafetyService';
 import { imageService } from '../../services/imageService';
 import { MediaResource } from '../../types';
 
@@ -270,8 +271,24 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         '[MediaSelector] pickImages result assets:',
         JSON.stringify(result.assets, null, 2)
       );
+
+      // 提前进行图片安全检测
+      const safeAssets = [];
+      for (const asset of result.assets) {
+        const isSafe = await ImageSafetyService.checkImageSafety(asset.uri);
+        if (isSafe) {
+          safeAssets.push(asset);
+        } else {
+          Alert.alert('内容违规', '检测到选取的图片包含不合规内容（如涉黄等），已自动拦截上传。');
+        }
+      }
+
+      if (safeAssets.length === 0) {
+        return; // 如果所有选中的图片都违规，直接退出
+      }
+
       // 先添加本地媒体（带 loading 状态）
-      const localMedia: MediaResource[] = result.assets.map((asset) => {
+      const localMedia: MediaResource[] = safeAssets.map((asset) => {
         // Expo ImagePicker 17.0+ 中，如果指定了 livePhotos 并且未经过 allowsEditing 处理，
         // 会返回 `pairedVideoAsset` 包含对应的视频。
         // 为了兼容不同的返回格式，我们同时检查 pairedVideoAsset 和 livePhotoVideoUri

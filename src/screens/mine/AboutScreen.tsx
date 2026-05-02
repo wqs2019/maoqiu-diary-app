@@ -94,6 +94,11 @@ const AboutScreen: React.FC = () => {
             <Text
               style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}
             >
+              不仅如此，你还可以创建共享日记，邀请恋人、挚友或家人共同书写。无论相隔多远，你们都能在这个专属的小天地里，分享彼此的生活点滴，让爱与陪伴不缺席。
+            </Text>
+            <Text
+              style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}
+            >
               希望毛球能像一个小小的太阳，永远温暖地陪伴你的每一段回忆。🐾✨
             </Text>
           </View>

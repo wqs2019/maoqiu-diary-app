@@ -373,8 +373,16 @@ const NotebooksScreen: React.FC = () => {
                       {notebook.name}
                     </Text>
                     {notebook.type === 'shared' && (
-                      <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]}>
-                        <Text style={[styles.sharedTagText, { color: HEALING_COLORS.pink[500] }]}>👥 共享</Text>
+                      <View style={[
+                        styles.sharedTag, 
+                        { backgroundColor: isDark ? '#333' : '#FFF0F3' },
+                        isActive && { backgroundColor: isDark ? '#4A2533' : '#FFD6E0' }
+                      ]}>
+                        <Text style={[
+                          styles.sharedTagText, 
+                          { color: HEALING_COLORS.pink[500] },
+                          isActive && { color: isDark ? HEALING_COLORS.pink[300] : HEALING_COLORS.pink[600] }
+                        ]}>👥 共享</Text>
                       </View>
                     )}
                   </View>
@@ -709,6 +717,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sharedTagText: {
     fontSize: 10,

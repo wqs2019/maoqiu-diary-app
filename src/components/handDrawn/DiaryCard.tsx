@@ -67,7 +67,10 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
             />
           ) : null}
           {item.authorInfo?.nickname && (
-            <Text style={[styles.authorName, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}>
+            <Text 
+              style={[styles.authorName, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}
+              numberOfLines={1}
+            >
               {item.authorInfo.nickname}
             </Text>
           )}
@@ -77,7 +80,10 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
             color={isDark ? '#AAA' : HEALING_COLORS.gray[400]}
             style={item.authorInfo?.nickname ? { marginLeft: 8 } : {}}
           />
-          <Text style={[styles.dateText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[500] }]}>
+          <Text 
+            style={[styles.dateText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[500] }]}
+            numberOfLines={1}
+          >
             {formatCardDate(item.date)}
           </Text>
         </View>
@@ -90,7 +96,7 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
             ]}
           >
             <Text style={styles.scenarioIcon}>{scenario.icon}</Text>
-            <Text style={[styles.scenarioText, { color: scenario.color }]}>{scenario.name}</Text>
+            <Text style={[styles.scenarioText, { color: scenario.color }]} numberOfLines={1}>{scenario.name}</Text>
           </View>
         )}
       </View>
@@ -211,6 +217,8 @@ const styles = StyleSheet.create({
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
   },
   authorAvatar: {
     width: 16,
@@ -221,12 +229,14 @@ const styles = StyleSheet.create({
   authorName: {
     fontSize: 12,
     fontWeight: '500',
+    maxWidth: 80,
   },
   dateText: {
     fontSize: 12,
     color: HEALING_COLORS.gray[500],
     fontWeight: '500',
     marginLeft: 4,
+    flexShrink: 1,
   },
   scenarioTag: {
     flexDirection: 'row',
@@ -234,6 +244,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    flexShrink: 0,
   },
   scenarioIcon: {
     fontSize: 14,

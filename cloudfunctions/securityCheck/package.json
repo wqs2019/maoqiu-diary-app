@@ -1,0 +1,15 @@
+{
+  "name": "securityCheck",
+  "version": "1.0.0",
+  "description": "内容安全检测云函数",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest",
+    "sensitive-word-tool": "^1.1.0"
+  }
+}

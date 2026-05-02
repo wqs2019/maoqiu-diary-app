@@ -21,7 +21,7 @@ fi
 cd cloudfunctions
 
 # 部署所有云函数
-for func in diary user sendCode verifyCode login image; do
+for func in diary user sendCode verifyCode login image securityCheck; do
     echo "📦 部署 $func ..."
     tcb fn deploy $func --force
     if [ $? -eq 0 ]; then

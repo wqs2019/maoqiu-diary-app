@@ -28,6 +28,7 @@ import { useVipGuard } from '../../hooks/useVipGuard';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 import { ScenarioType, MoodType, WeatherType, MediaResource } from '../../types';
+import { textSafetyService } from '../../services/textSafetyService';
 
 type EditDiaryRouteProp = RouteProp<
   { params: { scenario?: ScenarioType; diaryId?: string } },
@@ -81,7 +82,7 @@ const EditDiaryScreen: React.FC = () => {
   const currentNotebook = user ? getCurrentNotebook(user._id) : null;
   const { checkVipPermission } = useVipGuard();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim() && !content.trim()) {
       Alert.alert('提示', '请至少填写标题或内容哦～');
       return;
@@ -89,6 +90,19 @@ const EditDiaryScreen: React.FC = () => {
 
     if (!checkVipPermission('writeDiary')) {
       return;
+    }
+
+    // --- 内容安全检测拦截 ---
+    if (isPublic) {
+      // 只有当用户选择公开分享时，才进行严格检测
+      const isSafe = await textSafetyService.checkContentSafety(title.trim() + ' ' + content.trim());
+      if (!isSafe) {
+        Alert.alert(
+          '发布失败',
+          '日记内容包含敏感词汇（如涉政、色情、暴恐等）。为了维护阳光健康的社区环境，请修改后再尝试发布哦～'
+        );
+        return;
+      }
     }
 
     // 过滤掉仅在本地使用的状态字段
