@@ -15,6 +15,11 @@ export interface AppState {
   notificationsEnabled: boolean;
   biometricEnabled: boolean;
   isUnlocked: boolean; // Runtime only state
+  appConfig: {
+    show_ai_chat: boolean;
+    show_circle: boolean;
+    notification?: string;
+  };
   setTheme: (theme: ThemeType) => void;
   setLanguage: (language: I18nLangType) => void;
   setLoading: (loading: boolean) => void;
@@ -22,6 +27,7 @@ export interface AppState {
   setFirstLaunch: (isFirst: boolean) => Promise<void>;
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
   setUnlocked: (unlocked: boolean) => void;
+  setAppConfig: (config: { show_ai_chat: boolean; show_circle: boolean; notification?: string }) => void;
   initFirstLaunch: () => Promise<void>;
   initTheme: () => Promise<void>;
   initNotifications: () => Promise<void>;
@@ -37,6 +43,10 @@ export const useAppStore = create<AppState>((set) => ({
   notificationsEnabled: false,
   biometricEnabled: false,
   isUnlocked: false,
+  appConfig: {
+    show_ai_chat: true,
+    show_circle: true,
+  },
   setTheme: async (theme) => {
     await StorageUtil.set('theme', theme);
     set({ theme });
@@ -65,6 +75,9 @@ export const useAppStore = create<AppState>((set) => ({
   },
   setUnlocked: (unlocked) => {
     set({ isUnlocked: unlocked });
+  },
+  setAppConfig: (config) => {
+    set({ appConfig: config });
   },
   initFirstLaunch: async () => {
     // set({ isFirstLaunch: true });

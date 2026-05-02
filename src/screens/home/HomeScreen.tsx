@@ -29,10 +29,12 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useNotificationWatcher } from '../../hooks/useNotificationWatcher';
 import { useVipGuard } from '../../hooks/useVipGuard';
+import { useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 import { ScenarioType, TimelineItem, Diary } from '../../types';
 import { registerForPushNotificationsAsync } from '../../utils/notifications';
+import { AnnouncementBanner } from '../../components/common/AnnouncementBanner';
 
 const { width, height } = Dimensions.get('window');
 
@@ -61,6 +63,8 @@ const HomeScreen: React.FC = () => {
   // 记录是否是代码触发的滚动，避免 onScroll 冲突
   const isProgrammaticScroll = useRef(false);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const appConfig = useAppStore((state) => state.appConfig);
 
   // 简单的防抖处理，避免每次输入都触发网络请求
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -281,8 +285,11 @@ const HomeScreen: React.FC = () => {
       {!isDark && <AnimatedBackgroundBlobs />}
 
       {/* Fixed Header & Search */}
-      <View style={[styles.fixedHeader, { paddingTop: insets.top + 16 }]}>
-        <View style={styles.header}>
+      <View style={[styles.fixedHeader, { paddingTop: insets.top, paddingHorizontal: 0 }]}>
+        {!!appConfig?.notification && (
+          <AnnouncementBanner text={appConfig.notification} />
+        )}
+        <View style={[styles.header, { marginTop: appConfig?.notification ? 8 : 16, paddingHorizontal: 16 }]}>
           <View style={styles.headerLeft}>
             <TouchableOpacity
               style={styles.titleRow}
@@ -308,7 +315,7 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        <View style={styles.searchContainer}>
+        <View style={[styles.searchContainer, { paddingHorizontal: 16 }]}>
           <View
             style={[
               styles.searchInputWrapper,

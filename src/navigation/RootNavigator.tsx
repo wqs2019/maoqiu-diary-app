@@ -84,6 +84,7 @@ const AuthNavigator = () => (
 
 const MainNavigator = () => {
   const { themeName, colors } = useAppTheme();
+  const appConfig = useAppStore((state) => state.appConfig);
 
   return (
     <MainTab.Navigator
@@ -119,16 +120,20 @@ const MainNavigator = () => {
       })}
     >
       <MainTab.Screen name="Home" component={HomeScreen} options={{ title: '足迹' }} />
-      <MainTab.Screen name="Circle" component={CircleScreen} options={{ title: '圈子' }} />
+      {appConfig?.show_circle !== false && (
+        <MainTab.Screen name="Circle" component={CircleScreen} options={{ title: '圈子' }} />
+      )}
       <MainTab.Screen name="Category" component={CategoryScreen} options={{ title: '分类' }} />
-      <MainTab.Screen
-        name="AI"
-        component={AIScreen}
-        options={{
-          title: 'AI问答',
-          tabBarStyle: { display: 'none' },
-        }}
-      />
+      {appConfig?.show_ai_chat !== false && (
+        <MainTab.Screen
+          name="AI"
+          component={AIScreen}
+          options={{
+            title: 'AI问答',
+            tabBarStyle: { display: 'none' },
+          }}
+        />
+      )}
       <MainTab.Screen name="Mine" component={MineScreen} options={{ title: '我的' }} />
     </MainTab.Navigator>
   );
