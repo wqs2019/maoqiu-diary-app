@@ -228,10 +228,16 @@ const UserProfileScreen: React.FC = () => {
             }}
           >
             <View style={styles.feedHeader}>
-              <View style={styles.headerInfo}>
+              <View style={[styles.headerInfo, { flexDirection: 'row', alignItems: 'center' }]}>
                 <Text style={[styles.time, { color: isDark ? '#AAA' : '#6B7280' }]}>
                   {FormatUtil.formatRelativeTime(item.createdAt || item.date)}
                 </Text>
+                {/* ip location */}
+                {item.ipLocation && (
+                  <Text style={[styles.ipLocation, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                    {FormatUtil.formatIpLocation(item.ipLocation)}
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -448,7 +454,12 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: 12,
-    color: '#6B7280',
+    marginTop: 2,
+  },
+  ipLocation: {
+    fontSize: 12,
+    marginTop: 2,
+    marginLeft: 4,
   },
   title: {
     fontSize: 16,
