@@ -24,6 +24,7 @@ import {
 } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useAppStore } from '../../store/appStore';
+import { useAuthStore } from '../../store/authStore';
 import { scheduleDailyReminder, cancelDailyReminder } from '../../utils/notifications';
 
 const SettingsScreen: React.FC = () => {
@@ -39,6 +40,7 @@ const SettingsScreen: React.FC = () => {
   const themeStyle = HAND_DRAWN_STYLES.soft;
 
   const { theme, setTheme, notificationsEnabled, setNotificationsEnabled, reminderTime, setReminderTime } = useAppStore();
+  const { user } = useAuthStore();
   const [cacheSize, setCacheSize] = useState('计算中...');
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
 
@@ -48,6 +50,19 @@ const SettingsScreen: React.FC = () => {
 
   const handleToggleNotifications = async (enabled: boolean) => {
     if (enabled) {
+      if (!user?.isVip?.value) {
+        Alert.alert('提示', '开通 VIP 即可解锁每日定时提醒功能', [
+          { text: '取消', style: 'cancel' },
+          {
+            text: '去开通',
+            onPress: () => {
+              navigation.navigate('Subscription' as never);
+            },
+          },
+        ]);
+        return;
+      }
+
       const success = await scheduleDailyReminder(reminderTime.hour, reminderTime.minute);
       if (success) {
         await setNotificationsEnabled(true);
