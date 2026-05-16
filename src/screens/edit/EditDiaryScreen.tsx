@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  ActivityIndicator,
   Switch,
   TouchableOpacity,
 } from 'react-native';
@@ -25,10 +24,10 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { useCreateDiary, useUpdateDiary, useDiaryDetail } from '../../hooks/useDiaryQuery';
 import { useQueryClient } from '../../hooks/useQuery';
 import { useVipGuard } from '../../hooks/useVipGuard';
+import { textSafetyService } from '../../services/textSafetyService';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 import { ScenarioType, MoodType, WeatherType, MediaResource } from '../../types';
-import { textSafetyService } from '../../services/textSafetyService';
 
 type EditDiaryRouteProp = RouteProp<
   { params: { scenario?: ScenarioType; diaryId?: string } },
@@ -66,7 +65,7 @@ const EditDiaryScreen: React.FC = () => {
         // 使用腾讯新闻的免费接口
         const response = await fetch('https://i.news.qq.com/api/ip2city');
         const data = await response.json();
-        
+
         if (data.ret === 0 && data.province) {
           // 如果是中国，显示省份；如果是国外，显示国家
           const loc = data.country === '中国' ? data.province : data.country;
@@ -124,7 +123,9 @@ const EditDiaryScreen: React.FC = () => {
       // --- 内容安全检测拦截 ---
       if (isPublic) {
         // 只有当用户选择公开分享时，才进行严格检测
-        const isSafe = await textSafetyService.checkContentSafety(title.trim() + ' ' + content.trim());
+        const isSafe = await textSafetyService.checkContentSafety(
+          title.trim() + ' ' + content.trim()
+        );
         if (!isSafe) {
           Alert.alert(
             '发布失败',
@@ -136,8 +137,9 @@ const EditDiaryScreen: React.FC = () => {
 
       // 过滤掉未上传成功和仅在本地使用的状态字段
       // 尤其是兜底删除那些因为违规等原因上传失败，且用户没有主动删除的媒体
+      // 注意：已有的媒体可能没有 uploadStatus，需要保留 (m.uploadStatus === undefined)
       const cleanMedia = media
-        .filter((m) => m.uploadStatus === 'success')
+        .filter((m) => m.uploadStatus === 'success' || m.uploadStatus === undefined)
         .map(({ uploadStatus, subUploadStatus, uploadError, ...rest }) => rest);
 
       if (!currentNotebook) {
@@ -156,7 +158,7 @@ const EditDiaryScreen: React.FC = () => {
         weather: weather || 'sunny',
         location: location.trim(),
         ipLocation,
-        media: cleanMedia.length > 0 ? cleanMedia : undefined,
+        media: cleanMedia, // 总是发送 cleanMedia（包括空数组），确保删除所有媒体时能更新后端
         isPublic,
         authorInfo: {
           nickname: user?.nickname,
@@ -251,10 +253,7 @@ const EditDiaryScreen: React.FC = () => {
               return (
                 <TouchableOpacity
                   key={type}
-                  style={[
-                    styles.compactChip,
-                    index !== array.length - 1 && { marginRight: 16 }
-                  ]}
+                  style={[styles.compactChip, index !== array.length - 1 && { marginRight: 16 }]}
                   onPress={() => {
                     setScenario(type);
                   }}
@@ -329,8 +328,12 @@ const EditDiaryScreen: React.FC = () => {
             onMediaChange={setMedia}
             maxCount={user?.isVip?.value ? 9 : 3}
             draggable
-            onDragStart={() => setScrollEnabled(false)}
-            onDragEnd={() => setScrollEnabled(true)}
+            onDragStart={() => {
+              setScrollEnabled(false);
+            }}
+            onDragEnd={() => {
+              setScrollEnabled(true);
+            }}
           />
           {!user?.isVip?.value && (
             <Text style={[styles.vipHintText, { color: isDark ? '#888' : '#999' }]}>
