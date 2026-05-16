@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { imageService } from '../../services/imageService';
 import { useAuthStore } from '../../store/authStore';
@@ -28,6 +28,7 @@ const EditProfileScreen: React.FC = () => {
   const { user, updateProfile } = useAuthStore();
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const { isDark } = useAppTheme();
+  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
@@ -124,11 +125,11 @@ const EditProfileScreen: React.FC = () => {
           styles.genderOption,
           {
             backgroundColor: isDark ? '#1E1E1E' : '#FFF',
-            borderColor: isDark ? '#333' : '#FFF0F3',
+            borderColor: isDark ? '#333' : currentHealingColors.pink[100],
           },
           isSelected && {
-            backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50],
-            borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[300],
+            backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
+            borderColor: isDark ? '#4A2533' : currentHealingColors.pink[300],
           },
         ]}
         onPress={() => {
@@ -138,14 +139,14 @@ const EditProfileScreen: React.FC = () => {
         <Feather
           name={icon}
           size={20}
-          color={isSelected ? HEALING_COLORS.pink[500] : isDark ? '#AAA' : HEALING_COLORS.gray[400]}
+          color={isSelected ? currentHealingColors.pink[500] : isDark ? '#AAA' : currentHealingColors.gray[400]}
         />
         <Text
           style={[
             styles.genderText,
-            { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] },
+            { color: isDark ? '#AAA' : currentHealingColors.gray[600] },
             isSelected && {
-              color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600],
+              color: isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[600],
               fontWeight: '600',
             },
           ]}
@@ -180,10 +181,10 @@ const EditProfileScreen: React.FC = () => {
           <Feather
             name="chevron-left"
             size={24}
-            color={isDark ? '#FFF' : HEALING_COLORS.gray[800]}
+            color={isDark ? '#FFF' : currentHealingColors.gray[800]}
           />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
           编辑个人资料
         </Text>
         <View style={{ width: 40 }} />
@@ -202,7 +203,7 @@ const EditProfileScreen: React.FC = () => {
               styles.avatarContainer,
               {
                 borderColor: isDark ? '#333' : '#FFF',
-                shadowColor: isDark ? '#000' : HEALING_COLORS.pink[400],
+                shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
               },
             ]}
           >
@@ -224,7 +225,7 @@ const EditProfileScreen: React.FC = () => {
               )}
             </View>
           </TouchableOpacity>
-          <Text style={[styles.avatarHint, { color: isDark ? '#AAA' : HEALING_COLORS.gray[500] }]}>
+          <Text style={[styles.avatarHint, { color: isDark ? '#AAA' : currentHealingColors.gray[500] }]}>
             点击更换头像
           </Text>
         </View>
@@ -232,7 +233,7 @@ const EditProfileScreen: React.FC = () => {
         {/* 表单区域 */}
         <View style={styles.formSection}>
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: isDark ? '#FFF' : HEALING_COLORS.gray[700] }]}>
+            <Text style={[styles.label, { color: isDark ? '#FFF' : currentHealingColors.gray[700] }]}>
               昵称
             </Text>
             <TextInput
@@ -241,21 +242,21 @@ const EditProfileScreen: React.FC = () => {
                 {
                   borderRadius: themeStyle.borderRadius,
                   backgroundColor: isDark ? '#1E1E1E' : '#FFF',
-                  borderColor: isDark ? '#333' : '#FFF0F3',
-                  color: isDark ? '#FFF' : HEALING_COLORS.gray[800],
+                  borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+                  color: isDark ? '#FFF' : currentHealingColors.gray[800],
                 },
               ]}
               value={nickname}
               onChangeText={setNickname}
               placeholder="请输入可爱的昵称"
-              placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
+              placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
               maxLength={16}
               keyboardAppearance={isDark ? 'dark' : 'light'}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: isDark ? '#FFF' : HEALING_COLORS.gray[700] }]}>
+            <Text style={[styles.label, { color: isDark ? '#FFF' : currentHealingColors.gray[700] }]}>
               性别
             </Text>
             <View style={styles.genderContainer}>
@@ -266,7 +267,7 @@ const EditProfileScreen: React.FC = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: isDark ? '#FFF' : HEALING_COLORS.gray[700] }]}>
+            <Text style={[styles.label, { color: isDark ? '#FFF' : currentHealingColors.gray[700] }]}>
               年龄
             </Text>
             <TextInput
@@ -275,14 +276,14 @@ const EditProfileScreen: React.FC = () => {
                 {
                   borderRadius: themeStyle.borderRadius,
                   backgroundColor: isDark ? '#1E1E1E' : '#FFF',
-                  borderColor: isDark ? '#333' : '#FFF0F3',
-                  color: isDark ? '#FFF' : HEALING_COLORS.gray[800],
+                  borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+                  color: isDark ? '#FFF' : currentHealingColors.gray[800],
                 },
               ]}
               value={age}
               onChangeText={setAge}
               placeholder="你今年多大啦？"
-              placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
+              placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
               keyboardType="number-pad"
               maxLength={3}
               keyboardAppearance={isDark ? 'dark' : 'light'}
@@ -296,7 +297,8 @@ const EditProfileScreen: React.FC = () => {
             styles.saveButton,
             {
               borderRadius: themeStyle.borderRadius,
-              shadowColor: isDark ? '#000' : HEALING_COLORS.pink[500],
+              shadowColor: isDark ? '#000' : currentHealingColors.pink[500],
+              backgroundColor: currentHealingColors.pink[500]
             },
             isSaving && { opacity: 0.7 },
           ]}
@@ -393,11 +395,9 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#FFF',
     borderWidth: 2,
-    borderColor: '#FFF0F3',
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: HEALING_COLORS.gray[800],
   },
   genderContainer: {
     flexDirection: 'row',
@@ -411,7 +411,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFF',
     borderWidth: 2,
-    borderColor: '#FFF0F3',
     borderRadius: 16,
     paddingVertical: 12,
     gap: 6,
@@ -424,10 +423,8 @@ const styles = StyleSheet.create({
   saveButton: {
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: HEALING_COLORS.pink[500],
     paddingVertical: 16,
     alignItems: 'center',
-    shadowColor: HEALING_COLORS.pink[500],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
