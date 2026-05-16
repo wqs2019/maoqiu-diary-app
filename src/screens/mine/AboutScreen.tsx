@@ -4,7 +4,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
 const AboutScreen: React.FC = () => {
@@ -12,6 +12,7 @@ const AboutScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const { isDark } = useAppTheme();
+  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   return (
     <View
@@ -49,9 +50,9 @@ const AboutScreen: React.FC = () => {
             style={[
               styles.logoContainer,
               {
-                backgroundColor: isDark ? '#333' : HEALING_COLORS.pink[50],
+                backgroundColor: isDark ? '#333' : currentHealingColors.pink[50],
                 borderColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                shadowColor: isDark ? '#000' : HEALING_COLORS.pink[400],
+                shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
               },
             ]}
           >
@@ -68,15 +69,15 @@ const AboutScreen: React.FC = () => {
             style={[
               styles.sloganContainer,
               {
-                backgroundColor: isDark ? '#2C1B24' : '#FFF0F3',
-                borderColor: isDark ? '#4A2533' : '#FFE0E6',
+                backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
+                borderColor: isDark ? '#4A2533' : currentHealingColors.pink[100],
               },
             ]}
           >
             <Text
               style={[
                 styles.sloganText,
-                { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] },
+                { color: isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[600] },
               ]}
             >
               「收集日常里微小而确定的幸福」
@@ -109,7 +110,7 @@ const AboutScreen: React.FC = () => {
             styles.menuSection,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
               shadowColor: isDark ? '#000' : themeStyle.shadowColor,
               shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity * 0.5,
@@ -123,7 +124,7 @@ const AboutScreen: React.FC = () => {
             style={[
               styles.menuItem,
               styles.menuItemBorder,
-              { borderBottomColor: isDark ? '#333' : HEALING_COLORS.gray[100] },
+              { borderBottomColor: isDark ? '#333' : currentHealingColors.pink[50] },
             ]}
           >
             <Text
@@ -141,7 +142,7 @@ const AboutScreen: React.FC = () => {
             style={[
               styles.menuItem,
               styles.menuItemBorder,
-              { borderBottomColor: isDark ? '#333' : HEALING_COLORS.gray[100] },
+              { borderBottomColor: isDark ? '#333' : currentHealingColors.pink[50] },
             ]}
             onPress={() =>
               (navigation as any).navigate('Web', {

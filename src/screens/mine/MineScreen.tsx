@@ -271,7 +271,7 @@ const MineScreen: React.FC = () => {
                     { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
                   ]}
                 >
-                  解锁云同步、无限图片与专属贴纸
+                  解锁创建多本日记、自定义主题、应用锁等功能
                 </Text>
               </View>
             </View>

@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MediaSelector } from '../../components/handDrawn/MediaSelector';
-import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import feedbackService from '../../services/feedbackService';
 import { useAuthStore } from '../../store/authStore';
@@ -28,6 +28,7 @@ const FeedbackScreen: React.FC = () => {
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const user = useAuthStore((state) => state.user);
   const { isDark } = useAppTheme();
+  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   const [feedbackType, setFeedbackType] = useState<'bug' | 'feature' | 'other'>('bug');
   const [content, setContent] = useState('');
@@ -85,11 +86,11 @@ const FeedbackScreen: React.FC = () => {
           styles.typeOption,
           {
             backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-            borderColor: isDark ? '#333' : '#FFF0F3',
+            borderColor: isDark ? '#333' : currentHealingColors.pink[100],
           },
           isSelected && {
-            backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50],
-            borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[300],
+            backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
+            borderColor: isDark ? '#4A2533' : currentHealingColors.pink[300],
           },
         ]}
         onPress={() => {
@@ -101,9 +102,9 @@ const FeedbackScreen: React.FC = () => {
         <Text
           style={[
             styles.typeText,
-            { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[600] },
+            { color: isDark ? '#9CA3AF' : currentHealingColors.gray[600] },
             isSelected && {
-              color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600],
+              color: isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[600],
               fontWeight: '600',
             },
           ]}
@@ -190,12 +191,12 @@ const FeedbackScreen: React.FC = () => {
               {
                 borderRadius: themeStyle.borderRadius,
                 backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                borderColor: isDark ? '#333' : '#FFF0F3',
-                color: isDark ? '#FFF' : HEALING_COLORS.gray[800],
+                borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+                color: isDark ? '#FFF' : currentHealingColors.gray[800],
               },
             ]}
             placeholder="请详细描述你遇到的问题或建议，毛球会认真阅读的..."
-            placeholderTextColor={isDark ? '#6B7280' : HEALING_COLORS.gray[400]}
+            placeholderTextColor={isDark ? '#6B7280' : currentHealingColors.gray[400]}
             multiline
             textAlignVertical="top"
             value={content}
@@ -203,7 +204,7 @@ const FeedbackScreen: React.FC = () => {
             maxLength={500}
           />
           <Text
-            style={[styles.wordCount, { color: isDark ? '#6B7280' : HEALING_COLORS.gray[400] }]}
+            style={[styles.wordCount, { color: isDark ? '#6B7280' : currentHealingColors.gray[400] }]}
           >
             {content.length}/500
           </Text>
@@ -211,7 +212,7 @@ const FeedbackScreen: React.FC = () => {
           <Text
             style={[
               styles.label,
-              { marginTop: 12, color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[700] },
+              { marginTop: 12, color: isDark ? '#E5E7EB' : currentHealingColors.gray[700] },
             ]}
           >
             图片/视频（最多3个）
@@ -223,7 +224,7 @@ const FeedbackScreen: React.FC = () => {
           <Text
             style={[
               styles.label,
-              { marginTop: 12, color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[700] },
+              { marginTop: 12, color: isDark ? '#E5E7EB' : currentHealingColors.gray[700] },
             ]}
           >
             联系方式（选填）
@@ -234,12 +235,12 @@ const FeedbackScreen: React.FC = () => {
               {
                 borderRadius: themeStyle.borderRadius,
                 backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                borderColor: isDark ? '#333' : '#FFF0F3',
-                color: isDark ? '#FFF' : HEALING_COLORS.gray[800],
+                borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+                color: isDark ? '#FFF' : currentHealingColors.gray[800],
               },
             ]}
             placeholder="留下你的邮箱或微信，方便我们回复你"
-            placeholderTextColor={isDark ? '#6B7280' : HEALING_COLORS.gray[400]}
+            placeholderTextColor={isDark ? '#6B7280' : currentHealingColors.gray[400]}
             value={contact}
             onChangeText={setContact}
           />
@@ -249,8 +250,8 @@ const FeedbackScreen: React.FC = () => {
               styles.submitButton,
               {
                 borderRadius: themeStyle.borderRadius,
-                backgroundColor: isDark ? HEALING_COLORS.pink[600] : HEALING_COLORS.pink[500],
-                shadowColor: isDark ? '#000' : HEALING_COLORS.pink[500],
+                backgroundColor: isDark ? currentHealingColors.pink[600] : currentHealingColors.pink[500],
+                shadowColor: isDark ? '#000' : currentHealingColors.pink[500],
               },
               (!content.trim() || isSubmitting) && { opacity: 0.6 },
             ]}
@@ -340,7 +341,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#FFF0F3',
     borderRadius: 16,
     paddingVertical: 12,
     gap: 6,
@@ -356,11 +356,9 @@ const styles = StyleSheet.create({
   textArea: {
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#FFF0F3',
     paddingHorizontal: 16,
     paddingVertical: 16,
     fontSize: 15,
-    color: HEALING_COLORS.gray[800],
     minHeight: 150,
   },
   wordCount: {
@@ -373,21 +371,17 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#FFF0F3',
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: HEALING_COLORS.gray[800],
   },
   mediaContainer: {
     marginBottom: 12,
   },
   submitButton: {
-    backgroundColor: HEALING_COLORS.pink[500],
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 40,
-    shadowColor: HEALING_COLORS.pink[500],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

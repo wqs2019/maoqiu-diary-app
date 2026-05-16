@@ -28,6 +28,7 @@ interface MediaPreviewerProps {
 
 const LivePhotoItem = ({ item, isFocused }: { item: MediaResource; isFocused: boolean }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<Video>(null);
 
   // When not focused, ensure it stops
   useEffect(() => {
@@ -39,11 +40,20 @@ const LivePhotoItem = ({ item, isFocused }: { item: MediaResource; isFocused: bo
   const handlePressIn = () => {
     if (item.type === 'livePhoto') {
       setIsPlaying(true);
+      if (videoRef.current) {
+        videoRef.current.setPositionAsync(0);
+      }
     }
   };
 
   const handlePressOut = () => {
     if (item.type === 'livePhoto') {
+      setIsPlaying(false);
+    }
+  };
+
+  const handlePlaybackStatusUpdate = (status: any) => {
+    if (status.didJustFinish) {
       setIsPlaying(false);
     }
   };
@@ -64,12 +74,14 @@ const LivePhotoItem = ({ item, isFocused }: { item: MediaResource; isFocused: bo
 
         {item.type === 'livePhoto' && item.livePhotoVideoUri && (
           <Video
+            ref={videoRef}
             source={{ uri: item.livePhotoVideoUri }}
             style={[styles.fullScreen, styles.videoOverlay, { opacity: isPlaying ? 1 : 0 }]}
             resizeMode={ResizeMode.CONTAIN}
             shouldPlay={isPlaying}
-            isLooping
+            isLooping={false}
             isMuted={false}
+            onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
           />
         )}
 

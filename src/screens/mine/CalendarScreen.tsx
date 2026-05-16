@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Modal } from '../../components/common/Modal';
-import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { getMoodConfig } from '../../config/statusConfig';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList, useDiaryStats } from '../../hooks/useDiaryQuery';
@@ -25,6 +25,7 @@ const CalendarScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const { isDark } = useAppTheme();
+  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   // 当前日历查看的年月
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -175,9 +176,9 @@ const CalendarScreen: React.FC = () => {
             styles.statsCard,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
-              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
               shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity,
               shadowRadius: themeStyle.shadowRadius,
               shadowOffset: themeStyle.shadowOffset,
@@ -189,29 +190,29 @@ const CalendarScreen: React.FC = () => {
             <Text
               style={[
                 styles.statValue,
-                { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] },
+                { color: isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[500] },
               ]}
             >
               {checkInStats.maxStreak}
             </Text>
             <Text
-              style={[styles.statLabel, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}
+              style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}
             >
               最高连续(天)
             </Text>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]} />
+          <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : currentHealingColors.pink[50] }]} />
           <View style={styles.statItem}>
             <Text
               style={[
                 styles.statValue,
-                { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] },
+                { color: isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[500] },
               ]}
             >
               {checkInStats.totalCheckIns}
             </Text>
             <Text
-              style={[styles.statLabel, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}
+              style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}
             >
               本月打卡(次)
             </Text>
@@ -224,9 +225,9 @@ const CalendarScreen: React.FC = () => {
             styles.calendarCard,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
-              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
               shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
@@ -243,11 +244,11 @@ const CalendarScreen: React.FC = () => {
               <Feather
                 name="chevron-left"
                 size={24}
-                color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[600]}
+                color={isDark ? '#E5E7EB' : currentHealingColors.gray[600]}
               />
             </TouchableOpacity>
             <Text
-              style={[styles.monthTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+              style={[styles.monthTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
             >
               {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
             </Text>
@@ -258,7 +259,7 @@ const CalendarScreen: React.FC = () => {
               <Feather
                 name="chevron-right"
                 size={24}
-                color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[600]}
+                color={isDark ? '#E5E7EB' : currentHealingColors.gray[600]}
               />
             </TouchableOpacity>
           </View>
@@ -270,7 +271,7 @@ const CalendarScreen: React.FC = () => {
                 key={index}
                 style={[
                   styles.weekDayText,
-                  { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[400] },
+                  { color: isDark ? '#9CA3AF' : currentHealingColors.gray[400] },
                 ]}
               >
                 {day}
@@ -281,7 +282,7 @@ const CalendarScreen: React.FC = () => {
           {/* 日历网格 */}
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator color={HEALING_COLORS.pink[400]} size="large" />
+              <ActivityIndicator color={currentHealingColors.pink[400]} size="large" />
             </View>
           ) : (
             <View style={styles.daysGrid}>
@@ -325,13 +326,13 @@ const CalendarScreen: React.FC = () => {
                           !hasDiary && [
                             styles.todayCircle,
                             {
-                              backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[50],
-                              borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[300],
+                              backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
+                              borderColor: isDark ? '#4A2533' : currentHealingColors.pink[300],
                             },
                           ],
                         hasDiary && [
                           styles.checkedCircle,
-                          { backgroundColor: isDark ? '#2C1B24' : '#FFF0F3' },
+                          { backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50] },
                         ],
                       ]}
                     >
@@ -341,11 +342,11 @@ const CalendarScreen: React.FC = () => {
                         <Text
                           style={[
                             styles.dayText,
-                            { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[700] },
+                            { color: isDark ? '#E5E7EB' : currentHealingColors.gray[700] },
                             isToday && [
                               styles.todayText,
                               {
-                                color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600],
+                                color: isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[600],
                               },
                             ],
                           ]}
@@ -360,8 +361,8 @@ const CalendarScreen: React.FC = () => {
                           styles.multiDot,
                           {
                             backgroundColor: isDark
-                              ? HEALING_COLORS.pink[500]
-                              : HEALING_COLORS.pink[400],
+                              ? currentHealingColors.pink[500]
+                              : currentHealingColors.pink[400],
                           },
                         ]}
                       />
@@ -374,7 +375,7 @@ const CalendarScreen: React.FC = () => {
         </View>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>
+          <Text style={[styles.footerText, { color: isDark ? '#666' : currentHealingColors.gray[400] }]}>
             🐾 每天都要记得来看毛球哦
           </Text>
         </View>
@@ -391,7 +392,7 @@ const CalendarScreen: React.FC = () => {
           <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
             <View style={styles.modalHeader}>
               <Text
-                style={[styles.modalTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+                style={[styles.modalTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
               >
                 请选择要查看的日记
               </Text>
@@ -400,7 +401,7 @@ const CalendarScreen: React.FC = () => {
                   setIsModalVisible(false);
                 }}
               >
-                <Feather name="x" size={24} color={isDark ? '#9CA3AF' : HEALING_COLORS.gray[400]} />
+                <Feather name="x" size={24} color={isDark ? '#9CA3AF' : currentHealingColors.gray[400]} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
@@ -435,7 +436,7 @@ const CalendarScreen: React.FC = () => {
                         <Text
                           style={[
                             styles.diaryItemTitle,
-                            { color: isDark ? '#F3F4F6' : HEALING_COLORS.gray[800] },
+                            { color: isDark ? '#F3F4F6' : currentHealingColors.gray[800] },
                           ]}
                           numberOfLines={1}
                           ellipsizeMode="tail"
@@ -446,7 +447,7 @@ const CalendarScreen: React.FC = () => {
                       <Text
                         style={[
                           styles.diaryItemText,
-                          { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[600] },
+                          { color: isDark ? '#9CA3AF' : currentHealingColors.gray[600] },
                         ]}
                         numberOfLines={1}
                         ellipsizeMode="tail"
@@ -456,7 +457,7 @@ const CalendarScreen: React.FC = () => {
                       <Text
                         style={[
                           styles.diaryItemTime,
-                          { color: isDark ? '#6B7280' : HEALING_COLORS.gray[400] },
+                          { color: isDark ? '#6B7280' : currentHealingColors.gray[400] },
                         ]}
                         numberOfLines={1}
                       >
@@ -466,7 +467,7 @@ const CalendarScreen: React.FC = () => {
                     <Feather
                       name="chevron-right"
                       size={20}
-                      color={isDark ? '#6B7280' : HEALING_COLORS.gray[400]}
+                      color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
                     />
                   </TouchableOpacity>
                 );
@@ -503,7 +504,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: HEALING_COLORS.gray[800],
   },
   scrollView: {
     flex: 1,
@@ -516,7 +516,6 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     marginBottom: 24,
     borderWidth: 2,
-    borderColor: '#FFF0F3',
     alignItems: 'center',
   },
   statItem: {
@@ -526,13 +525,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 32,
     fontWeight: '800',
-    color: HEALING_COLORS.pink[500],
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: HEALING_COLORS.gray[500],
   },
   statDivider: {
     width: 2,
@@ -543,7 +540,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 20,
     borderWidth: 2,
-    borderColor: '#FFF0F3',
     marginBottom: 40,
   },
   calendarHeader: {
@@ -555,7 +551,6 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: HEALING_COLORS.gray[800],
   },
   monthButton: {
     padding: 8,
@@ -570,7 +565,6 @@ const styles = StyleSheet.create({
   weekDayText: {
     fontSize: 14,
     fontWeight: '600',
-    color: HEALING_COLORS.gray[400],
     width: 40,
     textAlign: 'center',
   },
@@ -599,20 +593,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   todayCircle: {
-    backgroundColor: HEALING_COLORS.pink[50],
     borderWidth: 2,
-    borderColor: HEALING_COLORS.pink[300],
   },
-  checkedCircle: {
-    backgroundColor: '#FFF0F3',
-  },
+  checkedCircle: {},
   dayText: {
     fontSize: 15,
     fontWeight: '500',
-    color: HEALING_COLORS.gray[700],
   },
   todayText: {
-    color: HEALING_COLORS.pink[600],
     fontWeight: '700',
   },
   dayEmoji: {
@@ -624,7 +612,6 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: HEALING_COLORS.pink[400],
   },
   footer: {
     alignItems: 'center',
@@ -632,7 +619,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: HEALING_COLORS.gray[400],
     fontWeight: '500',
   },
   modalOverlay: {

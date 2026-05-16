@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
+import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useVipGuard } from '../../hooks/useVipGuard';
 import { imageService } from '../../services/imageService';
@@ -40,6 +40,7 @@ const NotebooksScreen: React.FC = () => {
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const user = useAuthStore((state) => state.user);
   const { isDark } = useAppTheme();
+  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
   const { checkVipPermission } = useVipGuard();
 
   const setCurrentNotebook = useNotebookStore((state) => state.setCurrentNotebook);
@@ -282,7 +283,7 @@ const NotebooksScreen: React.FC = () => {
           style={styles.addButton}
           onPress={openAddModal}
         >
-          <Feather name="plus" size={24} color={HEALING_COLORS.pink[500]} />
+          <Feather name="plus" size={24} color={currentHealingColors.pink[500]} />
         </TouchableOpacity>
       </View>
 
@@ -299,7 +300,7 @@ const NotebooksScreen: React.FC = () => {
                   <TouchableOpacity style={[styles.invBtn, styles.invBtnReject]} onPress={() => handleRespondInvitation(inv._id, 'reject')}>
                     <Text style={styles.invBtnRejectText}>拒绝</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.invBtn, styles.invBtnAccept]} onPress={() => handleRespondInvitation(inv._id, 'accept')}>
+                  <TouchableOpacity style={[styles.invBtn, styles.invBtnAccept, { backgroundColor: currentHealingColors.pink[500] }]} onPress={() => handleRespondInvitation(inv._id, 'accept')}>
                     <Text style={styles.invBtnAcceptText}>同意</Text>
                   </TouchableOpacity>
                 </View>
@@ -319,13 +320,13 @@ const NotebooksScreen: React.FC = () => {
                   {
                     borderRadius: themeStyle.borderRadius,
                     backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                    borderColor: isDark ? '#333' : '#FFF0F3',
+                    borderColor: isDark ? '#333' : currentHealingColors.pink[100],
                   },
                   isActive && [
                     styles.notebookItemActive,
                     {
-                      backgroundColor: isDark ? '#2C1B24' : '#FFF0F3',
-                      borderColor: isDark ? '#4A2533' : HEALING_COLORS.pink[200],
+                      backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
+                      borderColor: isDark ? '#4A2533' : currentHealingColors.pink[200],
                     },
                   ],
                 ]}
@@ -339,23 +340,23 @@ const NotebooksScreen: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: isDark ? '#333' : '#F5F5F5' },
-                    isActive && [
-                      styles.iconContainerActive,
-                      { backgroundColor: HEALING_COLORS.pink[500] },
-                    ],
-                  ]}
-                >
+                    style={[
+                      styles.iconContainer,
+                      { backgroundColor: isDark ? '#333' : currentHealingColors.pink[50] },
+                      isActive && [
+                        styles.iconContainerActive,
+                        { backgroundColor: currentHealingColors.pink[500] },
+                      ],
+                    ]}
+                  >
                   {notebook.cover ? (
                     <Image source={{ uri: notebook.cover }} style={styles.notebookCover} />
                   ) : (
                     <Ionicons
-                      name="book"
-                      size={24}
-                      color={isActive ? '#FFFFFF' : isDark ? '#AAA' : HEALING_COLORS.gray[400]}
-                    />
+                        name="book"
+                        size={24}
+                        color={isActive ? '#FFFFFF' : isDark ? '#AAA' : currentHealingColors.gray[400]}
+                      />
                   )}
                 </View>
                 <View style={styles.notebookInfo}>
@@ -363,10 +364,10 @@ const NotebooksScreen: React.FC = () => {
                     <Text
                       style={[
                         styles.notebookName,
-                        { color: isDark ? '#FFF' : HEALING_COLORS.gray[800], marginBottom: 0 },
+                        { color: isDark ? '#FFF' : currentHealingColors.gray[800], marginBottom: 0 },
                         isActive && [
                           styles.notebookNameActive,
-                          { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] },
+                          { color: isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[600] },
                         ],
                       ]}
                     >
@@ -375,13 +376,13 @@ const NotebooksScreen: React.FC = () => {
                     {notebook.type === 'shared' && (
                       <View style={[
                         styles.sharedTag, 
-                        { backgroundColor: isDark ? '#333' : '#FFF0F3' },
-                        isActive && { backgroundColor: isDark ? '#4A2533' : '#FFD6E0' }
+                        { backgroundColor: isDark ? '#333' : currentHealingColors.pink[50] },
+                        isActive && { backgroundColor: isDark ? '#4A2533' : currentHealingColors.pink[100] }
                       ]}>
                         <Text style={[
                           styles.sharedTagText, 
-                          { color: HEALING_COLORS.pink[500] },
-                          isActive && { color: isDark ? HEALING_COLORS.pink[300] : HEALING_COLORS.pink[600] }
+                          { color: currentHealingColors.pink[500] },
+                          isActive && { color: isDark ? currentHealingColors.pink[300] : currentHealingColors.pink[600] }
                         ]}>👥 共享</Text>
                       </View>
                     )}
@@ -390,7 +391,7 @@ const NotebooksScreen: React.FC = () => {
                     <Text
                       style={[
                         styles.notebookDesc,
-                        { color: isDark ? '#AAA' : HEALING_COLORS.gray[500] },
+                        { color: isDark ? '#AAA' : currentHealingColors.gray[500] },
                       ]}
                       numberOfLines={1}
                       ellipsizeMode="tail"
@@ -401,7 +402,7 @@ const NotebooksScreen: React.FC = () => {
                   <Text
                     style={[
                       styles.notebookDate,
-                      { color: isDark ? '#888' : HEALING_COLORS.gray[500] },
+                      { color: isDark ? '#888' : currentHealingColors.gray[500] },
                     ]}
                   >
                     创建于 {new Date(notebook.createdAt).toLocaleDateString()}
@@ -411,7 +412,7 @@ const NotebooksScreen: React.FC = () => {
                   <Feather
                     name="check"
                     size={24}
-                    color={HEALING_COLORS.pink[500]}
+                    color={currentHealingColors.pink[500]}
                     style={styles.checkIcon}
                   />
                 )}
@@ -426,7 +427,7 @@ const NotebooksScreen: React.FC = () => {
                     <Feather
                       name="more-horizontal"
                       size={24}
-                      color={isDark ? '#AAA' : HEALING_COLORS.gray[400]}
+                      color={isDark ? '#AAA' : currentHealingColors.gray[400]}
                     />
                   </TouchableOpacity>
                 )}
@@ -457,16 +458,17 @@ const NotebooksScreen: React.FC = () => {
             >
               <TouchableWithoutFeedback>
                 <View
-                  style={[
-                    styles.modalContent,
-                    {
-                      borderRadius: themeStyle.borderRadius,
-                      backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                    },
-                  ]}
-                >
+                    style={[
+                      styles.modalContent,
+                      {
+                        borderRadius: themeStyle.borderRadius,
+                        backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                        borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+                      },
+                    ]}
+                  >
                 <Text
-                  style={[styles.modalTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+                  style={[styles.modalTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
                 >
                   {isEditMode ? '编辑日记本' : '新建日记本'}
                 </Text>
@@ -476,8 +478,8 @@ const NotebooksScreen: React.FC = () => {
                     <Image source={{ uri: notebookCover }} style={styles.coverImage} />
                   ) : (
                     <View style={[styles.coverPlaceholder, { backgroundColor: isDark ? '#333' : '#F5F5F5' }]}>
-                      <Feather name="image" size={20} color={isDark ? '#AAA' : HEALING_COLORS.gray[400]} />
-                      <Text style={[styles.coverText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[400] }]}>上传封面</Text>
+                      <Feather name="image" size={20} color={isDark ? '#AAA' : currentHealingColors.gray[400]} />
+                      <Text style={[styles.coverText, { color: isDark ? '#AAA' : currentHealingColors.gray[400] }]}>上传封面</Text>
                     </View>
                   )}
                   {isUploadingCover && (
@@ -497,7 +499,7 @@ const NotebooksScreen: React.FC = () => {
                     },
                   ]}
                   placeholder="给日记本起个名字吧..."
-                  placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
+                  placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
                   value={newNotebookName}
                   onChangeText={setNewNotebookName}
                   maxLength={20}
@@ -514,7 +516,7 @@ const NotebooksScreen: React.FC = () => {
                     },
                   ]}
                   placeholder="给这本日记本添加一点描述吧 (可选)..."
-                  placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
+                  placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
                   value={newNotebookDesc}
                   onChangeText={setNewNotebookDesc}
                   maxLength={50}
@@ -522,25 +524,25 @@ const NotebooksScreen: React.FC = () => {
 
                 {!isEditMode && (
                   <View style={styles.typeSelectorContainer}>
-                    <Text style={[styles.typeLabel, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>类型</Text>
+                    <Text style={[styles.typeLabel, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>类型</Text>
                     <View style={styles.typeButtons}>
                       <TouchableOpacity
                         style={[
                           styles.typeButton,
-                          notebookType === 'private' && styles.typeButtonActive,
+                          notebookType === 'private' && [styles.typeButtonActive, { backgroundColor: currentHealingColors.pink[50], borderColor: currentHealingColors.pink[300] }],
                           { borderRadius: themeStyle.borderRadius }
                         ]}
                         onPress={() => setNotebookType('private')}
                       >
                         <Text style={[
                           styles.typeButtonText,
-                          notebookType === 'private' && styles.typeButtonTextActive
+                          notebookType === 'private' && [styles.typeButtonTextActive, { color: currentHealingColors.pink[600] }]
                         ]}>私密日记本</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[
                           styles.typeButton,
-                          notebookType === 'shared' && styles.typeButtonActive,
+                          notebookType === 'shared' && [styles.typeButtonActive, { backgroundColor: currentHealingColors.pink[50], borderColor: currentHealingColors.pink[300] }],
                           !user?.isVip?.value && styles.typeButtonDisabled,
                           { borderRadius: themeStyle.borderRadius }
                         ]}
@@ -559,7 +561,7 @@ const NotebooksScreen: React.FC = () => {
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                           <Text style={[
                             styles.typeButtonText,
-                            notebookType === 'shared' && styles.typeButtonTextActive,
+                            notebookType === 'shared' && [styles.typeButtonTextActive, { color: currentHealingColors.pink[600] }],
                             !user?.isVip?.value && styles.typeButtonTextDisabled
                           ]}>共享日记本</Text>
                           {!user?.isVip?.value && (
@@ -571,7 +573,7 @@ const NotebooksScreen: React.FC = () => {
                       </TouchableOpacity>
                     </View>
                     {notebookType === 'shared' && (
-                      <Text style={[styles.typeHintText, { color: isDark ? '#888' : HEALING_COLORS.gray[500] }]}>
+                      <Text style={[styles.typeHintText, { color: isDark ? '#888' : currentHealingColors.gray[500] }]}>
                         💡 适合记录情侣日常、闺蜜旅行、家庭账本等共同回忆。
                       </Text>
                     )}
@@ -589,7 +591,7 @@ const NotebooksScreen: React.FC = () => {
                       },
                     ]}
                     placeholder="输入对方手机号..."
-                    placeholderTextColor={isDark ? '#888' : HEALING_COLORS.gray[400]}
+                    placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
                     value={inviteePhone}
                     onChangeText={setInviteePhone}
                     keyboardType="phone-pad"
@@ -602,19 +604,24 @@ const NotebooksScreen: React.FC = () => {
                     style={[
                       styles.modalButton,
                       styles.cancelButton,
-                      { borderRadius: themeStyle.borderRadius },
+                      { borderRadius: themeStyle.borderRadius, backgroundColor: isDark ? '#333' : '#F5F5F5' },
                     ]}
                     onPress={() => {
                       setIsAddModalVisible(false);
                     }}
                   >
-                    <Text style={styles.cancelButtonText}>取消</Text>
+                    <Text style={[styles.cancelButtonText, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>取消</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
                       styles.modalButton,
                       styles.confirmButton,
-                      { borderRadius: themeStyle.borderRadius },
+                      { 
+                        borderRadius: themeStyle.borderRadius,
+                        backgroundColor: (isAdding || !newNotebookName.trim() || isUploadingCover)
+                          ? (isDark ? '#333' : currentHealingColors.pink[200])
+                          : currentHealingColors.pink[500],
+                      },
                     ]}
                     onPress={handleSaveNotebook}
                     disabled={isAdding || !newNotebookName.trim() || isUploadingCover}
@@ -662,7 +669,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     justifyContent: 'center',
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -681,7 +688,6 @@ const styles = StyleSheet.create({
   },
   notebookItemActive: {
     backgroundColor: '#FFF0F5',
-    borderColor: HEALING_COLORS.pink[200],
   },
   iconContainer: {
     width: 48,
@@ -692,9 +698,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
-  iconContainerActive: {
-    backgroundColor: HEALING_COLORS.pink[400],
-  },
+  iconContainerActive: {},
   notebookInfo: {
     flex: 1,
   },
@@ -709,9 +713,7 @@ const styles = StyleSheet.create({
     color: HEALING_COLORS.gray[500],
     marginBottom: 4,
   },
-  notebookNameActive: {
-    color: HEALING_COLORS.pink[600],
-  },
+  notebookNameActive: {},
   sharedTag: {
     marginLeft: 8,
     paddingHorizontal: 6,
@@ -812,16 +814,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#F5F5F5',
-  },
-  confirmButton: {
-    backgroundColor: HEALING_COLORS.pink[500],
-  },
+  cancelButton: {},
+  confirmButton: {},
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: HEALING_COLORS.gray[600],
   },
   confirmButtonText: {
     fontSize: 16,
@@ -845,20 +842,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5F5F5',
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  typeButtonActive: {
-    backgroundColor: HEALING_COLORS.pink[50],
-    borderColor: HEALING_COLORS.pink[300],
-  },
+  typeButtonActive: {},
   typeButtonText: {
     fontSize: 14,
     color: '#666',
   },
   typeButtonTextActive: {
-    color: HEALING_COLORS.pink[600],
     fontWeight: '600',
   },
   typeHintText: {
@@ -922,9 +914,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#666',
   },
-  invBtnAccept: {
-    backgroundColor: HEALING_COLORS.pink[500],
-  },
+  invBtnAccept: {},
   invBtnAcceptText: {
     fontSize: 14,
     fontWeight: '600',
