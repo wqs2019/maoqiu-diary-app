@@ -39,7 +39,14 @@ const SettingsScreen: React.FC = () => {
 
   const themeStyle = HAND_DRAWN_STYLES.soft;
 
-  const { theme, setTheme, notificationsEnabled, setNotificationsEnabled, reminderTime, setReminderTime } = useAppStore();
+  const {
+    theme,
+    setTheme,
+    notificationsEnabled,
+    setNotificationsEnabled,
+    reminderTime,
+    setReminderTime,
+  } = useAppStore();
   const { user } = useAuthStore();
   const [cacheSize, setCacheSize] = useState('计算中...');
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
@@ -53,7 +60,10 @@ const SettingsScreen: React.FC = () => {
       const success = await scheduleDailyReminder(reminderTime.hour, reminderTime.minute);
       if (success) {
         await setNotificationsEnabled(true);
-        Alert.alert('提示', `已开启每日 ${formatTime(reminderTime.hour, reminderTime.minute)} 提醒写日记功能`);
+        Alert.alert(
+          '提示',
+          `已开启每日 ${formatTime(reminderTime.hour, reminderTime.minute)} 提醒写日记功能`
+        );
       } else {
         Alert.alert('提示', '请在系统设置中允许应用发送通知');
       }
@@ -68,7 +78,7 @@ const SettingsScreen: React.FC = () => {
     const hour = date.getHours();
     const minute = date.getMinutes();
     await setReminderTime({ hour, minute });
-    
+
     // 如果通知已经开启，则重新调度
     if (notificationsEnabled) {
       const success = await scheduleDailyReminder(hour, minute);
@@ -196,7 +206,7 @@ const SettingsScreen: React.FC = () => {
       style={[
         styles.menuItem,
         !isLast && styles.menuItemBorder,
-        { borderBottomColor: isDark ? '#333' : '#FFF0F3' },
+        { borderBottomColor: isDark ? '#333' : currentHealingColors.pink[50] },
       ]}
       onPress={onPress}
       disabled={!onPress}
@@ -226,7 +236,12 @@ const SettingsScreen: React.FC = () => {
         { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#FAFAFA' },
       ]}
     >
-      <View style={[styles.header, { borderBottomColor: isDark ? '#333' : '#F0F0F0' }]}>
+      <View
+        style={[
+          styles.header,
+          { borderBottomColor: isDark ? '#333' : currentHealingColors.pink[100] },
+        ]}
+      >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => {
@@ -253,10 +268,10 @@ const SettingsScreen: React.FC = () => {
             styles.menuSection,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
               shadowColor: isDark ? '#000' : themeStyle.shadowColor,
-              shadowOpacity: themeStyle.shadowOpacity * 0.5,
+              shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
@@ -281,10 +296,10 @@ const SettingsScreen: React.FC = () => {
             styles.menuSection,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
               shadowColor: isDark ? '#000' : themeStyle.shadowColor,
-              shadowOpacity: themeStyle.shadowOpacity * 0.5,
+              shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
@@ -300,10 +315,10 @@ const SettingsScreen: React.FC = () => {
             styles.menuSection,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
               shadowColor: isDark ? '#000' : themeStyle.shadowColor,
-              shadowOpacity: themeStyle.shadowOpacity * 0.5,
+              shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
@@ -325,29 +340,32 @@ const SettingsScreen: React.FC = () => {
             />,
             false
           )}
-          {notificationsEnabled && renderSettingItem(
-            'clock',
-            '提醒时间',
-            currentHealingColors.yellow[500],
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text
-                style={[
-                  styles.valueText,
-                  { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
-                ]}
-              >
-                {formatTime(reminderTime.hour, reminderTime.minute)}
-              </Text>
-              <Feather
-                name="chevron-right"
-                size={20}
-                color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
-                style={{ marginLeft: 4 }}
-              />
-            </View>,
-            false,
-            () => setTimePickerVisible(true)
-          )}
+          {notificationsEnabled &&
+            renderSettingItem(
+              'clock',
+              '提醒时间',
+              currentHealingColors.yellow[500],
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  style={[
+                    styles.valueText,
+                    { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                  ]}
+                >
+                  {formatTime(reminderTime.hour, reminderTime.minute)}
+                </Text>
+                <Feather
+                  name="chevron-right"
+                  size={20}
+                  color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
+                  style={{ marginLeft: 4 }}
+                />
+              </View>,
+              false,
+              () => {
+                setTimePickerVisible(true);
+              }
+            )}
           {renderSettingItem(
             'moon',
             '主题模式',
@@ -403,10 +421,10 @@ const SettingsScreen: React.FC = () => {
             styles.menuSection,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
               shadowColor: isDark ? '#000' : themeStyle.shadowColor,
-              shadowOpacity: themeStyle.shadowOpacity * 0.5,
+              shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
@@ -436,13 +454,11 @@ const SettingsScreen: React.FC = () => {
         mode="time"
         display="spinner"
         locale="zh-CN"
-        date={
-          new Date(
-            new Date().setHours(reminderTime.hour, reminderTime.minute, 0, 0)
-          )
-        }
+        date={new Date(new Date().setHours(reminderTime.hour, reminderTime.minute, 0, 0))}
         onConfirm={handleTimeConfirm}
-        onCancel={() => setTimePickerVisible(false)}
+        onCancel={() => {
+          setTimePickerVisible(false);
+        }}
         confirmTextIOS="确认"
         cancelTextIOS="取消"
         isDarkModeEnabled={isDark}

@@ -108,7 +108,7 @@ const AccountSecurityScreen: React.FC = () => {
       style={[
         styles.menuItem,
         !isLast && styles.menuItemBorder,
-        { borderBottomColor: isDark ? '#333' : '#FFF0F3' },
+        { borderBottomColor: isDark ? '#333' : currentHealingColors.pink[50] },
       ]}
       onPress={onPress}
       disabled={!onPress}
@@ -147,7 +147,7 @@ const AccountSecurityScreen: React.FC = () => {
           styles.header,
           {
             backgroundColor: isDark ? '#121212' : '#FAFAFA',
-            borderBottomColor: isDark ? '#333' : '#F0F0F0',
+            borderBottomColor: isDark ? '#333' : currentHealingColors.pink[100],
           },
         ]}
       >
@@ -171,9 +171,9 @@ const AccountSecurityScreen: React.FC = () => {
             styles.menuSection,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
-              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
               shadowOpacity: themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
@@ -232,9 +232,9 @@ const AccountSecurityScreen: React.FC = () => {
             styles.menuSection,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
-              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
               shadowOpacity: themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
@@ -250,9 +250,9 @@ const AccountSecurityScreen: React.FC = () => {
             styles.menuSection,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               borderRadius: themeStyle.borderRadius,
-              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
               shadowOpacity: themeStyle.shadowOpacity * 0.5,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
