@@ -58,7 +58,7 @@ export async function registerForPushNotificationsAsync() {
   return token;
 }
 
-export async function scheduleDailyReminder() {
+export async function scheduleDailyReminder(hour: number = 22, minute: number = 0) {
   // 仅检查权限，不强制要求 push token（因为是本地通知）
   const { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted') {
@@ -69,7 +69,7 @@ export async function scheduleDailyReminder() {
   // 取消旧的，防止重复
   await cancelDailyReminder();
 
-  // 每天晚上 22:00
+  // 自定义时间提醒
   await Notifications.scheduleNotificationAsync({
     content: {
       title: '✨ 记录今天的故事',
@@ -78,14 +78,14 @@ export async function scheduleDailyReminder() {
     },
     trigger: {
       type: 'calendar',
-      hour: 22,
-      minute: 0,
+      hour,
+      minute,
       repeats: true,
     } as any, // 兼容不同版本的 expo-notifications
     identifier: DAILY_REMINDER_IDENTIFIER,
   });
 
-  console.log('Scheduled daily reminder at 22:00');
+  console.log(`Scheduled daily reminder at ${hour}:${minute < 10 ? '0' : ''}${minute}`);
   return true;
 }
 

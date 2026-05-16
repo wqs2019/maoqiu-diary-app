@@ -13,6 +13,7 @@ export interface AppState {
   isLoading: boolean;
   isFirstLaunch: boolean;
   notificationsEnabled: boolean;
+  reminderTime: { hour: number; minute: number };
   biometricEnabled: boolean;
   isUnlocked: boolean; // Runtime only state
   appConfig: {
@@ -24,6 +25,7 @@ export interface AppState {
   setLanguage: (language: I18nLangType) => void;
   setLoading: (loading: boolean) => void;
   setNotificationsEnabled: (enabled: boolean) => Promise<void>;
+  setReminderTime: (time: { hour: number; minute: number }) => Promise<void>;
   setFirstLaunch: (isFirst: boolean) => Promise<void>;
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
   setUnlocked: (unlocked: boolean) => void;
@@ -41,6 +43,7 @@ export const useAppStore = create<AppState>((set) => ({
   isLoading: false,
   isFirstLaunch: true, // Default to true until checked
   notificationsEnabled: false,
+  reminderTime: { hour: 22, minute: 0 },
   biometricEnabled: false,
   isUnlocked: false,
   appConfig: {
@@ -60,6 +63,10 @@ export const useAppStore = create<AppState>((set) => ({
   setNotificationsEnabled: async (enabled) => {
     await StorageUtil.set('notificationsEnabled', enabled);
     set({ notificationsEnabled: enabled });
+  },
+  setReminderTime: async (time) => {
+    await StorageUtil.set('reminderTime', time);
+    set({ reminderTime: time });
   },
   setFirstLaunch: async (isFirst) => {
     await StorageUtil.set('isFirstLaunch', isFirst);
@@ -98,6 +105,10 @@ export const useAppStore = create<AppState>((set) => ({
     const saved = await StorageUtil.get<boolean>('notificationsEnabled');
     if (saved !== null) {
       set({ notificationsEnabled: saved });
+    }
+    const savedTime = await StorageUtil.get<{ hour: number; minute: number }>('reminderTime');
+    if (savedTime) {
+      set({ reminderTime: savedTime });
     }
   },
   initAppLock: async () => {

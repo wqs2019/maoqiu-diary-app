@@ -14,6 +14,7 @@ import {
   ActionSheetIOS,
   Platform,
 } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -37,8 +38,9 @@ const SettingsScreen: React.FC = () => {
 
   const themeStyle = HAND_DRAWN_STYLES.soft;
 
-  const { theme, setTheme, notificationsEnabled, setNotificationsEnabled } = useAppStore();
+  const { theme, setTheme, notificationsEnabled, setNotificationsEnabled, reminderTime, setReminderTime } = useAppStore();
   const [cacheSize, setCacheSize] = useState('计算中...');
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
 
   useEffect(() => {
     calculateCacheSize();
@@ -46,10 +48,10 @@ const SettingsScreen: React.FC = () => {
 
   const handleToggleNotifications = async (enabled: boolean) => {
     if (enabled) {
-      const success = await scheduleDailyReminder();
+      const success = await scheduleDailyReminder(reminderTime.hour, reminderTime.minute);
       if (success) {
         await setNotificationsEnabled(true);
-        Alert.alert('提示', '已开启每日 22:00 提醒写日记功能');
+        Alert.alert('提示', `已开启每日 ${formatTime(reminderTime.hour, reminderTime.minute)} 提醒写日记功能`);
       } else {
         Alert.alert('提示', '请在系统设置中允许应用发送通知');
       }
@@ -57,6 +59,27 @@ const SettingsScreen: React.FC = () => {
       await cancelDailyReminder();
       await setNotificationsEnabled(false);
     }
+  };
+
+  const handleTimeConfirm = async (date: Date) => {
+    setTimePickerVisible(false);
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+    await setReminderTime({ hour, minute });
+    
+    // 如果通知已经开启，则重新调度
+    if (notificationsEnabled) {
+      const success = await scheduleDailyReminder(hour, minute);
+      if (success) {
+        Alert.alert('提示', `已将提醒时间修改为 ${formatTime(hour, minute)}`);
+      } else {
+        Alert.alert('提示', '请在系统设置中允许应用发送通知');
+      }
+    }
+  };
+
+  const formatTime = (hour: number, minute: number) => {
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
   };
 
   const handleThemePress = () => {
@@ -300,6 +323,29 @@ const SettingsScreen: React.FC = () => {
             />,
             false
           )}
+          {notificationsEnabled && renderSettingItem(
+            'clock',
+            '提醒时间',
+            currentHealingColors.yellow[500],
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text
+                style={[
+                  styles.valueText,
+                  { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                ]}
+              >
+                {formatTime(reminderTime.hour, reminderTime.minute)}
+              </Text>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
+                style={{ marginLeft: 4 }}
+              />
+            </View>,
+            false,
+            () => setTimePickerVisible(true)
+          )}
           {renderSettingItem(
             'moon',
             '主题模式',
@@ -358,6 +404,24 @@ const SettingsScreen: React.FC = () => {
           )}
         </View>
       </ScrollView>
+
+      <DateTimePickerModal
+        isVisible={isTimePickerVisible}
+        mode="time"
+        display="spinner"
+        locale="zh-CN"
+        date={
+          new Date(
+            new Date().setHours(reminderTime.hour, reminderTime.minute, 0, 0)
+          )
+        }
+        onConfirm={handleTimeConfirm}
+        onCancel={() => setTimePickerVisible(false)}
+        confirmTextIOS="确认"
+        cancelTextIOS="取消"
+        isDarkModeEnabled={isDark}
+        pickerStyleIOS={{ justifyContent: 'center', alignItems: 'center' }}
+      />
     </View>
   );
 };
