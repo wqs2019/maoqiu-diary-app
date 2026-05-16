@@ -57,6 +57,27 @@ const EditDiaryScreen: React.FC = () => {
   const [media, setMedia] = React.useState<MediaResource[]>([]);
   const [isPublic, setIsPublic] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [ipLocation, setIpLocation] = React.useState<string>('');
+
+  // 获取IP属地
+  React.useEffect(() => {
+    const fetchIpLocation = async () => {
+      try {
+        // 使用腾讯新闻的免费接口
+        const response = await fetch('https://i.news.qq.com/api/ip2city');
+        const data = await response.json();
+        
+        if (data.ret === 0 && data.province) {
+          // 如果是中国，显示省份；如果是国外，显示国家
+          const loc = data.country === '中国' ? data.province : data.country;
+          setIpLocation(loc);
+        }
+      } catch (e) {
+        console.log('获取 IP 属地失败:', e);
+      }
+    };
+    fetchIpLocation();
+  }, []);
 
   // 填充已有日记数据
   React.useEffect(() => {
@@ -134,6 +155,7 @@ const EditDiaryScreen: React.FC = () => {
         mood: mood || 'normal',
         weather: weather || 'sunny',
         location: location.trim(),
+        ipLocation,
         media: cleanMedia.length > 0 ? cleanMedia : undefined,
         isPublic,
         authorInfo: {

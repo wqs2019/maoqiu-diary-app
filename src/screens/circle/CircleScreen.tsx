@@ -21,7 +21,7 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import { useDiaryList, useLikeDiary } from '@/hooks/useDiaryQuery';
 import { useAuthStore } from '@/store/authStore';
 import { Diary } from '@/types';
-import { FormatUtil } from '@/utils/format';
+import FormatUtil from '@/utils/format';
 
 const { width } = Dimensions.get('window');
 const CONTENT_WIDTH = width; // full width
@@ -111,9 +111,29 @@ const CircleScreen: React.FC = () => {
                 <Text style={[styles.nickname, { color: isDark ? '#FFF' : '#111827' }]}>
                   {item.authorInfo?.nickname || '某只毛球'}
                 </Text>
-                <Text style={[styles.time, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                  {FormatUtil.formatRelativeTime(item.createdAt || item.date)}
-                </Text>
+                <View style={[styles.timeLocationRow, { justifyContent: 'space-between' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[styles.time, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                      {FormatUtil.formatRelativeTime(item.createdAt || item.date)}
+                    </Text>
+                    {/* ip location */}
+                    {item.ipLocation && (
+                      <Text style={[styles.ipLocation, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                        {FormatUtil.formatIpLocation(item.ipLocation)}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* user location */}
+                  {!!item.location && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginLeft: 8 }}>
+                      <Ionicons name="location-outline" size={12} color={isDark ? '#AAA' : '#6B7280'} />
+                      <Text style={[styles.ipLocation, { color: isDark ? '#AAA' : '#6B7280', marginLeft: 2 }]} numberOfLines={1}>
+                        {item.location}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
 
@@ -322,9 +342,18 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 2,
   },
+  timeLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   time: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  ipLocation: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 4,
   },
   title: {
     fontSize: 16,

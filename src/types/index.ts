@@ -133,6 +133,7 @@ export interface Diary {
   weather: WeatherType;
   media?: MediaResource[]; // 新媒体资源（最多 9 个）
   location?: string;
+  ipLocation?: string; // IP 属地
   companions?: string[];
   rating?: number; // 1-5 星评分
   tags?: TagType[];

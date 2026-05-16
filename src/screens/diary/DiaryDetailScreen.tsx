@@ -22,7 +22,7 @@ import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useDiaryDetail, useDeleteDiary, useToggleFavorite } from '../../hooks/useDiaryQuery';
 import { useVipGuard } from '../../hooks/useVipGuard';
-import { FormatUtil } from '../../utils/format';
+import FormatUtil from '../../utils/format';
 
 import { useAuthStore } from '../../store/authStore';
 
@@ -138,6 +138,9 @@ const DiaryDetailScreen: React.FC = () => {
     );
   }
 
+  const ipLocation = diary.ipLocation;
+  const formattedIpLocation = FormatUtil.formatIpLocation(ipLocation);
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -218,6 +221,13 @@ const DiaryDetailScreen: React.FC = () => {
                 media={diary.media}
                 containerWidth={width - 40}
               />
+            </View>
+          )}
+          {/* ip location */}
+          {formattedIpLocation && (
+            <View style={styles.metaTextGroup}>
+              <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+              <Text style={styles.metaSecondaryText}>{formattedIpLocation}</Text>
             </View>
           )}
         </View>

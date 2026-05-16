@@ -63,6 +63,17 @@ export class FormatUtil {
     }
     return num.toString();
   }
+
+  /**
+   * 格式化 IP 属地显示
+   * @param loc 原始 IP 属地字符串
+   * @returns 去掉“省”、“市”等后缀后的精简地名
+   */
+  static formatIpLocation(loc?: string): string | null {
+    if (!loc) return null;
+    // 如果包含“省”或“市”等后缀，将其去掉，例如“广东省” -> “广东”，“北京市” -> “北京”
+    return loc.replace(/(省|市|自治区|壮族自治区|回族自治区|维吾尔自治区|特别行政区)$/, '');
+  }
 }
 
 export default FormatUtil;

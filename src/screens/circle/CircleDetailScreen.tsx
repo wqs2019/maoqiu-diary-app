@@ -170,7 +170,27 @@ const CircleDetailScreen: React.FC = () => {
           </View>
           <View style={styles.authorInfo}>
             <Text style={styles.nickname}>{diary.authorInfo?.nickname || '毛球用户'}</Text>
-            <Text style={styles.time}>{formattedDate}</Text>
+            <View style={[styles.timeLocationRow, { justifyContent: 'space-between' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.time}>{formattedDate}</Text>
+                {/* ip location */}
+                {diary.ipLocation && (
+                  <Text style={styles.ipLocation}>
+                    {FormatUtil.formatIpLocation(diary.ipLocation)}
+                  </Text>
+                )}
+              </View>
+
+              {/* user location */}
+              {!!diary.location && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginLeft: 8 }}>
+                  <Ionicons name="location-outline" size={12} color="#6B7280" />
+                  <Text style={[styles.ipLocation, { marginLeft: 2 }]} numberOfLines={1}>
+                    {diary.location}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
@@ -290,6 +310,15 @@ const styles = StyleSheet.create({
   time: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  timeLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ipLocation: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 4,
   },
   contentSection: {
     paddingHorizontal: 16,
