@@ -19,7 +19,7 @@ import { useDiaryStats } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 
 const { width } = Dimensions.get('window');
-const BADGE_ITEM_WIDTH = (width - 40 - 32) / 3; // 3 columns, 20 padding each side, 16 gap between columns
+const BADGE_ITEM_WIDTH = Math.floor((width - 40 - 32) / 3) - 1; // 3 columns, 20 padding each side, 16 gap between columns, minus 1 to prevent rounding wrap
 
 const BadgesScreen: React.FC = () => {
   const navigation = useNavigation();
