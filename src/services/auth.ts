@@ -26,6 +26,7 @@ export interface UserInfo {
   aiChatUsage?: { date: string; count: number };
   createdAt?: string | number;
   biometricEnabled?: boolean;
+  profileBackground?: string;
 }
 
 export interface TokenInfo {

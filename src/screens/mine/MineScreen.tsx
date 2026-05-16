@@ -4,6 +4,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import {
   HAND_DRAWN_STYLES,
@@ -99,23 +100,50 @@ const MineScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
       {/* 顶部背景装饰 */}
-      <View
-        style={[
-          styles.headerBackground,
-          {
-            height: 200 + insets.top,
-            backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[100],
-          },
-        ]}
-      />
+      {user?.profileBackground ? (
+        <View style={[styles.headerBackgroundContainer, { height: 200 + insets.top }]}>
+          <Image
+            source={{ uri: user.profileBackground }}
+            style={styles.headerBackgroundImage}
+          />
+          
+          <View style={styles.headerBackgroundGradient} pointerEvents="none">
+            <Svg width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={isDark ? '#121212' : '#FAFAFA'} stopOpacity="0" />
+                  <Stop offset="1" stopColor={isDark ? '#121212' : '#FAFAFA'} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#grad)" />
+            </Svg>
+          </View>
+        </View>
+      ) : (
+        <View style={[styles.headerBackgroundContainer, { height: 200 + insets.top }]}>
+          <View
+            style={[
+              StyleSheet.absoluteFillObject,
+              { backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[400] },
+            ]}
+          />
+          
+          <View style={styles.headerBackgroundGradient} pointerEvents="none">
+            <Svg width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="grad-default" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={isDark ? '#121212' : '#FAFAFA'} stopOpacity="0" />
+                  <Stop offset="1" stopColor={isDark ? '#121212' : '#FAFAFA'} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#grad-default)" />
+            </Svg>
+          </View>
+        </View>
+      )}
 
       {/* 顶部操作区 */}
       <View style={[styles.topActions, { paddingTop: insets.top }]}>
-        <View style={[styles.topActionsTitleContainer, { top: insets.top }]}>
-          <Text style={[styles.topActionsTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
-            个人中心
-          </Text>
-        </View>
         <TouchableOpacity
           style={[styles.bellButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.6)' }]}
           onPress={() => navigation.navigate('NotificationCenter' as any)}
@@ -134,64 +162,68 @@ const MineScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* 用户信息卡片 */}
-        <View
-          style={[
-            styles.userCard,
-            { marginTop: 10 },
-            {
-              borderRadius: themeStyle.borderRadius,
-              borderWidth: themeStyle.borderWidth,
-              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
-              shadowOpacity: themeStyle.shadowOpacity,
-              shadowRadius: themeStyle.shadowRadius,
-              shadowOffset: themeStyle.shadowOffset,
-              elevation: 8,
-              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : currentHealingColors.pink[200],
-            },
-          ]}
-        >
-          <Image
-            source={
-              user?.avatar
-                ? { uri: user.avatar }
-                : require('../../../assets/logo_bg.png')
-            }
-            fadeDuration={0}
-            style={[
-              styles.avatar,
-              {
-                borderColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                backgroundColor: isDark ? '#333' : currentHealingColors.pink[50],
-              },
-            ]}
-          />
+        {/* 用户信息区（移除卡片样式） */}
+        <View style={styles.userInfoContainer}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('EditProfile' as never)}
+          >
+            <Image
+              source={
+                user?.avatar
+                  ? { uri: user.avatar }
+                  : require('../../../assets/logo_bg.png')
+              }
+              fadeDuration={0}
+              style={[
+                styles.avatar,
+                {
+                  borderColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                  backgroundColor: isDark ? '#333' : currentHealingColors.pink[50],
+                },
+              ]}
+            />
+          </TouchableOpacity>
           <View style={styles.userDetails}>
             <View style={styles.userNameRow}>
-              <Text
-                style={[styles.userName, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('EditProfile' as never)}
               >
-                {user?.nickname || '毛球日记'}
-              </Text>
+                <Text
+                  style={[styles.userName, { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 }]}
+                >
+                  {user?.nickname || '毛球日记'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.inlineEditButton}
+                activeOpacity={0.8}
+                hitSlop={{ top: 15, bottom: 15, left: 10, right: 10 }}
+                onPress={() => {
+                  navigation.navigate('EditProfile' as never);
+                }}
+              >
+                <Feather name="edit-2" size={14} color="#FFFFFF" />
+              </TouchableOpacity>
               {user?.isVip?.value && (
                 <TouchableOpacity
-                  style={[styles.vipBadge, { backgroundColor: isDark ? '#374151' : '#FEF3C7' }]}
+                  style={[styles.vipBadge, { backgroundColor: isDark ? 'rgba(55,65,81,0.8)' : 'rgba(255,255,255,0.2)' }]}
                   onPress={() => {
                     navigation.navigate('Subscription' as any);
                   }}
                   activeOpacity={0.8}
                 >
-                  <Feather name="award" size={14} color="#F59E0B" style={styles.vipBadgeIcon} />
-                  <Text style={[styles.vipBadgeText, { color: '#F59E0B' }]}>尊贵会员</Text>
-                  <Feather name="chevron-right" size={14} color="#F59E0B" style={{ marginLeft: 2 }} />
+                  <Feather name="award" size={14} color="#FFD700" style={styles.vipBadgeIcon} />
+                  <Text style={[styles.vipBadgeText, { color: '#FFD700', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]} >尊贵会员</Text>
+                  <Feather name="chevron-right" size={14} color="#FFD700" style={{ marginLeft: 2 }} />
                 </TouchableOpacity>
               )}
             </View>
             <Text
               style={[
                 styles.userPhone,
-                { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                { color: 'rgba(255,255,255,0.9)', textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
               ]}
             >
               {user?.phone
@@ -202,13 +234,13 @@ const MineScreen: React.FC = () => {
               <View
                 style={[
                   styles.joinDaysTag,
-                  { backgroundColor: isDark ? '#374151' : currentHealingColors.pink[50] },
+                  { backgroundColor: 'rgba(0,0,0,0.2)' },
                 ]}
               >
                 <Text
                   style={[
                     styles.joinDaysText,
-                    { color: isDark ? '#D1D5DB' : currentHealingColors.pink[500] },
+                    { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
                   ]}
                 >
                   来毛球日记的第 {joinDays} 天
@@ -216,21 +248,6 @@ const MineScreen: React.FC = () => {
               </View>
             )}
           </View>
-          <TouchableOpacity
-            style={[
-              styles.editButton,
-              { backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50] },
-            ]}
-            onPress={() => {
-              navigation.navigate('EditProfile');
-            }}
-          >
-            <Feather
-              name="edit-2"
-              size={16}
-              color={isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[500]}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* VIP 开通入口 */}
@@ -512,14 +529,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAFAFA',
   },
-  headerBackground: {
+  // 顶部纯色背景样式已移除，因为统一使用了带有渐变的容器
+  headerBackgroundContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: HEALING_COLORS.pink[100],
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
+    width: '100%',
+    zIndex: 0,
+  },
+  headerBackgroundImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  headerBackgroundGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '60%',
   },
   topActions: {
     flexDirection: 'row',
@@ -530,19 +559,6 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     zIndex: 10,
     position: 'relative',
-  },
-  topActionsTitleContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: -1,
-  },
-  topActionsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
   },
   bellButton: {
     width: 36,
@@ -573,6 +589,16 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    marginTop: -40,
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    marginTop: 10,
+    marginBottom: 10,
+    position: 'relative',
   },
   userCard: {
     backgroundColor: '#FFFFFF',
@@ -586,9 +612,8 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: HEALING_COLORS.pink[50],
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: '#FFF',
   },
   userDetails: {
     flex: 1,
@@ -597,7 +622,15 @@ const styles = StyleSheet.create({
   userNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
+  },
+  inlineEditButton: {
+    marginLeft: 8,
+    padding: 6,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   userName: {
     fontSize: 20,
@@ -607,41 +640,43 @@ const styles = StyleSheet.create({
   vipBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
     marginLeft: 8,
   },
   vipBadgeIcon: {
-    marginRight: 4,
+    marginRight: 2,
   },
   vipBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   userPhone: {
     fontSize: 13,
     color: HEALING_COLORS.gray[500],
     fontWeight: '500',
+    marginBottom: 6,
   },
   joinDaysTag: {
-    marginTop: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: 8,
     alignSelf: 'flex-start',
+    marginTop: 4,
   },
   joinDaysText: {
     fontSize: 10,
     fontWeight: '600',
   },
   editButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: HEALING_COLORS.pink[50],
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   vipBanner: {
     flexDirection: 'row',
