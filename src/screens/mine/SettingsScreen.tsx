@@ -368,8 +368,32 @@ const SettingsScreen: React.FC = () => {
                 style={{ marginLeft: 4 }}
               />
             </View>,
-            true,
+            false,
             handleThemePress
+          )}
+          {renderSettingItem(
+            'aperture',
+            '自定义主题',
+            currentHealingColors.purple[400],
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
+                style={{ marginLeft: 4 }}
+              />
+            </View>,
+            true,
+            () => {
+              // if (!user?.isVip?.value) {
+              //   Alert.alert('提示', '开通 VIP 即可解锁自定义主题功能', [
+              //     { text: '取消', style: 'cancel' },
+              //     { text: '去开通', onPress: () => navigation.navigate('Subscription' as never) }
+              //   ]);
+              //   return;
+              // }
+              navigation.navigate('ThemeSetting' as never);
+            }
           )}
         </View>
 

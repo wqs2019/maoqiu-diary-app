@@ -1,3 +1,5 @@
+import { useAppStore } from '../store/appStore';
+
 // 治愈系手绘风格主题配置
 
 export interface HandDrawnStyle {
@@ -67,8 +69,26 @@ export const HAND_DRAWN_STYLES: Record<string, HandDrawnStyle> = {
 
 // 扩展颜色系统 - 治愈系配色
 export const HEALING_COLORS = {
+  get pink() {
+    try {
+      const colorKey = useAppStore.getState().themeColor || 'pink';
+      const colors: any = {
+        pink: this._pink,
+        blue: this._blue,
+        yellow: this._yellow,
+        green: this._green,
+        purple: this._purple,
+        orange: this._orange,
+        cyan: this._cyan,
+        brown: this._brown,
+      };
+      return colors[colorKey] || this._pink;
+    } catch (e) {
+      return this._pink;
+    }
+  },
   // 主色调 - 粉色系
-  pink: {
+  _pink: {
     50: '#FFF5F7',
     100: '#FFE4E9',
     200: '#FFC5D1',
@@ -81,7 +101,7 @@ export const HEALING_COLORS = {
     900: '#E00055',
   },
   // 辅助色 - 蓝色系
-  blue: {
+  _blue: {
     50: '#F0F8FF',
     100: '#E6F4FF',
     200: '#CCE8FF',
@@ -93,8 +113,9 @@ export const HEALING_COLORS = {
     800: '#0066CC',
     900: '#0055B3',
   },
+  get blue() { return this._blue; },
   // 辅助色 - 黄色系
-  yellow: {
+  _yellow: {
     50: '#FFFBF0',
     100: '#FFF7E0',
     200: '#FFEEC0',
@@ -106,8 +127,9 @@ export const HEALING_COLORS = {
     800: '#B39500',
     900: '#997F00',
   },
+  get yellow() { return this._yellow; },
   // 辅助色 - 绿色系
-  green: {
+  _green: {
     50: '#F0FFF0',
     100: '#E0FFE0',
     200: '#C0FFC0',
@@ -119,6 +141,63 @@ export const HEALING_COLORS = {
     800: '#1F8B3B',
     900: '#187731',
   },
+  get green() { return this._green; },
+  // 紫色系
+  _purple: {
+    50: '#F9F0FF',
+    100: '#F3E0FF',
+    200: '#E6C0FF',
+    300: '#D9A8F0',
+    400: '#C880FF',
+    500: '#AF52DE',
+    600: '#9B41C7',
+    700: '#8731B0',
+    800: '#732199',
+    900: '#5F1182',
+  },
+  get purple() { return this._purple; },
+  // 活力橘
+  _orange: {
+    50: '#FFF6E5',
+    100: '#FFE6CC',
+    200: '#FFD699',
+    300: '#FFC266',
+    400: '#FFB033',
+    500: '#FF9500', // primary
+    600: '#E68600',
+    700: '#CC7700',
+    800: '#B36800',
+    900: '#995900',
+  },
+  get orange() { return this._orange; },
+  // 浅海青
+  _cyan: {
+    50: '#E5FAF9',
+    100: '#CCF5F3',
+    200: '#99EBE7',
+    300: '#66E0DA',
+    400: '#33D6CE',
+    500: '#00C7BE', // primary
+    600: '#00B3AB',
+    700: '#009F98',
+    800: '#008B85',
+    900: '#007772',
+  },
+  get cyan() { return this._cyan; },
+  // 可可棕
+  _brown: {
+    50: '#F9F6F0',
+    100: '#F0EBE1',
+    200: '#E6DAC3',
+    300: '#DCCAA5',
+    400: '#D1B987',
+    500: '#C0A080', // primary
+    600: '#A68A6B',
+    700: '#8C7355',
+    800: '#735C40',
+    900: '#59462B',
+  },
+  get brown() { return this._brown; },
   // 中性色 - 温暖灰
   gray: {
     50: '#FAFAFA',
@@ -232,5 +311,41 @@ export const DARK_HEALING_COLORS = {
     700: '#A4E6FC',
     800: '#C9F0FD',
     900: '#EEFAFE',
+  },
+  orange: {
+    50: '#2A1F1A',
+    100: '#3D2A20',
+    200: '#523624',
+    300: '#664129',
+    400: '#8A5531',
+    500: '#FF9500',
+    600: '#CC7700',
+    700: '#995A00',
+    800: '#663D00',
+    900: '#331E00',
+  },
+  cyan: {
+    50: '#1A2A29',
+    100: '#203D3B',
+    200: '#26524F',
+    300: '#2C6662',
+    400: '#338A84',
+    500: '#00C7BE',
+    600: '#009F98',
+    700: '#007772',
+    800: '#004F4C',
+    900: '#002826',
+  },
+  brown: {
+    50: '#2A2624',
+    100: '#3D3530',
+    200: '#52453C',
+    300: '#665448',
+    400: '#8A705E',
+    500: '#C0A080',
+    600: '#998066',
+    700: '#73604D',
+    800: '#4D4033',
+    900: '#26201A',
   },
 };

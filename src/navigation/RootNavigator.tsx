@@ -27,6 +27,7 @@ import NotebooksScreen from '@/screens/mine/NotebooksScreen';
 import SettingsScreen from '@/screens/mine/SettingsScreen';
 import SubscriptionScreen from '@/screens/mine/SubscriptionScreen';
 import AccountSecurityScreen from '@/screens/mine/AccountSecurityScreen';
+import ThemeSettingScreen from '@/screens/mine/ThemeSettingScreen';
 import WebScreen from '@/screens/mine/WebScreen';
 import FollowersScreen from '@/screens/circle/FollowersScreen';
 import NotificationCenterScreen from '@/screens/mine/NotificationCenterScreen';
@@ -55,6 +56,7 @@ export type RootStackParamList = {
   AccountSecurity: undefined;
   Subscription: undefined;
   AppLockSetting: undefined;
+  ThemeSetting: undefined;
   Web: { url: string; title?: string };
   Followers: { userId: string };
   NotificationCenter: undefined;
@@ -83,8 +85,12 @@ const AuthNavigator = () => (
 );
 
 const MainNavigator = () => {
-  const { themeName, colors } = useAppTheme();
+  const { themeName, colors, themeColor } = useAppTheme();
   const appConfig = useAppStore((state) => state.appConfig);
+
+  // 引入全局主题配色
+  const { HEALING_COLORS, DARK_HEALING_COLORS } = require('@/config/handDrawnTheme');
+  const currentHealingColors = themeName === 'dark' ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   return (
     <MainTab.Navigator
@@ -109,7 +115,7 @@ const MainNavigator = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: currentHealingColors.pink[500],
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.surface,
@@ -284,6 +290,13 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="AppLockSetting"
             component={AppLockSettingScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="ThemeSetting"
+            component={ThemeSettingScreen}
             options={{
               headerShown: false,
             }}

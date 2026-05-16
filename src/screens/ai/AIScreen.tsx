@@ -19,6 +19,7 @@ import {
 import Markdown from 'react-native-markdown-display';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
 import { COLORS, FONT_SIZES, SPACING } from '@/config/constant';
@@ -47,6 +48,7 @@ const AIScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, updateProfile } = useAuthStore();
   const { isDark } = useAppTheme();
+  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
   const queryClient = useQueryClient();
 
   // 获取用户的日记本和日记统计信息
@@ -120,8 +122,8 @@ const AIScreen: React.FC = () => {
           currentCount = user.aiChatUsage.count || 0;
         }
 
-        if (currentCount >= 10) {
-          Alert.alert('对话次数已用完', '普通用户每日最多发送 10 条消息，开通 VIP 即可无限制畅聊！', [
+        if (currentCount >= 3) {
+          Alert.alert('对话次数已用完', '普通用户每日最多发送 3 条消息，开通 VIP 即可无限制畅聊！', [
             { text: '取消', style: 'cancel' },
             { text: '去开通', onPress: () => navigation.navigate('Subscription') },
           ]);
@@ -621,7 +623,7 @@ ${statsContext}`;
             style={[
               styles.messageBubble,
               isUser
-                ? [styles.messageBubbleUser, { backgroundColor: COLORS.primary }]
+                ? [styles.messageBubbleUser, { backgroundColor: isDark ? currentHealingColors.pink[600] : currentHealingColors.pink[400] }]
                 : [styles.messageBubbleAI, { backgroundColor: surfaceColor }],
             ]}
           >
@@ -634,7 +636,7 @@ ${statsContext}`;
                   paragraph: { marginTop: 0, marginBottom: 0 },
                   strong: { fontWeight: 'bold', color: textColor },
                   em: { fontStyle: 'italic', color: textColor },
-                  link: { color: COLORS.primary },
+                  link: { color: currentHealingColors.pink[400] },
                   list_item: { flexDirection: 'row', alignItems: 'flex-start' },
                   bullet_list: { marginBottom: 8 },
                   ordered_list: { marginBottom: 8 },
@@ -645,7 +647,7 @@ ${statsContext}`;
             )}
           </View>
           {isUser && (
-            <View style={styles.avatarUser}>
+            <View style={[styles.avatarUser, { backgroundColor: currentHealingColors.pink[400] }]}>
               {user?.avatar ? (
                 <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
               ) : (
@@ -734,7 +736,7 @@ ${statsContext}`;
                       { backgroundColor: surfaceColor },
                     ]}
                   >
-                    <ActivityIndicator size="small" color={COLORS.primary} />
+                    <ActivityIndicator size="small" color={currentHealingColors.pink[400]} />
                   </View>
                 </View>
               ) : null
@@ -764,7 +766,7 @@ ${statsContext}`;
           <TouchableOpacity
             style={[
               styles.sendButton,
-              { backgroundColor: inputText.trim() ? COLORS.primary : '#E5E5EA' },
+              { backgroundColor: inputText.trim() ? currentHealingColors.pink[400] : '#E5E5EA' },
             ]}
             onPress={handleSend}
             disabled={!inputText.trim() || isLoading}
@@ -842,7 +844,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: SPACING.small,

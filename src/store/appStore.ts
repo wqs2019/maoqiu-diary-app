@@ -7,8 +7,11 @@ import { useAuthStore } from './authStore';
 export type I18nLangType = 'zh-CN' | 'en-US';
 export type { ThemeType };
 
+export type ThemeColorType = 'pink' | 'blue' | 'yellow' | 'green' | 'purple' | 'orange' | 'cyan' | 'brown';
+
 export interface AppState {
   theme: ThemeType;
+  themeColor: ThemeColorType;
   language: I18nLangType;
   isLoading: boolean;
   isFirstLaunch: boolean;
@@ -30,6 +33,7 @@ export interface AppState {
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
   setUnlocked: (unlocked: boolean) => void;
   setAppConfig: (config: { show_ai_chat: boolean; show_circle: boolean; notification?: string }) => void;
+  setThemeColor: (color: ThemeColorType) => Promise<void>;
   initFirstLaunch: () => Promise<void>;
   initTheme: () => Promise<void>;
   initNotifications: () => Promise<void>;
@@ -39,6 +43,7 @@ export interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   theme: 'system',
+  themeColor: 'pink',
   language: 'zh-CN',
   isLoading: false,
   isFirstLaunch: true, // Default to true until checked
@@ -53,6 +58,10 @@ export const useAppStore = create<AppState>((set) => ({
   setTheme: async (theme) => {
     await StorageUtil.set('theme', theme);
     set({ theme });
+  },
+  setThemeColor: async (color) => {
+    await StorageUtil.set('themeColor', color);
+    set({ themeColor: color });
   },
   setLanguage: (language) => {
     set({ language });
@@ -99,6 +108,10 @@ export const useAppStore = create<AppState>((set) => ({
     const savedTheme = await StorageUtil.get<ThemeType>('theme');
     if (savedTheme) {
       set({ theme: savedTheme });
+    }
+    const savedThemeColor = await StorageUtil.get<ThemeColorType>('themeColor');
+    if (savedThemeColor) {
+      set({ themeColor: savedThemeColor });
     }
   },
   initNotifications: async () => {

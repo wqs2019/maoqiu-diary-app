@@ -20,8 +20,9 @@ import {
 
 import { CommentList } from '@/components/handDrawn/CommentList';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
-import { HEALING_COLORS } from '@/config/handDrawnTheme';
+import { HEALING_COLORS, DARK_HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useDiaryDetail, useLikeDiary, useCommentDiary } from '@/hooks/useDiaryQuery';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useAuthStore } from '@/store/authStore';
 import { FormatUtil } from '@/utils/format';
 
@@ -33,6 +34,9 @@ const CircleDetailScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<CircleDetailRouteProp>();
   const { _id } = route.params;
+
+  const { isDark } = useAppTheme();
+  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   const { data: diary, isLoading, error, refetch } = useDiaryDetail(_id);
   const user = useAuthStore((state) => state.user);
@@ -127,7 +131,7 @@ const CircleDetailScreen: React.FC = () => {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={HEALING_COLORS.pink[400]} />
+        <ActivityIndicator size="large" color={currentHealingColors.pink[400]} />
       </View>
     );
   }
@@ -151,8 +155,8 @@ const CircleDetailScreen: React.FC = () => {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            tintColor={HEALING_COLORS.pink[400]}
-            colors={[HEALING_COLORS.pink[400]]}
+            tintColor={currentHealingColors.pink[400]}
+            colors={[currentHealingColors.pink[400]]}
           />
         }
       >
@@ -233,7 +237,7 @@ const CircleDetailScreen: React.FC = () => {
             />
             {commentText.length > 0 && (
               <TouchableOpacity style={styles.sendButton} onPress={handleSendComment}>
-                <Ionicons name="send" size={20} color={HEALING_COLORS.pink[500]} />
+                <Ionicons name="send" size={20} color={currentHealingColors.pink[500]} />
               </TouchableOpacity>
             )}
           </View>
@@ -243,10 +247,10 @@ const CircleDetailScreen: React.FC = () => {
                 <Ionicons
                   name={hasLiked ? 'heart' : 'heart-outline'}
                   size={28}
-                  color={hasLiked ? HEALING_COLORS.pink[500] : '#4B5563'}
+                  color={hasLiked ? '#FF6B9D' : '#4B5563'} // 点赞固定使用真实的粉色
                 />
                 <Text
-                  style={[styles.actionIconText, hasLiked && { color: HEALING_COLORS.pink[500] }]}
+                  style={[styles.actionIconText, hasLiked && { color: '#FF6B9D' }]}
                 >
                   {diary.likedUserIds?.length || 0}
                 </Text>

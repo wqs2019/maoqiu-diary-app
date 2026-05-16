@@ -72,8 +72,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                   { backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[100] },
                 ]}
               >
-                <Text style={styles.dateHeaderYear}>{itemData.year}年</Text>
-                <Text style={styles.dateHeaderMonth}>{dateKey.split('-')[1]}月</Text>
+                <Text style={[styles.dateHeaderYear, { color: HEALING_COLORS.pink[600] }]}>{itemData.year}年</Text>
+                <Text style={[styles.dateHeaderMonth, { color: HEALING_COLORS.pink[700] }]}>{dateKey.split('-')[1]}月</Text>
               </View>
               <View
                 style={[
@@ -103,6 +103,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                         styles.timelineDay,
                         { color: isDark ? '#FFF' : '#333' },
                         isToday && styles.timelineDayToday,
+                        isToday && { color: HEALING_COLORS.pink[500] }
                       ]}
                     >
                       {isToday ? '今天' : dayStr}
@@ -112,12 +113,20 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                         styles.timelineWeek,
                         { color: isDark ? '#AAA' : '#999' },
                         isToday && styles.timelineWeekToday,
+                        isToday && { color: HEALING_COLORS.pink[400] }
                       ]}
                     >
                       {weekStr}
                     </Text>
                     <View
-                      style={[styles.timelineDot, { borderColor: isDark ? '#121212' : '#FFFFFF' }]}
+                      style={[
+                        styles.timelineDot,
+                        { 
+                          borderColor: isDark ? '#121212' : '#FFFFFF',
+                          backgroundColor: HEALING_COLORS.pink[isDark ? 500 : 400],
+                          shadowColor: HEALING_COLORS.pink[isDark ? 500 : 400]
+                        }
+                      ]}
                     />
                     {!isLastItem && (
                       <View
@@ -180,13 +189,11 @@ const styles = StyleSheet.create({
   dateHeaderYear: {
     fontSize: 14,
     fontWeight: '600',
-    color: HEALING_COLORS.pink[600],
     marginRight: 4,
   },
   dateHeaderMonth: {
     fontSize: 18,
     fontWeight: '800',
-    color: HEALING_COLORS.pink[700],
   },
   dateLine: {
     flex: 1,
@@ -212,7 +219,6 @@ const styles = StyleSheet.create({
   },
   timelineDayToday: {
     fontSize: 20,
-    color: HEALING_COLORS.pink[500],
   },
   timelineWeek: {
     fontSize: 12,
@@ -221,17 +227,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   timelineWeekToday: {
-    color: HEALING_COLORS.pink[400],
   },
   timelineDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: HEALING_COLORS.pink[400],
     borderWidth: 2,
-    borderColor: '#FFFFFF',
     elevation: 2,
-    shadowColor: HEALING_COLORS.pink[400],
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 2,

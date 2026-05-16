@@ -23,7 +23,7 @@ import { AnimatedBackgroundBlobs } from '../../components/common/AnimatedBackgro
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/common/Toast';
 import { TimelineView } from '../../components/handDrawn/TimelineView';
-import { HEALING_COLORS } from '../../config/handDrawnTheme';
+import { HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
@@ -50,7 +50,12 @@ const HomeScreen: React.FC = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [activeYear, setActiveYear] = useState<string | null>(null);
 
-  const { themeName, isDark } = useAppTheme();
+  const { themeName, isDark, colors } = useAppTheme();
+  
+  // 适配主题色
+  const currentHealingColors = isDark
+    ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS }
+    : HEALING_COLORS;
 
   // 开启邀请通知监听
   useNotificationWatcher();
@@ -293,24 +298,27 @@ const HomeScreen: React.FC = () => {
           <View style={styles.headerLeft}>
             <TouchableOpacity
               style={styles.titleRow}
-              onPress={() => {
-                setIsNotebookModalVisible(true);
-              }}
+              onPress={() => setIsNotebookModalVisible(true)}
             >
               <Text style={[styles.title, { color: isDark ? '#FFF' : '#333' }]}>
-                {currentNotebook.name}
+                {currentNotebook?.name || '毛球日记'}
               </Text>
-              {currentNotebook.type === 'shared' && (
-                <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]}>
-                  <Text style={[styles.sharedTagText, { color: HEALING_COLORS.pink[500] }]}>👥 共享</Text>
-                </View>
-              )}
-              <Ionicons name="chevron-down" size={20} color={isDark ? '#FFF' : '#333'} />
+              <Ionicons
+                name="chevron-down"
+                size={20}
+                color={isDark ? '#FFF' : '#333'}
+                style={{ marginLeft: 4 }}
+              />
             </TouchableOpacity>
+            {currentNotebook.type === 'shared' && (
+              <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]}>
+                <Text style={[styles.sharedTagText, { color: currentHealingColors.pink[500] }]}>👥 共享</Text>
+              </View>
+            )}
             <Text style={styles.dateText}>{getFormattedDate()}</Text>
           </View>
           <View style={styles.headerRight}>
-            <Text style={styles.greetingText}>{getGreeting()}</Text>
+            <Text style={[styles.greetingText, { color: currentHealingColors.pink[400] }]}>{getGreeting()}</Text>
             <Text style={styles.subtitleText}>生活明朗，万物可爱</Text>
           </View>
         </View>
@@ -358,8 +366,8 @@ const HomeScreen: React.FC = () => {
 
         {currentNotebook.type === 'shared' && currentNotebook.status === 'pending' && (
           <View style={[styles.pendingBanner, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]}>
-            <Ionicons name="time-outline" size={16} color={HEALING_COLORS.pink[500]} />
-            <Text style={[styles.pendingBannerText, { color: HEALING_COLORS.pink[600] }]}>
+            <Ionicons name="time-outline" size={16} color={currentHealingColors.pink[500]} />
+            <Text style={[styles.pendingBannerText, { color: currentHealingColors.pink[600] }]}>
               等待对方加入中...
             </Text>
           </View>
@@ -473,10 +481,13 @@ const HomeScreen: React.FC = () => {
                     key={notebook._id || `notebook-${index}`}
                     style={[
                       styles.notebookItem,
-                      currentNotebook._id === notebook._id && styles.notebookItemActive,
                       {
                         backgroundColor: isDark ? '#2C2C2C' : '#FFF',
                         borderColor: isDark ? '#444' : '#F0F0F0',
+                      },
+                      currentNotebook._id === notebook._id && {
+                        backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
+                        borderColor: isDark ? '#4A2533' : currentHealingColors.pink[200],
                       },
                     ]}
                     onPress={() => {
@@ -500,7 +511,7 @@ const HomeScreen: React.FC = () => {
                           size={28}
                           color={
                             currentNotebook._id === notebook._id
-                              ? HEALING_COLORS.pink[500]
+                              ? currentHealingColors.pink[500]
                               : isDark
                                 ? '#AAA'
                                 : '#999'
@@ -514,14 +525,14 @@ const HomeScreen: React.FC = () => {
                           style={[
                             styles.notebookItemText,
                             { color: isDark ? '#FFF' : '#333' },
-                            currentNotebook._id === notebook._id && styles.notebookItemTextActive,
+                            currentNotebook._id === notebook._id && [styles.notebookItemTextActive, { color: currentHealingColors.pink[500] }],
                           ]}
                         >
                           {notebook.name}
                         </Text>
                         {notebook.type === 'shared' && (
                           <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3', marginLeft: 8 }]}>
-                            <Text style={[styles.sharedTagText, { color: HEALING_COLORS.pink[500] }]}>👥 共享</Text>
+                            <Text style={[styles.sharedTagText, { color: currentHealingColors.pink[500] }]}>👥 共享</Text>
                           </View>
                         )}
                       </View>
@@ -539,7 +550,7 @@ const HomeScreen: React.FC = () => {
                       )}
                     </View>
                     {currentNotebook._id === notebook._id && (
-                      <Ionicons name="checkmark" size={20} color={HEALING_COLORS.pink[500]} />
+                      <Ionicons name="checkmark" size={20} color={currentHealingColors.pink[500]} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -547,7 +558,7 @@ const HomeScreen: React.FC = () => {
 
               <View style={styles.addNotebookContainer}>
                 <TouchableOpacity
-                  style={[styles.addNotebookBtn, { width: '100%', borderRadius: 12, height: 48 }]}
+                  style={[styles.addNotebookBtn, { width: '100%', borderRadius: 12, height: 48, backgroundColor: currentHealingColors.pink[400] }]}
                   onPress={() => {
                     if (!checkVipPermission('createNotebook', () => {
                       setIsNotebookModalVisible(false);
@@ -576,7 +587,7 @@ const HomeScreen: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={HEALING_COLORS.pink[400]}
+            tintColor={currentHealingColors.pink[400]}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -649,12 +660,12 @@ const HomeScreen: React.FC = () => {
                 style={[
                   styles.yearText,
                   { color: isDark ? '#AAA' : '#999' },
-                  activeYear === year && styles.activeYearText,
+                  activeYear === year && [styles.activeYearText, { color: currentHealingColors.pink[400] }],
                 ]}
               >
                 {year}
               </Text>
-              {activeYear === year && <View style={styles.yearDot} />}
+              {activeYear === year && <View style={[styles.yearDot, { backgroundColor: currentHealingColors.pink[500] }]} />}
             </TouchableOpacity>
           ))}
         </View>
@@ -673,10 +684,10 @@ const HomeScreen: React.FC = () => {
         <TouchableOpacity
           style={[
             styles.fab,
-            isDark && {
-              borderColor: '#121212',
-              backgroundColor: HEALING_COLORS.pink[500],
-              shadowColor: HEALING_COLORS.pink[500],
+            {
+              backgroundColor: isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[400],
+              borderColor: isDark ? '#121212' : '#FFFFFF',
+              shadowColor: currentHealingColors.pink[400],
             },
           ]}
           onPress={() => {
@@ -927,14 +938,12 @@ const styles = StyleSheet.create({
   },
   activeYearText: {
     fontSize: 14,
-    color: HEALING_COLORS.pink[400], // 匹配粉色主题
     fontWeight: 'bold',
   },
   yearDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: HEALING_COLORS.pink[500],
     marginTop: 4,
   },
   fabContainer: {
@@ -984,11 +993,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F5F5F5',
   },
   notebookItemActive: {
-    backgroundColor: '#FFF0F5',
-    borderColor: HEALING_COLORS.pink[200],
   },
   notebookItemInfo: {
     flex: 1,
@@ -1004,7 +1010,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   notebookItemTextActive: {
-    color: HEALING_COLORS.pink[500],
     fontWeight: '600',
   },
   addNotebookContainer: {
@@ -1026,7 +1031,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   addNotebookBtn: {
-    backgroundColor: HEALING_COLORS.pink[400],
     paddingHorizontal: 20,
     height: 44,
     borderRadius: 22,

@@ -5,6 +5,7 @@ import { useAppStore } from '../store/appStore';
 
 export const useAppTheme = () => {
   const theme = useAppStore((state) => state.theme);
+  const themeColor = useAppStore((state) => state.themeColor);
   const systemColorScheme = useColorScheme();
 
   const actualThemeName = theme === 'system' ? systemColorScheme || 'light' : theme;
@@ -15,5 +16,6 @@ export const useAppTheme = () => {
     theme: currentTheme,
     colors: currentTheme.colors,
     isDark: actualThemeName === 'dark',
+    themeColor,
   };
 };

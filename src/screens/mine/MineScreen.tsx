@@ -72,7 +72,7 @@ const MineScreen: React.FC = () => {
       style={[
         styles.menuItem,
         !isLast && styles.menuItemBorder,
-        { borderBottomColor: isDark ? '#333' : '#FFF0F3' },
+        { borderBottomColor: isDark ? '#333' : currentHealingColors.pink[50] },
       ]}
       onPress={onPress}
       activeOpacity={0.7}
@@ -141,13 +141,14 @@ const MineScreen: React.FC = () => {
             { marginTop: 10 },
             {
               borderRadius: themeStyle.borderRadius,
+              borderWidth: themeStyle.borderWidth,
               shadowColor: isDark ? '#000' : themeStyle.shadowColor,
               shadowOpacity: themeStyle.shadowOpacity,
               shadowRadius: themeStyle.shadowRadius,
               shadowOffset: themeStyle.shadowOffset,
               elevation: 8,
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[200],
             },
           ]}
         >
@@ -162,7 +163,7 @@ const MineScreen: React.FC = () => {
               styles.avatar,
               {
                 borderColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                backgroundColor: isDark ? '#333' : HEALING_COLORS.pink[50],
+                backgroundColor: isDark ? '#333' : currentHealingColors.pink[50],
               },
             ]}
           />
@@ -239,7 +240,7 @@ const MineScreen: React.FC = () => {
               styles.vipBanner,
               {
                 backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
-                borderColor: isDark ? '#333' : '#FFF0F3',
+                borderColor: isDark ? '#333' : currentHealingColors.pink[100],
               },
             ]}
             activeOpacity={0.8}
@@ -291,7 +292,7 @@ const MineScreen: React.FC = () => {
             styles.statsContainer,
             {
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
             },
           ]}
         >
@@ -405,14 +406,14 @@ const MineScreen: React.FC = () => {
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
             },
           ]}
         >
           {renderMenuItem(
             'book-open',
             '我的日记本',
-            isDark ? currentHealingColors.blue[600] : currentHealingColors.blue[500],
+            isDark ? currentHealingColors.pink[600] : currentHealingColors.pink[500],
             false,
             () => {
               navigation.navigate('Notebooks' as any);
@@ -421,7 +422,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'star',
             '收藏夹',
-            isDark ? currentHealingColors.yellow[300] : currentHealingColors.yellow[500],
+            isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[400],
             false,
             () => {
               navigation.navigate('Favorites' as any);
@@ -430,7 +431,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'calendar',
             '打卡日历',
-            isDark ? currentHealingColors.green[300] : currentHealingColors.green[500],
+            isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[500],
             true,
             () => {
               navigation.navigate('Calendar' as any);
@@ -450,14 +451,14 @@ const MineScreen: React.FC = () => {
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
               backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFF0F3',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
             },
           ]}
         >
           {renderMenuItem(
             'settings',
             '应用设置',
-            isDark ? '#D1D5DB' : currentHealingColors.gray[500],
+            isDark ? currentHealingColors.pink[300] : currentHealingColors.pink[400],
             false,
             () => {
               navigation.navigate('Settings');
@@ -466,7 +467,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'info',
             '关于毛球',
-            isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[400],
+            isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[500],
             false,
             () => {
               navigation.navigate('About');
@@ -475,7 +476,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'help-circle',
             '帮助与反馈',
-            isDark ? currentHealingColors.blue[500] : currentHealingColors.blue[400],
+            isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[600],
             true,
             () => {
               navigation.navigate('Feedback');
@@ -490,7 +491,8 @@ const MineScreen: React.FC = () => {
               styles.logoutButton,
               {
                 borderRadius: themeStyle.borderRadius,
-                backgroundColor: isDark ? '#2C1B24' : '#FFF0F3',
+                backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
+                borderColor: isDark ? '#4A2533' : currentHealingColors.pink[200],
               },
             ]}
             onPress={handleLogout}
@@ -579,8 +581,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#FFF0F3',
   },
   avatar: {
     width: 64,
@@ -752,11 +752,11 @@ const styles = StyleSheet.create({
   logoutButton: {
     marginHorizontal: 20,
     marginTop: 10,
-    backgroundColor: '#FFF0F3',
-    paddingVertical: 16,
+    marginBottom: 40,
+    height: 56,
+    justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: HEALING_COLORS.pink[200],
   },
   logoutButtonText: {
     fontSize: 16,

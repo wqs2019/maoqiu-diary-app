@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
-import { HEALING_COLORS } from '@/config/handDrawnTheme';
+import { HEALING_COLORS, DARK_HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useDiaryList, useLikeDiary } from '@/hooks/useDiaryQuery';
 import { useAuthStore } from '@/store/authStore';
@@ -31,6 +31,7 @@ const CircleScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const user = useAuthStore((state) => state.user);
   const { isDark, colors } = useAppTheme();
+  const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
@@ -176,13 +177,13 @@ const CircleScreen: React.FC = () => {
               <Ionicons
                 name={hasLiked ? 'heart' : 'heart-outline'}
                 size={22}
-                color={hasLiked ? HEALING_COLORS.pink[500] : isDark ? '#AAA' : '#666'}
+                color={hasLiked ? '#FF6B9D' : isDark ? '#AAA' : '#666'} // 点赞固定使用真实的粉红色
               />
               <Text
                 style={[
                   styles.actionText,
                   { color: isDark ? '#AAA' : '#6B7280' },
-                  hasLiked && { color: HEALING_COLORS.pink[500] },
+                  hasLiked && { color: '#FF6B9D' },
                 ]}
               >
                 {item.likedUserIds?.length || 0}
@@ -236,7 +237,7 @@ const CircleScreen: React.FC = () => {
 
       {isLoading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={HEALING_COLORS.pink[400]} />
+          <ActivityIndicator size="large" color={currentHealingColors.pink[400]} />
         </View>
       ) : diaries.length > 0 ? (
         <FlatList
@@ -249,7 +250,7 @@ const CircleScreen: React.FC = () => {
             <RefreshControl
               refreshing={isManualRefreshing}
               onRefresh={onRefresh}
-              tintColor={HEALING_COLORS.pink[400]}
+              tintColor={currentHealingColors.pink[400]}
             />
           }
         />
