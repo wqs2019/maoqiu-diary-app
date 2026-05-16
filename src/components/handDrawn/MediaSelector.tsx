@@ -16,7 +16,6 @@ import { DraggableGrid } from 'react-native-draggable-grid';
 import { MediaPreviewer } from './MediaPreviewer';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import ImageSafetyService from '../../services/imageSafetyService';
 import { imageService } from '../../services/imageService';
 import { MediaResource } from '../../types';
 
@@ -61,23 +60,6 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
 
     try {
       console.log(`[MediaUpload] Retrying upload for media at index ${index}`);
-
-      // 安全检测
-      const isSafe = await ImageSafetyService.checkImageSafety(item.uri);
-      
-      if (!isSafe) {
-        console.log(`[MediaUpload] Retry rejected by safety check`);
-        const failMedia = [...media];
-        failMedia[index] = {
-          ...item,
-          uploadStatus: 'fail',
-          subUploadStatus: 'violation',
-          uploadError: '图片违规，禁止上传',
-        };
-        onMediaChange(failMedia);
-        Alert.alert('提示', '该图片包含不合规内容，无法上传。');
-        return;
-      }
 
       // 生成唯一的云存储路径（上传到 diary 目录）
       const extension = item.mimeType?.split('/')[1] || 'jpg';
@@ -146,11 +128,10 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       // 更新错误信息
       const failMedia = [...media];
       const errorMessage = error.message || '上传失败';
-      const isViolation = errorMessage.includes('违规') || errorMessage.includes('不合规') || errorMessage.includes('禁止上传');
       failMedia[index] = {
         ...item,
         uploadStatus: 'fail',
-        subUploadStatus: isViolation ? 'violation' : 'network',
+        subUploadStatus: 'network',
         uploadError: errorMessage,
       };
       onMediaChange(failMedia);
@@ -242,11 +223,10 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         console.error(`[MediaUpload] Upload failed (Try ${currentTry}/${retryCount}):`, error);
         if (currentTry >= retryCount) {
           const errorMessage = error.message || '上传失败';
-          const isViolation = errorMessage.includes('违规') || errorMessage.includes('不合规') || errorMessage.includes('禁止上传');
           return {
             ...item,
             uploadStatus: 'fail',
-            subUploadStatus: isViolation ? 'violation' : 'network',
+            subUploadStatus: 'network',
             uploadError: errorMessage,
           };
         }
@@ -321,34 +301,13 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         onMediaChange(latestMediaState);
         isUploading.current = true;
 
-        // 2. 逐个进行安全检测和上传
+        // 2. 逐个进行上传
         for (let i = 0; i < assets.length; i++) {
           const asset = assets[i];
           const localItem = localMedia[i];
           
           try {
-            // 安全检测
-            const isSafe = await ImageSafetyService.checkImageSafety(asset.uri);
-            
-            if (!isSafe) {
-              console.log(`[MediaUpload] Image ${i+1} rejected by safety check`);
-              // 更新状态为违规失败
-              const newMedia = [...latestMediaState];
-              const targetIndex = newMedia.findIndex(m => m.uri === asset.uri);
-              if (targetIndex >= 0) {
-                newMedia[targetIndex] = {
-                  ...newMedia[targetIndex],
-                  uploadStatus: 'fail',
-                  subUploadStatus: 'violation',
-                  uploadError: '图片违规，禁止上传',
-                };
-              }
-              latestMediaState = newMedia;
-              onMediaChange(latestMediaState);
-              continue; // 跳过当前违规图片，继续处理下一张
-            }
-
-            // 安全检测通过，执行上传
+            // 执行上传
             const uploadedItem = await uploadMediaItem(localItem);
             
             // 更新当前图片的上传结果
@@ -370,11 +329,10 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
             const targetIndex = newMedia.findIndex(m => m.uri === asset.uri);
             if (targetIndex >= 0) {
               const errorMessage = err.message || '处理异常';
-              const isViolation = errorMessage.includes('违规') || errorMessage.includes('不合规') || errorMessage.includes('禁止上传');
               newMedia[targetIndex] = {
                 ...newMedia[targetIndex],
                 uploadStatus: 'fail',
-                subUploadStatus: isViolation ? 'violation' : 'unknown',
+                subUploadStatus: 'unknown',
                 uploadError: errorMessage,
               };
             }
@@ -384,12 +342,6 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         }
         
         isUploading.current = false;
-        
-        // 检查是否有违规被拦截的图片，给个提示
-        const hasViolation = latestMediaState.some(m => m.subUploadStatus === 'violation');
-        if (hasViolation) {
-          Alert.alert('提示', '部分选取的图片因包含不合规内容已被拦截上传。');
-        }
       };
 
       // 启动异步处理流，不阻塞当前主线程（UI 立刻关闭选择器并显示 loading）
@@ -530,8 +482,8 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           <Ionicons name="close-circle" size={24} color="#FF4444" />
         </TouchableOpacity>
 
-        {/* 重试按钮（仅失败且不是违规图片时显示） */}
-        {isFailed && item.subUploadStatus !== 'violation' && (
+        {/* 重试按钮 */}
+        {isFailed && (
           <TouchableOpacity style={styles.retryButton} onPress={() => retryUpload(currentIndex)}>
             <Ionicons name="refresh" size={24} color="#FFF" />
           </TouchableOpacity>
@@ -544,12 +496,10 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
           </Text>
         </View>
 
-        {/* 上传失败或违规提示 */}
+        {/* 上传失败提示 */}
         {isFailed && (
-          <View style={[styles.errorOverlay, item.subUploadStatus === 'violation' && { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
-            <Text style={styles.errorText}>
-              {item.subUploadStatus === 'violation' ? '图片违规' : '上传失败'}
-            </Text>
+          <View style={styles.errorOverlay}>
+            <Text style={styles.errorText}>上传失败</Text>
           </View>
         )}
       </View>

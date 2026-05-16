@@ -48,6 +48,10 @@ yarn-error.*
 # test
 coverage/
 
+# AI models (large files, download on demand)
+# Temporarily allow for testing
+# assets/models/
+
 # IDE
 .idea/
 .vscode/

@@ -19,7 +19,7 @@ import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
 
 // 保持原生 SplashScreen 阻止隐藏，直到我们的 CustomSplashScreen 准备就绪
-SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.preventAutoHideAsync().catch(() => { });
 
 const checkAndSyncVIPStatus = async () => {
   try {
