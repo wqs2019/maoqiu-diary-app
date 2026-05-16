@@ -59,7 +59,7 @@ const CalendarScreen: React.FC = () => {
   );
 
   // 获取统计数据（包括准确计算跨月连续打卡）
-  const { currentStreak } = useDiaryStats(user?._id);
+  const { currentStreak, maxStreak } = useDiaryStats(user?._id);
 
   // 处理当前月份的日记数据，按日期（YYYY-MM-DD）分组
   const diariesByDate = useMemo(() => {
@@ -125,8 +125,8 @@ const CalendarScreen: React.FC = () => {
       totalCheckIns = sortedDates.length;
     }
 
-    return { totalCheckIns, currentStreak };
-  }, [diariesByDate, diaryData, currentStreak]);
+    return { totalCheckIns, currentStreak, maxStreak };
+  }, [diariesByDate, diaryData, currentStreak, maxStreak]);
 
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -192,12 +192,12 @@ const CalendarScreen: React.FC = () => {
                 { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] },
               ]}
             >
-              {checkInStats.currentStreak}
+              {checkInStats.maxStreak}
             </Text>
             <Text
               style={[styles.statLabel, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}
             >
-              连续打卡(天)
+              最高连续(天)
             </Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]} />

@@ -81,8 +81,8 @@ const SubscriptionScreen: React.FC = () => {
     { icon: 'book', title: '无限日记本', desc: '不限数量创建分类日记本' },
     { icon: 'cpu', title: 'AI 智能问答', desc: '解锁无限制 AI 聊天与日记分析' },
     { icon: 'shield', title: '专属应用锁', desc: '更高强度的隐私保护功能' },
-    { icon: 'clock', title: '定时提醒', desc: '设置自定义时间提醒用户写日记' },
     { icon: 'share', title: '共享日记本', desc: '与好友分享日记本，同步更新' },
+    { icon: 'briefcase', title: '自定义主题', desc: '根据个人喜好调整应用主题' },
   ];
 
   useEffect(() => {

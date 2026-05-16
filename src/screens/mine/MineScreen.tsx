@@ -350,7 +350,7 @@ const MineScreen: React.FC = () => {
                 { color: isDark ? '#FFF' : currentHealingColors.gray[800] },
               ]}
             >
-              {stats.currentStreak}
+              {stats.maxStreak}
             </Text>
             <Text
               style={[
@@ -358,7 +358,7 @@ const MineScreen: React.FC = () => {
                 { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
               ]}
             >
-              连续打卡(天)
+              最高连续(天)
             </Text>
           </View>
           <View

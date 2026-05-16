@@ -50,19 +50,6 @@ const SettingsScreen: React.FC = () => {
 
   const handleToggleNotifications = async (enabled: boolean) => {
     if (enabled) {
-      if (!user?.isVip?.value) {
-        Alert.alert('提示', '开通 VIP 即可解锁每日定时提醒功能', [
-          { text: '取消', style: 'cancel' },
-          {
-            text: '去开通',
-            onPress: () => {
-              navigation.navigate('Subscription' as never);
-            },
-          },
-        ]);
-        return;
-      }
-
       const success = await scheduleDailyReminder(reminderTime.hour, reminderTime.minute);
       if (success) {
         await setNotificationsEnabled(true);
