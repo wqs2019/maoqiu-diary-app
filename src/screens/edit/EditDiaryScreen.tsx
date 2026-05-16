@@ -56,6 +56,7 @@ const EditDiaryScreen: React.FC = () => {
   const [content, setContent] = React.useState('');
   const [media, setMedia] = React.useState<MediaResource[]>([]);
   const [isPublic, setIsPublic] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
 
   // 填充已有日记数据
   React.useEffect(() => {
@@ -83,66 +84,95 @@ const EditDiaryScreen: React.FC = () => {
   const { checkVipPermission } = useVipGuard();
 
   const handleSave = async () => {
-    if (!title.trim() && !content.trim()) {
-      Alert.alert('提示', '请至少填写标题或内容哦～');
-      return;
-    }
+    // 防止重复点击
+    if (isSaving) return;
 
-    if (!checkVipPermission('writeDiary')) {
-      return;
-    }
+    // 立即设置 loading 状态
+    setIsSaving(true);
 
-    // --- 内容安全检测拦截 ---
-    if (isPublic) {
-      // 只有当用户选择公开分享时，才进行严格检测
-      const isSafe = await textSafetyService.checkContentSafety(title.trim() + ' ' + content.trim());
-      if (!isSafe) {
-        Alert.alert(
-          '发布失败',
-          '日记内容包含敏感词汇（如涉政、色情、暴恐等）。为了维护阳光健康的社区环境，请修改后再尝试发布哦～'
-        );
+    try {
+      if (!title.trim() && !content.trim()) {
+        Alert.alert('提示', '请至少填写标题或内容哦～');
         return;
       }
-    }
 
-    // 过滤掉未上传成功和仅在本地使用的状态字段
-    // 尤其是兜底删除那些因为违规等原因上传失败，且用户没有主动删除的媒体
-    const cleanMedia = media
-      .filter((m) => m.uploadStatus === 'success')
-      .map(({ uploadStatus, subUploadStatus, uploadError, ...rest }) => rest);
+      if (!checkVipPermission('writeDiary')) {
+        return;
+      }
 
-    if (!currentNotebook) {
-      Alert.alert('提示', '未找到当前日记本');
-      return;
-    }
+      // --- 内容安全检测拦截 ---
+      if (isPublic) {
+        // 只有当用户选择公开分享时，才进行严格检测
+        const isSafe = await textSafetyService.checkContentSafety(title.trim() + ' ' + content.trim());
+        if (!isSafe) {
+          Alert.alert(
+            '发布失败',
+            '日记内容包含敏感词汇（如涉政、色情、暴恐等）。为了维护阳光健康的社区环境，请修改后再尝试发布哦～'
+          );
+          return;
+        }
+      }
 
-    const payload = {
-      userId: user!._id,
-      notebookId: currentNotebook._id,
-      title: title.trim(),
-      content: content.trim(),
-      date: date.toISOString(), // 保存用户选择的日期
-      scenario,
-      mood: mood || 'normal',
-      weather: weather || 'sunny',
-      location: location.trim(),
-      media: cleanMedia.length > 0 ? cleanMedia : undefined,
-      isPublic,
-      authorInfo: {
-        nickname: user?.nickname,
-        avatar: user?.avatar,
-      },
-    };
+      // 过滤掉未上传成功和仅在本地使用的状态字段
+      // 尤其是兜底删除那些因为违规等原因上传失败，且用户没有主动删除的媒体
+      const cleanMedia = media
+        .filter((m) => m.uploadStatus === 'success')
+        .map(({ uploadStatus, subUploadStatus, uploadError, ...rest }) => rest);
 
-    if (isEditMode) {
-      updateDiaryMutation.mutate(
-        {
-          id: diaryId,
-          ...payload,
+      if (!currentNotebook) {
+        Alert.alert('提示', '未找到当前日记本');
+        return;
+      }
+
+      const payload = {
+        userId: user!._id,
+        notebookId: currentNotebook._id,
+        title: title.trim(),
+        content: content.trim(),
+        date: date.toISOString(), // 保存用户选择的日期
+        scenario,
+        mood: mood || 'normal',
+        weather: weather || 'sunny',
+        location: location.trim(),
+        media: cleanMedia.length > 0 ? cleanMedia : undefined,
+        isPublic,
+        authorInfo: {
+          nickname: user?.nickname,
+          avatar: user?.avatar,
         },
-        {
+      };
+
+      if (isEditMode) {
+        updateDiaryMutation.mutate(
+          {
+            id: diaryId,
+            ...payload,
+          },
+          {
+            onSuccess: () => {
+              Alert.alert('✨ 太棒了！', '日记更新成功～', [
+                {
+                  text: '好的',
+                  onPress: () => {
+                    navigation.goBack();
+                  },
+                },
+              ]);
+            },
+            onError: (error) => {
+              console.error('Update diary error:', error);
+              Alert.alert('更新失败', '请检查网络连接后重试', [{ text: '确定' }]);
+            },
+            onSettled: () => {
+              setIsSaving(false);
+            },
+          }
+        );
+      } else {
+        // 调用 mutation 保存日记
+        createDiaryMutation.mutate(payload, {
           onSuccess: () => {
-            Alert.alert('✨ 太棒了！', '日记更新成功～', [
+            Alert.alert('✨ 太棒了！', '日记已保存到云端，继续记录美好时光吧～', [
               {
                 text: '好的',
                 onPress: () => {
@@ -152,29 +182,18 @@ const EditDiaryScreen: React.FC = () => {
             ]);
           },
           onError: (error) => {
-            console.error('Update diary error:', error);
-            Alert.alert('更新失败', '请检查网络连接后重试', [{ text: '确定' }]);
+            console.error('Save diary error:', error);
+            Alert.alert('保存失败', '请检查网络连接后重试', [{ text: '确定' }]);
           },
-        }
-      );
-    } else {
-      // 调用 mutation 保存日记
-      createDiaryMutation.mutate(payload, {
-        onSuccess: () => {
-          Alert.alert('✨ 太棒了！', '日记已保存到云端，继续记录美好时光吧～', [
-            {
-              text: '好的',
-              onPress: () => {
-                navigation.goBack();
-              },
-            },
-          ]);
-        },
-        onError: (error) => {
-          console.error('Save diary error:', error);
-          Alert.alert('保存失败', '请检查网络连接后重试', [{ text: '确定' }]);
-        },
-      });
+          onSettled: () => {
+            setIsSaving(false);
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Save diary error:', error);
+      Alert.alert('保存失败', '请检查网络连接后重试', [{ text: '确定' }]);
+      setIsSaving(false);
     }
   };
 
@@ -362,17 +381,14 @@ const EditDiaryScreen: React.FC = () => {
 
         {/* 保存按钮 */}
         <View style={styles.saveButtonContainer}>
-          {createDiaryMutation.isPending || updateDiaryMutation.isPending ? (
-            <ActivityIndicator size="large" color={HEALING_COLORS.pink[500]} />
-          ) : (
-            <HandDrawnButton
-              title={isEditMode ? '更新日记' : '保存日记'}
-              size="large"
-              onPress={handleSave}
-              color={HEALING_COLORS.pink[500]}
-              buttonStyle={styles.fullWidthButton}
-            />
-          )}
+          <HandDrawnButton
+            title={isEditMode ? '更新日记' : '保存日记'}
+            size="large"
+            onPress={handleSave}
+            color={HEALING_COLORS.pink[500]}
+            buttonStyle={styles.fullWidthButton}
+            isLoading={isSaving}
+          />
         </View>
 
         <View style={{ height: 40 }} />

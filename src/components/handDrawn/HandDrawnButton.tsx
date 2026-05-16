@@ -13,7 +13,7 @@ import { HAND_DRAWN_STYLES, HEALING_COLORS } from '../../config/handDrawnTheme';
 interface HandDrawnButtonProps {
   title: string;
   onPress: () => void;
-  loading?: boolean;
+  isLoading?: boolean;
   disabled?: boolean;
   style?: 'soft' | 'warm' | 'dreamy' | 'natural';
   variant?: 'primary' | 'secondary' | 'outline';
@@ -26,7 +26,7 @@ interface HandDrawnButtonProps {
 export const HandDrawnButton: React.FC<HandDrawnButtonProps> = ({
   title,
   onPress,
-  loading = false,
+  isLoading = false,
   disabled = false,
   style: styleType = 'soft',
   variant = 'primary',
@@ -85,25 +85,27 @@ export const HandDrawnButton: React.FC<HandDrawnButtonProps> = ({
         buttonStyle,
       ]}
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={disabled || isLoading}
       activeOpacity={0.7}
     >
-      {loading ? (
-        <ActivityIndicator color={variant === 'outline' ? buttonColor : '#FFFFFF'} />
-      ) : (
-        <View style={styles.content}>
-          {icon && <Text style={[styles.icon, { fontSize: sizeStyle.fontSize }]}> {icon}</Text>}
-          <Text
-            style={[
-              styles.text,
-              { fontSize: sizeStyle.fontSize },
-              variant === 'outline' && { color: buttonColor },
-            ]}
-          >
-            {title}
-          </Text>
-        </View>
-      )}
+      <View style={styles.content}>
+        {icon && <Text style={[styles.icon, { fontSize: sizeStyle.fontSize }]}> {icon}</Text>}
+        <Text
+          style={[
+            styles.text,
+            { fontSize: sizeStyle.fontSize },
+            variant === 'outline' && { color: buttonColor },
+          ]}
+        >
+          {title}
+        </Text>
+        {isLoading && (
+          <ActivityIndicator
+            style={styles.loading}
+            color={variant === 'outline' ? buttonColor : '#FFFFFF'}
+          />
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
@@ -127,7 +129,9 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 8,
-    fontWeight: '600',
+  },
+  loading: {
+    marginLeft: 8,
   },
   disabled: {
     opacity: 0.5,
