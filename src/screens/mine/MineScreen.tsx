@@ -147,6 +147,16 @@ const MineScreen: React.FC = () => {
       {/* 顶部操作区 */}
       <View style={[styles.topActions, { paddingTop: insets.top }]}>
         <TouchableOpacity
+          style={[styles.circleButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.6)', marginRight: 12 }]}
+          onPress={() => {
+            if (user?._id) {
+              navigation.navigate('UserProfile' as any, { userId: user._id });
+            }
+          }}
+        >
+          <Feather name="globe" size={20} color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[800]} />
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.bellButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.6)' }]}
           onPress={() => navigation.navigate('NotificationCenter' as any)}
         >
@@ -561,6 +571,13 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     zIndex: 10,
     position: 'relative',
+  },
+  circleButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   bellButton: {
     width: 36,

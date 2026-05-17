@@ -150,7 +150,15 @@ const UserProfileScreen: React.FC = () => {
     const textShadowStyle = hasBackground ? { textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 } : {};
 
     return (
-      <View style={[styles.profileHeader, { backgroundColor: profileHeaderBg }]}>
+      <View style={{ backgroundColor: 'transparent' }}>
+        <View style={[styles.profileHeader, { backgroundColor: profileHeaderBg, paddingTop: insets.top, marginBottom: 0 }]}>
+          {/* 返回按钮放在 Header 内部 */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={28} color={hasBackground ? '#FFF' : (isDark ? '#FFF' : '#111827')} style={hasBackground ? { textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 } : {}} />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.profileTop}>
           <View style={[styles.avatarContainer, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
             {profile.avatar ? (
@@ -217,6 +225,8 @@ const UserProfileScreen: React.FC = () => {
             )}
           </TouchableOpacity>
         )}
+        </View>
+        <View style={{ height: 8, backgroundColor }} />
       </View>
     );
   };
@@ -226,8 +236,9 @@ const UserProfileScreen: React.FC = () => {
     const hasLiked = currentUser?._id ? (item.likedUserIds || []).includes(currentUser._id) : false;
 
     return (
-      <View style={[styles.diaryWrapper, { backgroundColor: isDark ? '#1E1E1E' : '#fff' }]}>
-        <View style={styles.feedCard}>
+      <View style={{ backgroundColor, paddingBottom: 8 }}>
+        <View style={[styles.diaryWrapper, { backgroundColor: isDark ? '#1E1E1E' : '#fff', marginBottom: 0 }]}>
+          <View style={styles.feedCard}>
           <TouchableOpacity
             activeOpacity={1}
             onPress={() => {
@@ -308,6 +319,7 @@ const UserProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
+        </View>
       </View>
     );
   };
@@ -348,13 +360,6 @@ const UserProfileScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Navigation Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={28} color={hasBackground ? '#FFF' : (isDark ? '#FFF' : '#111827')} style={hasBackground ? { textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 } : {}} />
-        </TouchableOpacity>
-      </View>
-
       {errorMsg ? (
         <View style={styles.errorContainer}>
           <Ionicons name="person-circle-outline" size={64} color={isDark ? '#555' : '#D1D5DB'} />
@@ -377,7 +382,7 @@ const UserProfileScreen: React.FC = () => {
           }
           ListEmptyComponent={
             !diaryLoading && !profileLoading ? (
-              <View style={styles.emptyContainer}>
+              <View style={[styles.emptyContainer, { backgroundColor }]}>
                 <Ionicons name="globe-outline" size={48} color={isDark ? '#555' : '#D1D5DB'} />
                 <Text style={[styles.emptyText, { color: isDark ? '#AAA' : '#6B7280' }]}>
                   该用户还没有发布公开日记
@@ -420,9 +425,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
     paddingVertical: 12,
     zIndex: 10,
+    marginLeft: -16, // 抵消 profileHeader 的 padding
   },
   backBtn: {
     padding: 4,
