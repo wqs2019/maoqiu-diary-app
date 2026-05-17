@@ -14,6 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Svg, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
 import { HEALING_COLORS } from '@/config/handDrawnTheme';
@@ -141,9 +142,15 @@ const UserProfileScreen: React.FC = () => {
     if (!profile) return null;
 
     const isSelf = currentUser?._id === targetUserId;
+    const hasBackground = !!profile.profileBackground;
+
+    const profileHeaderBg = hasBackground ? 'transparent' : (isDark ? '#1E1E1E' : '#fff');
+    const textColor = hasBackground ? '#FFF' : (isDark ? '#FFF' : '#111827');
+    const labelColor = hasBackground ? 'rgba(255,255,255,0.8)' : (isDark ? '#AAA' : '#6B7280');
+    const textShadowStyle = hasBackground ? { textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 } : {};
 
     return (
-      <View style={[styles.profileHeader, { backgroundColor: isDark ? '#1E1E1E' : '#fff' }]}>
+      <View style={[styles.profileHeader, { backgroundColor: profileHeaderBg }]}>
         <View style={styles.profileTop}>
           <View style={[styles.avatarContainer, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
             {profile.avatar ? (
@@ -153,31 +160,31 @@ const UserProfileScreen: React.FC = () => {
             )}
           </View>
           <View style={styles.profileInfo}>
-            <Text style={[styles.nickname, { color: isDark ? '#FFF' : '#111827' }]}>
+            <Text style={[styles.nickname, { color: textColor }, textShadowStyle]}>
               {profile.nickname || '某只毛球'}
             </Text>
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: isDark ? '#FFF' : '#111827' }]}>
+                <Text style={[styles.statValue, { color: textColor }, textShadowStyle]}>
                   {formatCount(profile.publicDiariesCount)}
                 </Text>
-                <Text style={[styles.statLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>公开日记</Text>
+                <Text style={[styles.statLabel, { color: labelColor }, textShadowStyle]}>公开日记</Text>
               </View>
               <TouchableOpacity 
                 style={styles.statItem}
                 onPress={() => isSelf && navigation.navigate('Followers', { userId: targetUserId })}
                 disabled={!isSelf}
               >
-                <Text style={[styles.statValue, { color: isDark ? '#FFF' : '#111827' }]}>
+                <Text style={[styles.statValue, { color: textColor }, textShadowStyle]}>
                   {formatCount(profile.followersCount)}
                 </Text>
-                <Text style={[styles.statLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>粉丝</Text>
+                <Text style={[styles.statLabel, { color: labelColor }, textShadowStyle]}>粉丝</Text>
               </TouchableOpacity>
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: isDark ? '#FFF' : '#111827' }]}>
+                <Text style={[styles.statValue, { color: textColor }, textShadowStyle]}>
                   {formatCount(profile.totalLikes)}
                 </Text>
-                <Text style={[styles.statLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>获赞</Text>
+                <Text style={[styles.statLabel, { color: labelColor }, textShadowStyle]}>获赞</Text>
               </View>
             </View>
           </View>
@@ -188,20 +195,20 @@ const UserProfileScreen: React.FC = () => {
             style={[
               styles.followBtn,
               profile.isFollowing
-                ? { backgroundColor: isDark ? '#333' : '#F3F4F6' }
+                ? { backgroundColor: hasBackground ? 'rgba(255,255,255,0.2)' : (isDark ? '#333' : '#F3F4F6') }
                 : { backgroundColor: HEALING_COLORS.pink[500] },
             ]}
             onPress={handleFollow}
             disabled={followLoading}
           >
             {followLoading ? (
-              <ActivityIndicator size="small" color={profile.isFollowing ? '#6B7280' : '#fff'} />
+              <ActivityIndicator size="small" color={profile.isFollowing ? (hasBackground ? '#FFF' : (isDark ? '#FFF' : '#111827')) : '#fff'} />
             ) : (
               <Text
                 style={[
                   styles.followBtnText,
                   profile.isFollowing
-                    ? { color: isDark ? '#AAA' : '#6B7280' }
+                    ? { color: hasBackground ? '#FFF' : (isDark ? '#FFF' : '#6B7280') }
                     : { color: '#fff' },
                 ]}
               >
@@ -305,19 +312,47 @@ const UserProfileScreen: React.FC = () => {
     );
   };
 
+  console.log('profile', profile);
+
+  const backgroundColor = isDark ? '#121212' : '#F9FAFB';
+  const hasBackground = !!(!profileLoading && profile?.profileBackground);
+
   return (
     <View
       style={[
         styles.container,
-        { paddingTop: insets.top, backgroundColor: isDark ? '#121212' : '#F9FAFB' },
+        { backgroundColor },
       ]}
     >
-      <View style={styles.header}>
+      {/* 顶部背景装饰 */}
+      {hasBackground && (
+        <View style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}>
+          <Image
+            source={{ uri: profile.profileBackground }}
+            style={styles.headerBackgroundImage}
+          />
+          {/* 半透明黑色遮罩，确保前景信息更清晰 */}
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.3)' }]} pointerEvents="none" />
+          
+          <View style={styles.headerBackgroundGradient} pointerEvents="none">
+            <Svg width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={backgroundColor} stopOpacity="0" />
+                  <Stop offset="1" stopColor={backgroundColor} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#grad)" />
+            </Svg>
+          </View>
+        </View>
+      )}
+
+      {/* Navigation Header */}
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={28} color={isDark ? '#FFF' : '#111827'} />
+          <Ionicons name="chevron-back" size={28} color={hasBackground ? '#FFF' : (isDark ? '#FFF' : '#111827')} style={hasBackground ? { textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 } : {}} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>个人主页</Text>
-        <View style={{ width: 28 }} />
       </View>
 
       {errorMsg ? (
@@ -361,12 +396,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+  headerBackgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+    zIndex: 0,
+  },
+  headerBackgroundImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  headerBackgroundGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '60%',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    zIndex: 10,
   },
   backBtn: {
     padding: 4,

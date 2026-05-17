@@ -444,6 +444,7 @@ const getProfile = async (data) => {
         _id: userData._id,
         nickname: userData.nickname,
         avatar: userData.avatar,
+        profileBackground: userData.profileBackground,
         publicDiariesCount: publicDiariesCount,
         followersCount: followersCount,
         totalLikes: totalLikes,

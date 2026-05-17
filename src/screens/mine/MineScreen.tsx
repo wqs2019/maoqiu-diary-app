@@ -101,7 +101,7 @@ const MineScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
       {/* 顶部背景装饰 */}
       {user?.profileBackground ? (
-        <View style={[styles.headerBackgroundContainer, { height: 200 + insets.top }]}>
+        <View style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}>
           <Image
             source={{ uri: user.profileBackground }}
             style={styles.headerBackgroundImage}
@@ -122,7 +122,7 @@ const MineScreen: React.FC = () => {
           </View>
         </View>
       ) : (
-        <View style={[styles.headerBackgroundContainer, { height: 200 + insets.top }]}>
+        <View style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}>
           <View
             style={[
               StyleSheet.absoluteFillObject,
