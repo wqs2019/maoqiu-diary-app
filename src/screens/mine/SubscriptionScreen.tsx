@@ -600,7 +600,7 @@ const SubscriptionScreen: React.FC = () => {
               <TouchableOpacity
                 onPress={() => {
                   navigation.navigate('Web' as any, {
-                    url: 'https://maoqiu.com/terms',
+                    url: 'https://www.xieyimao.com/doc/detailzh/token/1772109293_4012',
                     title: '用户协议',
                   });
                 }}
@@ -620,7 +620,7 @@ const SubscriptionScreen: React.FC = () => {
               <TouchableOpacity
                 onPress={() => {
                   navigation.navigate('Web' as any, {
-                    url: 'https://maoqiu.com/privacy',
+                    url: 'https://www.xieyimao.com/doc/detailzh/token/1772108718_2251',
                     title: '隐私政策',
                   });
                 }}
