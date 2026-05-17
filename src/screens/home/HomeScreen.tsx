@@ -300,9 +300,14 @@ const HomeScreen: React.FC = () => {
               style={styles.titleRow}
               onPress={() => setIsNotebookModalVisible(true)}
             >
-              <Text style={[styles.title, { color: isDark ? '#FFF' : '#333' }]}>
+              <Text style={[styles.title, { color: isDark ? '#FFF' : '#333', flexShrink: 1 }]} numberOfLines={1}>
                 {currentNotebook?.name || '毛球日记'}
               </Text>
+              {currentNotebook?.type === 'shared' && (
+                <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3', marginLeft: 8 }]}>
+                  <Text style={[styles.sharedTagText, { color: currentHealingColors.pink[500] }]}>👥 共享</Text>
+                </View>
+              )}
               <Ionicons
                 name="chevron-down"
                 size={20}
@@ -310,11 +315,6 @@ const HomeScreen: React.FC = () => {
                 style={{ marginLeft: 4 }}
               />
             </TouchableOpacity>
-            {currentNotebook.type === 'shared' && (
-              <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]}>
-                <Text style={[styles.sharedTagText, { color: currentHealingColors.pink[500] }]}>👥 共享</Text>
-              </View>
-            )}
             <Text style={styles.dateText}>{getFormattedDate()}</Text>
           </View>
           <View style={styles.headerRight}>
@@ -524,9 +524,10 @@ const HomeScreen: React.FC = () => {
                         <Text
                           style={[
                             styles.notebookItemText,
-                            { color: isDark ? '#FFF' : '#333' },
+                            { color: isDark ? '#FFF' : '#333', flexShrink: 1 },
                             currentNotebook._id === notebook._id && [styles.notebookItemTextActive, { color: currentHealingColors.pink[500] }],
                           ]}
+                          numberOfLines={1}
                         >
                           {notebook.name}
                         </Text>

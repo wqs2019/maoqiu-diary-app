@@ -106,6 +106,8 @@ const MineScreen: React.FC = () => {
             source={{ uri: user.profileBackground }}
             style={styles.headerBackgroundImage}
           />
+          {/* 半透明黑色遮罩，确保前景信息更清晰 */}
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.3)' }]} pointerEvents="none" />
           
           <View style={styles.headerBackgroundGradient} pointerEvents="none">
             <Svg width="100%" height="100%">
