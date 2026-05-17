@@ -122,7 +122,7 @@ async function validateTokenHandler(data) {
 
     const [userId, timestamp, signature] = tokenParts;
 
-    const tokenExpiry = 30 * 24 * 60 * 60 * 1000;
+    const tokenExpiry = 365 * 24 * 60 * 60 * 1000;
     if (Date.now() - parseInt(timestamp) > tokenExpiry) {
       return { code: -1, message: 'Token已过期' };
     }
