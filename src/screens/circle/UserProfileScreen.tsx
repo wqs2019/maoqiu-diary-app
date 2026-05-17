@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import * as Linking from 'expo-linking';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -12,11 +13,13 @@ import {
   Image,
   Dimensions,
   Alert,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Svg, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
+import { Modal as CommonModal } from '@/components/common/Modal';
 import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useDiaryList, useLikeDiary } from '@/hooks/useDiaryQuery';
@@ -51,7 +54,8 @@ const UserProfileScreen: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
-  
+  const [moreActionsVisible, setMoreActionsVisible] = useState(false);
+
   // Tab 状态：'public' | 'commented' | 'liked'
   const [activeTab, setActiveTab] = useState<'public' | 'commented' | 'liked'>('public');
 
@@ -134,6 +138,53 @@ const UserProfileScreen: React.FC = () => {
     });
   };
 
+  const handleShareProfile = useCallback(async () => {
+    if (!profile || !targetUserId) return;
+
+    try {
+      const profileUrl = Linking.createURL(`user/${targetUserId}`);
+      const avatarText = profile.avatar ? `头像：${profile.avatar}\n` : '';
+      const shareMessage = `来看看 ${profile.nickname || '这位用户'} 在毛球日记的个人主页吧\n${avatarText}主页链接：${profileUrl}`;
+
+      await Share.share({
+        title: `${profile.nickname || '这位用户'}的毛球主页`,
+        message: shareMessage,
+        url: profileUrl,
+      });
+    } catch (error) {
+      console.error('Share profile error:', error);
+      Alert.alert('提示', '分享失败，请稍后再试');
+    }
+  }, [profile, targetUserId]);
+
+  const handleOpenMoreActions = useCallback(() => {
+    setMoreActionsVisible(true);
+  }, []);
+
+  const handleShareFromPopup = useCallback(() => {
+    setMoreActionsVisible(false);
+    setTimeout(() => {
+      handleShareProfile();
+    }, 180);
+  }, [handleShareProfile]);
+
+  const handleBackPress = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Main',
+          params: { screen: 'Home' },
+        },
+      ],
+    });
+  }, [navigation]);
+
 
 
   const renderHeader = () => {
@@ -159,8 +210,16 @@ const UserProfileScreen: React.FC = () => {
         <View style={[styles.profileHeader, { backgroundColor: profileHeaderBg, paddingTop: insets.top, marginBottom: 0 }]}>
           {/* 返回按钮放在 Header 内部 */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backBtn} onPress={handleBackPress}>
             <Ionicons name="chevron-back" size={28} color={hasBackground ? '#FFF' : (isDark ? '#FFF' : '#111827')} style={hasBackground ? { textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 } : {}} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.moreBtn} onPress={handleOpenMoreActions}>
+            <Ionicons
+              name="ellipsis-horizontal"
+              size={22}
+              color={hasBackground ? '#FFF' : (isDark ? '#FFF' : '#111827')}
+              style={hasBackground ? { textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 } : {}}
+            />
           </TouchableOpacity>
         </View>
 
@@ -438,6 +497,53 @@ const UserProfileScreen: React.FC = () => {
           }
         />
       )}
+
+      <CommonModal visible={moreActionsVisible} onClose={() => setMoreActionsVisible(false)}>
+        <View style={styles.popupContainer}>
+          <TouchableOpacity
+            style={styles.popupBackdrop}
+            activeOpacity={1}
+            onPress={() => setMoreActionsVisible(false)}
+          />
+          <View
+            style={[
+              styles.popupCard,
+              {
+                backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                borderColor: isDark ? '#333' : '#E5E7EB',
+              },
+            ]}
+          >
+            <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>
+              更多操作
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.popupAction,
+                { borderBottomColor: isDark ? '#333' : '#F3F4F6' },
+              ]}
+              onPress={handleShareFromPopup}
+            >
+              <Ionicons
+                name="share-social-outline"
+                size={18}
+                color={HEALING_COLORS.pink[500]}
+              />
+              <Text style={[styles.popupActionText, { color: isDark ? '#FFF' : '#111827' }]}>
+                分享这位用户的主页
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.popupCancel}
+              onPress={() => setMoreActionsVisible(false)}
+            >
+              <Text style={[styles.popupCancelText, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                取消
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </CommonModal>
     </View>
   );
 };
@@ -478,6 +584,54 @@ const styles = StyleSheet.create({
   backBtn: {
     padding: 4,
     marginLeft: -8,
+  },
+  moreBtn: {
+    padding: 6,
+    marginRight: -4,
+  },
+  popupContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  popupBackdrop: {
+    flex: 1,
+  },
+  popupCard: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingTop: 16,
+    paddingBottom: 8,
+    overflow: 'hidden',
+  },
+  popupTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  popupAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  popupActionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  popupCancel: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  popupCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   headerTitle: {
     fontSize: 18,

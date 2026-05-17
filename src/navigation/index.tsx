@@ -25,6 +25,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       },
       CircleDetail: 'circle/:_id',
       DiaryDetail: 'diary/:_id',
+      UserProfile: 'user/:userId',
     },
   },
 };
