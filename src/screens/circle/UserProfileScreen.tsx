@@ -51,12 +51,17 @@ const UserProfileScreen: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  
+  // Tab 状态：'public' | 'commented' | 'liked'
+  const [activeTab, setActiveTab] = useState<'public' | 'commented' | 'liked'>('public');
 
   const { data: diaryData, isLoading: diaryLoading, refetch } = useDiaryList({
     page: 1,
     pageSize: 100,
-    userId: targetUserId,
-    isPublic: true,
+    userId: activeTab === 'public' ? targetUserId : undefined,
+    likedByUserId: activeTab === 'liked' ? targetUserId : undefined,
+    commentedByUserId: activeTab === 'commented' ? targetUserId : undefined,
+    isPublic: activeTab === 'public' ? true : undefined, // 仅在查看“我的公开”时强制过滤公开日记，评论/点赞的日记可能包含自己参与的他人的非公开日记（视业务需求）
   });
 
   const diaries = diaryData?.list || [];
@@ -168,9 +173,41 @@ const UserProfileScreen: React.FC = () => {
             )}
           </View>
           <View style={styles.profileInfo}>
-            <Text style={[styles.nickname, { color: textColor }, textShadowStyle]}>
-              {profile.nickname || '某只毛球'}
-            </Text>
+            <View style={styles.nicknameRow}>
+              <Text style={[styles.nickname, { color: textColor }, textShadowStyle]}>
+                {profile.nickname || '某只毛球'}
+              </Text>
+              {!isSelf && (
+                <TouchableOpacity
+                  style={[
+                    styles.followIconBtn,
+                    profile.isFollowing
+                      ? { backgroundColor: hasBackground ? 'rgba(255,255,255,0.2)' : (isDark ? '#333' : '#F3F4F6') }
+                      : { backgroundColor: HEALING_COLORS.pink[500] },
+                  ]}
+                  onPress={handleFollow}
+                  disabled={followLoading}
+                >
+                  {followLoading ? (
+                    <ActivityIndicator size="small" color={profile.isFollowing ? (hasBackground ? '#FFF' : (isDark ? '#FFF' : '#111827')) : '#fff'} />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name={profile.isFollowing ? "checkmark" : "add"}
+                        size={14}
+                        color={profile.isFollowing ? (hasBackground ? '#FFF' : (isDark ? '#FFF' : '#6B7280')) : '#fff'}
+                      />
+                      <Text style={[
+                        styles.followIconText,
+                        { color: profile.isFollowing ? (hasBackground ? '#FFF' : (isDark ? '#FFF' : '#6B7280')) : '#fff' }
+                      ]}>
+                        {profile.isFollowing ? '已关注' : '关注'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: textColor }, textShadowStyle]}>
@@ -197,35 +234,38 @@ const UserProfileScreen: React.FC = () => {
             </View>
           </View>
         </View>
-
-        {!isSelf && (
-          <TouchableOpacity
-            style={[
-              styles.followBtn,
-              profile.isFollowing
-                ? { backgroundColor: hasBackground ? 'rgba(255,255,255,0.2)' : (isDark ? '#333' : '#F3F4F6') }
-                : { backgroundColor: HEALING_COLORS.pink[500] },
-            ]}
-            onPress={handleFollow}
-            disabled={followLoading}
-          >
-            {followLoading ? (
-              <ActivityIndicator size="small" color={profile.isFollowing ? (hasBackground ? '#FFF' : (isDark ? '#FFF' : '#111827')) : '#fff'} />
-            ) : (
-              <Text
-                style={[
-                  styles.followBtnText,
-                  profile.isFollowing
-                    ? { color: hasBackground ? '#FFF' : (isDark ? '#FFF' : '#6B7280') }
-                    : { color: '#fff' },
-                ]}
-              >
-                {profile.isFollowing ? '已关注' : '关注'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        )}
         </View>
+
+        {/* Tab 栏（仅自己可见） */}
+        {isSelf && (
+          <View style={[styles.tabContainer, { borderBottomColor: isDark ? '#333' : '#E5E7EB' }]}>
+            <TouchableOpacity
+              style={[styles.tabItem, activeTab === 'public' && { borderBottomColor: HEALING_COLORS.pink[500] }]}
+              onPress={() => setActiveTab('public')}
+            >
+              <Text style={[styles.tabText, { color: isDark ? '#AAA' : '#6B7280' }, activeTab === 'public' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
+                我的公开
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabItem, activeTab === 'commented' && { borderBottomColor: HEALING_COLORS.pink[500] }]}
+              onPress={() => setActiveTab('commented')}
+            >
+              <Text style={[styles.tabText, { color: isDark ? '#AAA' : '#6B7280' }, activeTab === 'commented' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
+                评论
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabItem, activeTab === 'liked' && { borderBottomColor: HEALING_COLORS.pink[500] }]}
+              onPress={() => setActiveTab('liked')}
+            >
+              <Text style={[styles.tabText, { color: isDark ? '#AAA' : '#6B7280' }, activeTab === 'liked' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
+                赞过
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={{ height: 8, backgroundColor }} />
       </View>
     );
@@ -324,10 +364,9 @@ const UserProfileScreen: React.FC = () => {
     );
   };
 
-  console.log('profile', profile);
-
   const backgroundColor = isDark ? '#121212' : '#F9FAFB';
   const hasBackground = !!(!profileLoading && profile?.profileBackground);
+  const isSelf = currentUser?._id === targetUserId;
 
   return (
     <View
@@ -344,7 +383,7 @@ const UserProfileScreen: React.FC = () => {
             style={styles.headerBackgroundImage}
           />
           {/* 半透明黑色遮罩，确保前景信息更清晰 */}
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.3)' }]} pointerEvents="none" />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.6)' }]} pointerEvents="none" />
           
           <View style={styles.headerBackgroundGradient} pointerEvents="none">
             <Svg width="100%" height="100%">
@@ -359,6 +398,7 @@ const UserProfileScreen: React.FC = () => {
           </View>
         </View>
       )}
+      
 
       {errorMsg ? (
         <View style={styles.errorContainer}>
@@ -385,7 +425,13 @@ const UserProfileScreen: React.FC = () => {
               <View style={[styles.emptyContainer, { backgroundColor }]}>
                 <Ionicons name="globe-outline" size={48} color={isDark ? '#555' : '#D1D5DB'} />
                 <Text style={[styles.emptyText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                  该用户还没有发布公开日记
+                  {isSelf
+                    ? activeTab === 'public'
+                      ? '你还没有发布公开日记'
+                      : activeTab === 'commented'
+                      ? '你还没有评论过日记'
+                      : '你还没有赞过日记'
+                    : '该用户还没有发布公开日记'}
                 </Text>
               </View>
             ) : null
@@ -462,10 +508,29 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
   },
+  nicknameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   nickname: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginRight: 8,
+  },
+  followIconBtn: {
+    flexDirection: 'row',
+    height: 26,
+    paddingHorizontal: 10,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  followIconText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 2,
   },
   statsRow: {
     flexDirection: 'row',
@@ -482,15 +547,20 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
   },
-  followBtn: {
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+  tabContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderBottomWidth: 1,
+    marginTop: 12,
   },
-  followBtnText: {
+  tabItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabText: {
     fontSize: 15,
-    fontWeight: '600',
   },
   listContent: {
     paddingBottom: 40,

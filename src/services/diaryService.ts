@@ -17,6 +17,8 @@ export interface DiaryListParams {
   userId?: string;
   isFavorite?: boolean;
   isPublic?: boolean;
+  likedByUserId?: string;
+  commentedByUserId?: string;
 }
 
 /**
@@ -52,6 +54,8 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
         userId: params.userId,
         isFavorite: params.isFavorite,
         isPublic: params.isPublic,
+        likedByUserId: params.likedByUserId,
+        commentedByUserId: params.commentedByUserId,
       },
     }
   );

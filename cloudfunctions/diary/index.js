@@ -281,13 +281,13 @@ const getDiaryDetail = async (data) => {
 // 获取日记列表
 const getDiaryList = async (data) => {
   try {
-    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId, isFavorite, isPublic } = data;
+    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId, isFavorite, isPublic, likedByUserId, commentedByUserId } = data;
     const _ = db.command;
 
-    if (!userId && !isPublic) {
+    if (!userId && !isPublic && !likedByUserId && !commentedByUserId) {
       return {
         success: false,
-        message: '用户ID或isPublic标识不能为空',
+        message: '查询条件不足',
       };
     }
 
@@ -324,13 +324,14 @@ const getDiaryList = async (data) => {
         queryConditions.push({ userId: userId });
       }
     } else {
-      if (userId && !isPublic) {
+      // 没有任何特殊过滤条件（评论、点赞）且要求不是完全的公共世界频道
+      if (userId && !isPublic && !likedByUserId && !commentedByUserId) {
         queryConditions.push({ userId: userId });
       } else if (isPublic === true && userId) {
         // 特定用户的公开日记
         queryConditions.push({ userId: userId });
         queryConditions.push({ isPublic: true });
-      } else if (isPublic === true) {
+      } else if (isPublic === true && !likedByUserId && !commentedByUserId) {
         // 世界频道
         queryConditions.push({ isPublic: true });
       }
@@ -366,6 +367,19 @@ const getDiaryList = async (data) => {
           { content: keywordRegex }
         ])
       );
+    }
+
+    if (likedByUserId) {
+      queryConditions.push({ likedUserIds: likedByUserId });
+    }
+
+    if (commentedByUserId) {
+      // 使用数组元素匹配查询
+      queryConditions.push({
+        comments: _.elemMatch({
+          userId: commentedByUserId
+        })
+      });
     }
 
     let finalQuery = queryConditions.length > 0 ? _.and(queryConditions) : {};

@@ -33,7 +33,11 @@ export const useDiaryList = (params: DiaryListParams = {}) => {
       // 可选配置
       staleTime: 1000 * 60 * 1, // 1 分钟内数据不失效
       retry: 2, // 失败重试 2 次
-      enabled: !!params.userId || !!params.isPublic, // 仅当 userId 存在或是公开查询时启用查询
+      enabled:
+        !!params.userId ||
+        !!params.isPublic ||
+        !!params.likedByUserId ||
+        !!params.commentedByUserId, // 仅当至少存在一种有效查询条件时启用查询
     }
   );
 };
