@@ -403,13 +403,13 @@ const SettingsScreen: React.FC = () => {
             </View>,
             true,
             () => {
-              // if (!user?.isVip?.value) {
-              //   Alert.alert('提示', '开通 VIP 即可解锁自定义主题功能', [
-              //     { text: '取消', style: 'cancel' },
-              //     { text: '去开通', onPress: () => navigation.navigate('Subscription' as never) }
-              //   ]);
-              //   return;
-              // }
+              if (!user?.isVip?.value) {
+                Alert.alert('提示', '开通 VIP 即可解锁自定义主题功能', [
+                  { text: '取消', style: 'cancel' },
+                  { text: '去开通', onPress: () => navigation.navigate('Subscription' as never) }
+                ]);
+                return;
+              }
               navigation.navigate('ThemeSetting' as never);
             }
           )}
