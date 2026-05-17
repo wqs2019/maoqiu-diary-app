@@ -253,7 +253,7 @@ const EditDiaryScreen: React.FC = () => {
               return (
                 <TouchableOpacity
                   key={type}
-                  style={[styles.compactChip, index !== array.length - 1 && { marginRight: 16 }]}
+                  style={[styles.compactChip, index !== array.length - 1 && styles.compactChipSpacing]}
                   onPress={() => {
                     setScenario(type);
                   }}
@@ -437,18 +437,22 @@ const styles = StyleSheet.create({
   },
   scenarioScrollContainer: {
     paddingHorizontal: 20,
+    paddingRight: 44,
     flexDirection: 'row',
     alignItems: 'center',
   },
   compactChip: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 48,
+    width: 55,
+  },
+  compactChipSpacing: {
+    marginRight: 14,
   },
   compactIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
