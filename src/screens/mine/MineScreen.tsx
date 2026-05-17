@@ -432,7 +432,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'book-open',
             '我的日记本',
-            isDark ? currentHealingColors.pink[600] : currentHealingColors.pink[500],
+            currentHealingColors.pink[500],
             false,
             () => {
               navigation.navigate('Notebooks' as any);
@@ -441,7 +441,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'star',
             '收藏夹',
-            isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[400],
+            currentHealingColors.pink[500],
             false,
             () => {
               navigation.navigate('Favorites' as any);
@@ -450,7 +450,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'calendar',
             '打卡日历',
-            isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[500],
+            currentHealingColors.pink[500],
             true,
             () => {
               navigation.navigate('Calendar' as any);
@@ -477,7 +477,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'settings',
             '应用设置',
-            isDark ? currentHealingColors.pink[300] : currentHealingColors.pink[400],
+            currentHealingColors.pink[500],
             false,
             () => {
               navigation.navigate('Settings');
@@ -486,7 +486,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'info',
             '关于毛球',
-            isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[500],
+            currentHealingColors.pink[500],
             false,
             () => {
               navigation.navigate('About');
@@ -495,7 +495,7 @@ const MineScreen: React.FC = () => {
           {renderMenuItem(
             'help-circle',
             '帮助与反馈',
-            isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[600],
+            currentHealingColors.pink[600],
             true,
             () => {
               navigation.navigate('Feedback');
