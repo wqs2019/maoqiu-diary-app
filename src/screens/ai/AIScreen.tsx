@@ -39,8 +39,8 @@ interface Message {
   name?: string;
 }
 
-const DOUBAO_API_KEY = '837368c6-aa84-4ae8-920f-0474cae5709b';
-const DOUBAO_CHAT_MODEL_ID = 'doubao-seed-1-6-lite-251015';
+const DOUBAO_API_KEY = 'ark-f6a254f2-6f05-4d9e-8773-eb85ef69e67d-e55b0';
+const DOUBAO_CHAT_MODEL_ID = 'doubao-seed-2-0-lite-260215';
 const DOUBAO_API_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
 
 const AIScreen: React.FC = () => {
@@ -580,12 +580,16 @@ ${statsContext}`;
           responseMessage?.tool_calls ? '我还在思考中...' : '（小主，毛球不太清楚呢～🤔）'
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI Request Error:', error);
+      let errorContent = '抱歉，我现在有点开小差，请稍后再试哦～';
+      if (error?.message?.includes('429') || error?.message?.includes('RateLimitExceeded')) {
+        errorContent = '哎呀，我刚才回答得太快啦，大脑有点转不过弯了～\n（API 请求频率限制，请稍微等几秒钟再发哦）';
+      }
       const errorMsg: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: '抱歉，我现在有点开小差，请稍后再试哦～',
+        content: errorContent,
         createdAt: Date.now(),
       };
       setMessages((prev) => [...prev, errorMsg]);
