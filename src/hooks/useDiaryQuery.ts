@@ -82,8 +82,15 @@ export const useDiaryStats = (userId?: string) => {
       const uniqueMoods = new Set();
 
       let nightOwlCount = 0;
+      let earlyBirdCount = 0;
+      let totalWords = 0;
+      let totalPhotos = 0;
+      let totalLikesReceived = 0;
+      let hasViralDiary = false;
       let hasLongStory = false;
       let fullPhotosCount = 0;
+      let foodDiaryCount = 0;
+      let travelDiaryCount = 0;
       const uniqueLocations = new Set<string>();
       const weekendDates = new Set<string>();
 
@@ -130,10 +137,27 @@ export const useDiaryStats = (userId?: string) => {
           uniqueMoods.add(diary.mood);
         }
 
-        // 9. 午夜守望者：累计 10 篇深夜日记
+        // 9 & 17. 守望者与早起鸟：深夜和清晨日记
         if (diary.createdAt) {
           const createdHour = new Date(diary.createdAt).getHours();
           if (createdHour >= 0 && createdHour < 4) nightOwlCount++;
+          if (createdHour >= 5 && createdHour < 8) earlyBirdCount++;
+        }
+
+        // 累计字数、图片、点赞
+        if (diary.content) {
+          totalWords += diary.content.length;
+        }
+        if (diary.media) {
+          totalPhotos += diary.media.length;
+        }
+        if (diary.likedUserIds) {
+          const likesCount = diary.likedUserIds.length;
+          totalLikesReceived += likesCount;
+          // 20. 一呼百应：单篇公开日记获得超过 50 个赞
+          if (diary.isPublic && likesCount >= 50) {
+            hasViralDiary = true;
+          }
         }
 
         // 10. 洋洋洒洒：字数超 2000 且至少 3 张图
@@ -174,6 +198,13 @@ export const useDiaryStats = (userId?: string) => {
         // 13. 环游世界：至少 5 个不同地点
         if (diary.location && diary.location.trim() !== '') {
           uniqueLocations.add(diary.location.trim());
+        }
+
+        // 22 & 23. 场景标签：美食与旅行
+        if (diary.scenario === 'food') {
+          foodDiaryCount++;
+        } else if (diary.scenario === 'travel') {
+          travelDiaryCount++;
         }
 
         // 14. 完美的周末：收集所有打卡过的周末日期
@@ -278,6 +309,27 @@ export const useDiaryStats = (userId?: string) => {
       if (uniqueLocations.size >= 5) unlockedBadges.push('badge_13');
       // 14. 完美的周末：连续 4 个周末（六日均有）打卡
       if (hasPerfectWeekends) unlockedBadges.push('badge_14');
+      // 15. 交际达人：累计获得 100 个他人的点赞
+      if (totalLikesReceived >= 100) unlockedBadges.push('badge_15');
+      // 16. 毛球挚友：成功关注 10 位其他毛球用户
+      if ((user as any)?.following?.length >= 10) unlockedBadges.push('badge_16');
+      // 17. 早起鸟儿：累计在清晨（05:00 - 08:00）写下 10 篇日记
+      if (earlyBirdCount >= 10) unlockedBadges.push('badge_17');
+      // 18. 滔滔不绝：累计发布日记总字数达到 50,000 字
+      if (totalWords >= 50000) unlockedBadges.push('badge_18');
+      // 19. 光影留声：累计上传的照片数量达到 100 张
+      if (totalPhotos >= 100) unlockedBadges.push('badge_19');
+      // 20. 一呼百应：单篇公开日记获得超过 50 个赞
+      if (hasViralDiary) unlockedBadges.push('badge_20');
+      // 21. 岁月史书：注册毛球日记满 365 天，且发布日记超 50 篇
+      if ((user as any)?.createdAt) {
+        const registeredDays = (Date.now() - new Date((user as any).createdAt).getTime()) / (1000 * 60 * 60 * 24);
+        if (registeredDays >= 365 && totalDiaries >= 50) unlockedBadges.push('badge_21');
+      }
+      // 22. 美食探险家：累计发布 10 篇带有“美食”场景标签的日记
+      if (foodDiaryCount >= 10) unlockedBadges.push('badge_22');
+      // 23. 行万里路：累计发布 10 篇带有“旅行”场景标签的日记
+      if (travelDiaryCount >= 10) unlockedBadges.push('badge_23');
 
       badges = unlockedBadges.length;
     } else {

@@ -11,9 +11,14 @@ import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
 import { Notification } from '../../types';
 
+import { HEALING_COLORS } from '../../config/handDrawnTheme';
+
 export default function NotificationCenterScreen() {
   const navigation = useNavigation();
-  const { isDark, colors } = useAppTheme();
+  const { isDark, themeName } = useAppTheme();
+  // 因为消息通知页面还没有引入 currentHealingColors，所以我们使用全局的 HEALING_COLORS.pink[400]
+  // 或者是深色模式特有的颜色
+  const loadingColor = isDark ? '#FFB6C1' : HEALING_COLORS.pink[400];
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
 
@@ -103,7 +108,7 @@ export default function NotificationCenterScreen() {
           <View style={styles.actionContainer}>
             {isPending ? (
               actionLoading === item._id ? (
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={loadingColor} />
               ) : (
                 <>
                   <TouchableOpacity 
@@ -143,7 +148,7 @@ export default function NotificationCenterScreen() {
 
       {loading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={loadingColor} />
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.centerContainer}>

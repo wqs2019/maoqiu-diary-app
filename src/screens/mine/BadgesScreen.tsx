@@ -79,7 +79,7 @@ const BadgesScreen: React.FC = () => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.summaryContainer}>
           <Text style={[styles.summaryText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}>
-            已收集 <Text style={styles.summaryHighlight}>{unlockedBadges.length}</Text> /{' '}
+            已收集 <Text style={[styles.summaryHighlight, { color: HEALING_COLORS.pink[500] }]}>{unlockedBadges.length}</Text> /{' '}
             {BADGES_CONFIG.length} 枚徽章
           </Text>
         </View>
@@ -101,8 +101,8 @@ const BadgesScreen: React.FC = () => {
                         styles.badgeUnlocked,
                         {
                           backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                          borderColor: isDark ? '#333' : '#FFF0F3',
-                          shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+                          borderColor: isDark ? '#333' : HEALING_COLORS.pink[50],
+                          shadowColor: isDark ? '#000' : HEALING_COLORS.pink[200],
                         },
                       ]
                     : [
@@ -155,7 +155,7 @@ const BadgesScreen: React.FC = () => {
         onRequestClose={closeBadgeModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+          <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : HEALING_COLORS.pink[50] }]}>
             {selectedBadge && (
               <>
                 <TouchableOpacity style={styles.modalCloseButton} onPress={closeBadgeModal}>
@@ -246,7 +246,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   summaryHighlight: {
-    color: HEALING_COLORS.pink[500],
     fontSize: 24,
     fontWeight: '800',
   },
@@ -263,15 +262,13 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFF0F3',
     elevation: 2,
-    shadowColor: '#FFB6C1',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
   badgeUnlocked: {
-    borderColor: '#FFF0F3',
+    // 颜色和阴影现在由内联样式动态控制
   },
   badgeLocked: {
     borderColor: '#F0F0F0',
@@ -310,12 +307,10 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 32,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFF0F3',
   },
   modalCloseButton: {
     position: 'absolute',

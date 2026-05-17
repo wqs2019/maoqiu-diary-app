@@ -1,17 +1,21 @@
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 
-import { COLORS, FONT_SIZES } from '../../config/constant';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 interface LoadingScreenProps {
   message?: string;
 }
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = '加载中...' }) => {
+  const { themeName, isDark } = useAppTheme();
+  // HEALING_COLORS is not part of the returned theme context, but pink[400] is standard
+  const loadingColor = themeName === 'dark' ? '#FFB6C1' : '#FF8FA3'; // Fallback pinks
+
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color={COLORS.primary} />
-      <Text style={styles.message}>{message}</Text>
+    <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FFFFFF' }]}>
+      <ActivityIndicator size="large" color={loadingColor} />
+      <Text style={[styles.message, { color: isDark ? '#AAA' : '#666' }]}>{message}</Text>
     </View>
   );
 };
@@ -21,12 +25,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
   },
   message: {
     marginTop: 16,
-    fontSize: FONT_SIZES.medium,
-    color: COLORS.textSecondary,
+    fontSize: 16,
   },
 });
 
