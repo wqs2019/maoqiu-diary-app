@@ -590,23 +590,24 @@ const SubscriptionScreen: React.FC = () => {
             <Text
               style={[
                 styles.footerText,
-                { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500], textAlign: 'left' },
               ]}
             >
-              确认购买后，将从您的 iTunes 账户扣费。订阅会自动续期，除非在当前订阅期结束前至少 24
-              小时关闭自动续期。
+              • 付款：用户确认购买并付款后记入 iTunes 账户。{'\n'}
+              • 续期：苹果 iTunes 账户会在到期前 24 小时内扣款，扣款成功后订阅周期顺延一个订阅周期。{'\n'}
+              • 取消续订：如需取消续订，请在当前扣款周期前至少 24 小时，手动在 iTunes/Apple ID 设置管理中关闭自动续订功能。
             </Text>
             <View style={styles.footerLinks}>
               <TouchableOpacity
                 onPress={() => {
                   navigation.navigate('Web' as any, {
-                    url: 'https://www.xieyimao.com/doc/detailzh/token/1772109293_4012',
-                    title: '用户协议',
+                    url: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+                    title: '用户协议(EULA)',
                   });
                 }}
               >
                 <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>
-                  用户协议
+                  用户协议(EULA)
                 </Text>
               </TouchableOpacity>
               <Text
@@ -855,8 +856,8 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    lineHeight: 16,
-    textAlign: 'center',
+    lineHeight: 18,
+    textAlign: 'left',
     marginBottom: 16,
   },
   footerLinks: {
