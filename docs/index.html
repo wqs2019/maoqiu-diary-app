@@ -1,0 +1,1560 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>毛球日记 | 收集日常里微小而确定的幸福</title>
+    <meta
+      name="description"
+      content="毛球日记是一款温暖治愈的日记应用，支持图文记录、生活分类、照片墙回顾、圈子分享、AI 问答与共享日记本。"
+    />
+    <style>
+      :root {
+        --bg: #fff8fb;
+        --bg-soft: #fff3f7;
+        --surface: rgba(255, 255, 255, 0.78);
+        --surface-strong: rgba(255, 255, 255, 0.94);
+        --surface-muted: #fffafc;
+        --line: rgba(255, 133, 179, 0.16);
+        --line-strong: rgba(255, 133, 179, 0.28);
+        --text: #271f27;
+        --text-soft: #6f6571;
+        --pink: #ec4899;
+        --pink-deep: #be185d;
+        --purple: #8b5cf6;
+        --blue: #4f46e5;
+        --teal: #0f766e;
+        --gold: #d97706;
+        --shadow-lg: 0 32px 80px rgba(195, 56, 120, 0.13);
+        --shadow-md: 0 18px 42px rgba(195, 56, 120, 0.1);
+        --radius-xl: 32px;
+        --radius-lg: 24px;
+        --radius-md: 18px;
+        --max-width: 1160px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC',
+          'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        overflow-x: hidden;
+        background:
+          radial-gradient(circle at 0% 0%, rgba(236, 72, 153, 0.16), transparent 26%),
+          radial-gradient(circle at 100% 10%, rgba(139, 92, 246, 0.14), transparent 20%),
+          radial-gradient(circle at 80% 80%, rgba(255, 196, 214, 0.22), transparent 22%),
+          linear-gradient(180deg, #fff9fb 0%, #fffefe 45%, #fff7fb 100%);
+      }
+
+      body::before,
+      body::after {
+        content: '';
+        position: fixed;
+        width: 320px;
+        height: 320px;
+        pointer-events: none;
+        z-index: 0;
+        border-radius: 999px;
+        filter: blur(70px);
+        opacity: 0.35;
+      }
+
+      body::before {
+        top: 80px;
+        left: -90px;
+        background: rgba(236, 72, 153, 0.34);
+      }
+
+      body::after {
+        right: -80px;
+        bottom: 140px;
+        background: rgba(139, 92, 246, 0.24);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      a,
+      button {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      a:focus-visible {
+        outline: 3px solid rgba(236, 72, 153, 0.3);
+        outline-offset: 4px;
+        border-radius: 999px;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        width: min(calc(100% - 32px), var(--max-width));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 10px;
+        z-index: 20;
+        padding-top: 10px;
+      }
+
+      .topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 64px;
+        padding: 10px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.74);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 18px 40px rgba(44, 24, 51, 0.08);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .brand-badge {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #ffd6e8, #fff0f7);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        overflow: hidden;
+      }
+
+      .brand-badge::before {
+        content: 'M';
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--pink-deep);
+        letter-spacing: 0.02em;
+      }
+
+      .brand-meta small {
+        display: block;
+        color: var(--text-soft);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .brand-meta strong {
+        display: block;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.66);
+        border: 1px solid rgba(255, 255, 255, 0.86);
+        min-width: 0;
+      }
+
+      .nav a {
+        flex: 0 0 auto;
+        padding: 8px 12px;
+        border-radius: 999px;
+        color: var(--text-soft);
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        transition:
+          background-color 0.22s ease,
+          color 0.22s ease,
+          box-shadow 0.22s ease;
+        cursor: pointer;
+      }
+
+      .nav a:hover {
+        color: var(--pink-deep);
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: inset 0 0 0 1px rgba(236, 72, 153, 0.12);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.06fr) minmax(360px, 0.94fr);
+        gap: 28px;
+        align-items: center;
+        padding: 34px 0 28px;
+      }
+
+      .hero-card,
+      .metric-card,
+      .feature-card,
+      .panel,
+      .timeline-card,
+      .faq-item,
+      .cta-panel {
+        background: var(--surface);
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.78);
+        box-shadow: var(--shadow-md);
+      }
+
+      .hero-card {
+        position: relative;
+        padding: 44px;
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+      }
+
+      .hero-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at top right, rgba(236, 72, 153, 0.14), transparent 28%),
+          radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.08), transparent 24%);
+        pointer-events: none;
+      }
+
+      .eyebrow,
+      .section-kicker,
+      .micro-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(236, 72, 153, 0.12);
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--pink-deep);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+      }
+
+      h1 {
+        margin: 18px 0 16px;
+        font-size: clamp(42px, 6vw, 72px);
+        line-height: 0.98;
+        letter-spacing: -0.05em;
+      }
+
+      .lead {
+        margin: 0;
+        max-width: 640px;
+        color: var(--text-soft);
+        font-size: 18px;
+        line-height: 1.85;
+      }
+
+      .hero-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .hero-list div {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.76);
+        border: 1px solid rgba(255, 255, 255, 0.82);
+        color: var(--text-soft);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .hero-list strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--text);
+        font-size: 15px;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 28px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        padding: 0 22px;
+        border-radius: 999px;
+        font-size: 15px;
+        font-weight: 800;
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease,
+          background-color 0.2s ease,
+          color 0.2s ease;
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        color: #fff;
+        background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+        box-shadow: 0 20px 44px rgba(190, 24, 93, 0.24);
+      }
+
+      .btn-secondary {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(236, 72, 153, 0.14);
+      }
+
+      .hero-note {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      .pill {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid rgba(255, 255, 255, 0.84);
+        color: var(--text-soft);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .hero-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .metric-card {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .metric-card strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 28px;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .metric-card span {
+        color: var(--text-soft);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .showcase {
+        position: relative;
+        min-height: 740px;
+        padding-inline: 12px;
+      }
+
+      .glow-orb {
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(10px);
+        opacity: 0.66;
+      }
+
+      .glow-orb.one {
+        width: 120px;
+        height: 120px;
+        top: 18px;
+        right: 24px;
+        background: rgba(236, 72, 153, 0.18);
+      }
+
+      .glow-orb.two {
+        width: 160px;
+        height: 160px;
+        left: 0;
+        bottom: 28px;
+        background: rgba(139, 92, 246, 0.14);
+      }
+
+      .phone-frame {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 420px);
+        margin-left: auto;
+        padding: 18px;
+        border-radius: 42px;
+        background: linear-gradient(180deg, #24161f, #181019);
+        box-shadow: 0 34px 86px rgba(32, 13, 28, 0.34);
+      }
+
+      .phone-frame::before {
+        content: '';
+        position: absolute;
+        top: 11px;
+        left: 50%;
+        width: 132px;
+        height: 28px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .screen {
+        min-height: 704px;
+        padding: 28px 18px 22px;
+        overflow: hidden;
+        border-radius: 28px;
+        background:
+          radial-gradient(circle at top right, rgba(236, 72, 153, 0.18), transparent 24%),
+          linear-gradient(180deg, #fff9fc, #fffefe);
+      }
+
+      .screen-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #17121a;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+        box-shadow: 0 0 0 6px rgba(236, 72, 153, 0.12);
+      }
+
+      .screen-header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .screen-header h3 {
+        margin: 6px 0 0;
+        font-size: 30px;
+        line-height: 1.08;
+        letter-spacing: -0.04em;
+      }
+
+      .screen-header p {
+        margin: 0;
+        color: var(--text-soft);
+        font-size: 13px;
+      }
+
+      .bubble-stack {
+        display: inline-grid;
+        gap: 8px;
+      }
+
+      .bubble-stack span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 74px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.86);
+        color: var(--pink-deep);
+        font-size: 12px;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(195, 56, 120, 0.12);
+      }
+
+      .screen-card {
+        margin-top: 16px;
+        padding: 20px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid var(--line);
+        box-shadow: 0 18px 36px rgba(195, 56, 120, 0.11);
+      }
+
+      .screen-card h4 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+
+      .screen-card p {
+        margin: 0;
+        color: var(--text-soft);
+        line-height: 1.72;
+        font-size: 14px;
+      }
+
+      .mini-tags,
+      .mini-grid,
+      .mini-feature-list,
+      .store-strip {
+        margin-top: 14px;
+      }
+
+      .mini-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .mini-tags span {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--bg-soft);
+        color: var(--pink-deep);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .mini-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .mini-grid div {
+        aspect-ratio: 1;
+        border-radius: 18px;
+        background:
+          linear-gradient(160deg, rgba(255, 219, 236, 0.95), rgba(255, 243, 247, 0.96));
+        border: 1px solid rgba(255, 255, 255, 0.84);
+      }
+
+      .mini-feature-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .mini-feature-list div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 13px 14px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.78);
+        color: var(--text-soft);
+        font-size: 14px;
+      }
+
+      .mini-feature-list strong {
+        color: var(--text);
+      }
+
+      .store-strip {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .store-strip div {
+        padding: 14px 12px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.82);
+        text-align: center;
+      }
+
+      .store-strip strong {
+        display: block;
+        font-size: 16px;
+      }
+
+      .store-strip span {
+        color: var(--text-soft);
+        font-size: 12px;
+      }
+
+      .floating-card {
+        position: absolute;
+        z-index: 2;
+        max-width: 220px;
+        padding: 16px 18px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        box-shadow: var(--shadow-md);
+      }
+
+      .floating-card.top {
+        top: 42px;
+        left: 10px;
+      }
+
+      .floating-card.bottom {
+        right: 0;
+        bottom: 54px;
+      }
+
+      .floating-card strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 15px;
+      }
+
+      .floating-card p {
+        margin: 0;
+        color: var(--text-soft);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+
+      .section {
+        padding: 34px 0;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 22px;
+      }
+
+      .section-header-main {
+        max-width: 760px;
+      }
+
+      .section-header h2 {
+        margin: 12px 0 10px;
+        font-size: clamp(32px, 4vw, 48px);
+        line-height: 1.04;
+        letter-spacing: -0.04em;
+      }
+
+      .section-header p {
+        margin: 0;
+        color: var(--text-soft);
+        line-height: 1.85;
+      }
+
+      .section-side-note {
+        max-width: 280px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.74);
+        border: 1px solid rgba(255, 255, 255, 0.86);
+        color: var(--text-soft);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .feature-card {
+        position: relative;
+        padding: 28px;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition:
+          transform 0.22s ease,
+          box-shadow 0.22s ease,
+          border-color 0.22s ease;
+      }
+
+      .feature-card:hover,
+      .panel:hover,
+      .faq-item:hover,
+      .timeline-card:hover,
+      .cta-panel:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .feature-card::after {
+        content: '';
+        position: absolute;
+        inset: auto -40px -40px auto;
+        width: 120px;
+        height: 120px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.3);
+        filter: blur(8px);
+      }
+
+      .feature-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        margin-bottom: 18px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .feature-card h3,
+      .panel h3,
+      .timeline-card h3,
+      .faq-item h3,
+      .cta-panel h3 {
+        margin: 0 0 10px;
+        font-size: 22px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .feature-card p,
+      .panel p,
+      .panel li,
+      .timeline-card p,
+      .faq-item p,
+      .cta-panel p {
+        color: var(--text-soft);
+        line-height: 1.82;
+        position: relative;
+        z-index: 1;
+      }
+
+      .feature-card ul,
+      .panel ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 18px;
+      }
+
+      .panel {
+        padding: 30px;
+        border-radius: var(--radius-lg);
+      }
+
+      .panel-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+        gap: 18px;
+      }
+
+      .quote-card {
+        padding: 30px;
+        border-radius: var(--radius-lg);
+        background: linear-gradient(160deg, rgba(255, 244, 249, 0.92), rgba(255, 255, 255, 0.78));
+        border: 1px solid rgba(255, 255, 255, 0.84);
+        box-shadow: var(--shadow-md);
+      }
+
+      .quote-card p {
+        margin: 0;
+        color: var(--text);
+        font-size: 26px;
+        line-height: 1.5;
+        letter-spacing: -0.03em;
+      }
+
+      .quote-card span {
+        display: block;
+        margin-top: 16px;
+        color: var(--text-soft);
+        font-size: 13px;
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .timeline-card {
+        padding: 26px;
+        border-radius: var(--radius-lg);
+      }
+
+      .step-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        margin-bottom: 16px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(236, 72, 153, 0.16), rgba(139, 92, 246, 0.18));
+        color: var(--pink-deep);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .faq {
+        display: grid;
+        gap: 14px;
+      }
+
+      .faq-item {
+        padding: 24px 26px;
+        border-radius: 22px;
+      }
+
+      .cta-panel {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 18px;
+        margin-top: 8px;
+        padding: 28px 30px;
+        border-radius: 28px;
+        background:
+          radial-gradient(circle at top right, rgba(236, 72, 153, 0.12), transparent 22%),
+          rgba(255, 255, 255, 0.82);
+      }
+
+      .cta-panel .cta-row {
+        margin-top: 0;
+      }
+
+      footer {
+        padding: 22px 0 56px;
+      }
+
+      .footer-card {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 24px 26px;
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.84);
+        box-shadow: var(--shadow-md);
+      }
+
+      .footer-card strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 17px;
+      }
+
+      .footer-card div {
+        color: var(--text-soft);
+        line-height: 1.7;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .footer-links a {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.84);
+        color: var(--text-soft);
+        font-size: 14px;
+        font-weight: 600;
+        transition: color 0.2s ease, background-color 0.2s ease;
+        cursor: pointer;
+      }
+
+      .footer-links a:hover {
+        color: var(--pink-deep);
+        background: rgba(255, 255, 255, 0.95);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+
+      @media (max-width: 1120px) {
+        .hero {
+          grid-template-columns: 1fr;
+          gap: 22px;
+        }
+
+        .showcase {
+          min-height: auto;
+        }
+
+        .phone-frame {
+          margin: 0 auto;
+        }
+
+        .floating-card.top {
+          left: 0;
+        }
+      }
+
+      @media (max-width: 920px) {
+        .topbar {
+          top: 8px;
+          padding-top: 8px;
+        }
+
+        .section-header,
+        .panel-grid,
+        .two-col,
+        .feature-grid,
+        .timeline,
+        .cta-panel,
+        .hero-metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .topbar-inner {
+          flex-direction: column;
+          align-items: center;
+          min-height: auto;
+          padding: 12px;
+          border-radius: 24px;
+        }
+
+        .brand {
+          width: auto;
+          justify-content: center;
+        }
+
+        .brand-meta {
+          text-align: center;
+        }
+
+        .nav {
+          width: auto;
+          max-width: 100%;
+          display: flex;
+          flex-wrap: nowrap;
+          justify-content: center;
+          align-self: center;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+          border-radius: 999px;
+        }
+
+        .nav::-webkit-scrollbar {
+          display: none;
+        }
+
+        .nav a {
+          width: auto;
+          min-width: max-content;
+          text-align: center;
+          padding-inline: 12px;
+        }
+
+        .hero {
+          padding-top: 24px;
+        }
+
+        .hero-metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .section-header {
+          align-items: stretch;
+        }
+
+        .section-side-note {
+          max-width: none;
+        }
+
+        .cta-panel {
+          justify-items: start;
+        }
+
+        .showcase {
+          padding-inline: 0;
+        }
+
+        .floating-card {
+          display: none;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          width: min(calc(100% - 20px), var(--max-width));
+        }
+
+        .topbar {
+          top: 4px;
+          padding-top: 4px;
+        }
+
+        .topbar-inner {
+          gap: 10px;
+          padding: 10px;
+        }
+
+        .brand {
+          width: auto;
+          justify-content: center;
+        }
+
+        .brand-meta {
+          text-align: center;
+        }
+
+        .nav {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 4px;
+          padding: 4px;
+          border-radius: 999px;
+        }
+
+        .nav a {
+          width: auto;
+          padding: 10px 8px;
+          font-size: 12px;
+        }
+
+        .hero-card,
+        .metric-card,
+        .feature-card,
+        .panel,
+        .faq-item,
+        .timeline-card,
+        .cta-panel,
+        .quote-card {
+          padding: 22px;
+        }
+
+        .hero {
+          gap: 18px;
+          padding-top: 10px;
+        }
+
+        h1 {
+          font-size: clamp(36px, 12vw, 52px);
+        }
+
+        .lead {
+          font-size: 16px;
+          line-height: 1.75;
+        }
+
+        .hero-list,
+        .hero-metrics,
+        .store-strip,
+        .mini-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .cta-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .btn {
+          width: 100%;
+        }
+
+        .metric-card strong {
+          font-size: 24px;
+        }
+
+        .phone-frame {
+          width: 100%;
+          padding: 14px;
+          border-radius: 32px;
+        }
+
+        .phone-frame::before {
+          top: 9px;
+          width: 96px;
+          height: 22px;
+        }
+
+        .screen {
+          min-height: auto;
+          padding: 24px 14px 18px;
+          border-radius: 22px;
+        }
+
+        .screen-header {
+          align-items: start;
+          flex-direction: column;
+        }
+
+        .screen-header h3 {
+          font-size: 24px;
+        }
+
+        .bubble-stack {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          width: 100%;
+        }
+
+        .bubble-stack span {
+          width: 100%;
+        }
+
+        .mini-feature-list div {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .quote-card p {
+          font-size: 22px;
+        }
+
+        .footer-card {
+          padding: 20px;
+          border-radius: 22px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .topbar-inner {
+          padding: 8px;
+          border-radius: 20px;
+        }
+
+        .brand {
+          gap: 8px;
+        }
+
+        .brand-badge {
+          width: 34px;
+          height: 34px;
+          border-radius: 12px;
+        }
+
+        .brand-badge::before {
+          font-size: 14px;
+        }
+
+        .brand-meta small {
+          font-size: 9px;
+        }
+
+        .brand-meta strong {
+          font-size: 14px;
+        }
+
+        .eyebrow,
+        .section-kicker,
+        .micro-label {
+          padding: 7px 12px;
+          font-size: 11px;
+        }
+
+        .hero-card,
+        .metric-card,
+        .feature-card,
+        .panel,
+        .faq-item,
+        .timeline-card,
+        .cta-panel,
+        .quote-card,
+        .floating-card {
+          padding: 18px;
+        }
+
+        h1 {
+          font-size: 34px;
+        }
+
+        .nav a {
+          padding: 8px 10px;
+        }
+
+        .hero {
+          padding: 8px 0 22px;
+        }
+
+        .screen-card {
+          padding: 16px;
+          border-radius: 20px;
+        }
+
+        .screen-card h4 {
+          font-size: 18px;
+        }
+
+        .screen-header h3 {
+          font-size: 22px;
+        }
+
+        .bubble-stack {
+          grid-template-columns: 1fr;
+        }
+
+        .showcase {
+          min-height: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <a class="brand" href="#top">
+          <span class="brand-badge"></span>
+          <span class="brand-meta">
+            <small>Healing Diary App</small>
+            <strong>毛球日记</strong>
+          </span>
+        </a>
+        <nav class="nav">
+          <a href="#features">核心功能</a>
+          <a href="#values">产品特点</a>
+          <a href="#safety">安全治理</a>
+          <a href="#faq">常见问题</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top" class="shell">
+      <section class="hero">
+        <div>
+          <div class="hero-card">
+            <div class="eyebrow">收集日常里微小而确定的幸福</div>
+            <h1>把情绪、灵感与回忆，温柔地留在毛球日记里。</h1>
+            <p class="lead">
+              毛球日记是一款温暖治愈的日记应用，支持图文记录、生活分类、照片墙回顾、圈子分享、AI
+              问答与共享日记本。它既是一个安静的树洞，也是认真保存生活的时光手账。
+            </p>
+            <div class="hero-list">
+              <div>
+                <strong>专属记录空间</strong>
+                图文、视频、时间轴与照片墙，让生活片段被认真保存。
+              </div>
+              <div>
+                <strong>轻量陪伴体验</strong>
+                圈子分享、AI 问答与共享日记本，让记录不只是单向输出。
+              </div>
+            </div>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="#features">了解功能亮点</a>
+              <a class="btn btn-secondary" href="#safety">查看安全治理</a>
+            </div>
+            <div class="hero-note">
+              <span class="pill">支持图文和视频记录</span>
+              <span class="pill">支持圈子互动与用户主页</span>
+              <span class="pill">支持 AI 问答与共享日记本</span>
+              <span class="pill">支持举报、拉黑与协议确认</span>
+            </div>
+          </div>
+
+          <div class="hero-metrics">
+            <article class="metric-card">
+              <strong>4</strong>
+              <span>官网核心能力分区，信息更聚焦</span>
+            </article>
+            <article class="metric-card">
+              <strong>多模态</strong>
+              <span>支持文字、图片、视频等多种记录方式</span>
+            </article>
+            <article class="metric-card">
+              <strong>双空间</strong>
+              <span>既能私人记录，也能在圈子里温柔分享</span>
+            </article>
+            <article class="metric-card">
+              <strong>已合规</strong>
+              <span>支持协议确认、举报、拉黑与内容过滤</span>
+            </article>
+          </div>
+        </div>
+
+        <div class="showcase" aria-hidden="true">
+          <div class="glow-orb one"></div>
+          <div class="glow-orb two"></div>
+          <div class="floating-card top">
+            <strong>今天的记录时刻</strong>
+            <p>从一句心情、一张照片到一段晚霞视频，都可以被认真留下。</p>
+          </div>
+          <div class="phone-frame">
+            <div class="screen">
+              <div class="screen-top">
+                <span>09:41</span>
+                <span class="status-dot"></span>
+              </div>
+              <div class="screen-header">
+                <div>
+                  <div class="micro-label">Daily Moments</div>
+                  <h3>把普通日常，也写成值得珍藏的回忆。</h3>
+                </div>
+                <div class="bubble-stack">
+                  <span>温柔记录</span>
+                  <span>轻量分享</span>
+                </div>
+              </div>
+
+              <div class="screen-card">
+                <h4>今天的幸福值 +1</h4>
+                <p>
+                  早晨喝到一杯刚刚好的拿铁，傍晚散步时拍到了晚霞。把这些小小的瞬间写下来，日子就有了被认真珍惜的感觉。
+                </p>
+                <div class="mini-tags">
+                  <span>图文日记</span>
+                  <span>生活分类</span>
+                  <span>心情记录</span>
+                </div>
+                <div class="mini-grid">
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                </div>
+              </div>
+
+              <div class="screen-card">
+                <h4>圈子与陪伴</h4>
+                <p>看看别人真实的生活片段，也把自己的温柔分享出去。想倾诉时，还可以和 AI 聊一聊。</p>
+                <div class="mini-feature-list">
+                  <div><strong>圈子分享</strong><span>公开内容浏览与互动</span></div>
+                  <div><strong>AI 问答</strong><span>轻量陪伴与情绪回应</span></div>
+                  <div><strong>共享日记本</strong><span>共同记录专属回忆</span></div>
+                </div>
+              </div>
+
+              <div class="store-strip">
+                <div>
+                  <strong>记录</strong>
+                  <span>图文视频</span>
+                </div>
+                <div>
+                  <strong>回顾</strong>
+                  <span>分类时间轴</span>
+                </div>
+                <div>
+                  <strong>陪伴</strong>
+                  <span>圈子与 AI</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="floating-card bottom">
+            <strong>产品气质</strong>
+            <p>治愈、克制、留白充足，更接近正式上架官网而不是演示模板。</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="section">
+        <div class="section-header">
+          <div class="section-header-main">
+            <div class="section-kicker">Core Features</div>
+            <h2>核心功能</h2>
+            <p>
+              页面内容基于当前应用真实能力整理，既能用作官网介绍，也适合作为上架时填写的产品官网地址。
+            </p>
+          </div>
+          <div class="section-side-note">
+            采用更像正式产品官网的视觉组织方式：大标题、留白、分区标签和更干净的卡片层级。
+          </div>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #ec4899, #be185d)">DI</div>
+            <h3>写日记</h3>
+            <p>支持记录文字、图片、视频与生活场景，把开心、委屈、灵感和想法都安静收纳起来。</p>
+            <ul>
+              <li>图文视频混排记录</li>
+              <li>按场景分类整理内容</li>
+              <li>支持搜索与时间轴回顾</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #8b5cf6, #5b21b6)">CI</div>
+            <h3>圈子分享</h3>
+            <p>浏览公开日记、进入他人主页、查看互动内容，在同频的人之间感受理解与共鸣。</p>
+            <ul>
+              <li>公开内容浏览与互动</li>
+              <li>用户主页与关注关系</li>
+              <li>支持举报、拉黑与内容过滤</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #14b8a6, #0f766e)">AI</div>
+            <h3>AI 问答</h3>
+            <p>当你想倾诉、想被理解，或者只是想找点灵感时，AI 能提供即时陪伴与温柔回应。</p>
+            <ul>
+              <li>日常倾诉与情绪陪伴</li>
+              <li>灵感启发与轻量问答</li>
+              <li>随时可用的陪伴体验</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #f59e0b, #b45309)">CO</div>
+            <h3>共享日记本</h3>
+            <p>邀请恋人、家人或好友共同记录生活，把那些双向奔赴的普通日常写成只属于彼此的回忆。</p>
+            <ul>
+              <li>多人共享记录空间</li>
+              <li>适合情侣、家人与好友</li>
+              <li>让共同回忆更有仪式感</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="values" class="section">
+        <div class="section-header">
+          <div class="section-header-main">
+            <div class="section-kicker">Product Values</div>
+            <h2>产品特点</h2>
+            <p>毛球日记希望做的不只是记录工具，而是一个能让人安心停留、愿意反复回来的情绪空间。</p>
+          </div>
+          <div class="section-side-note">
+            这部分强化了“产品调性”而不是只堆功能，能更好地支撑官网气质和上架展示。
+          </div>
+        </div>
+        <div class="panel-grid">
+          <div class="two-col">
+            <div class="panel">
+              <h3>温柔治愈的记录体验</h3>
+              <ul>
+                <li>围绕“生活、情绪、回忆”设计整体体验，适合长期书写与回看。</li>
+                <li>支持分类、照片墙、时间轴等多种回顾方式，帮助用户重新看见自己的生活轨迹。</li>
+                <li>提供主题模式、通知提醒和应用锁等能力，兼顾仪式感与私密性。</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>真实、克制的社交关系</h3>
+              <ul>
+                <li>用户可以选择在圈子中分享公开内容，也可以把更多日常留在自己的私人空间。</li>
+                <li>通过关注、主页浏览与互动建立连接，但仍以“记录自己”而非“被动表演”为核心。</li>
+                <li>共享日记本让亲密关系中的共同记录更自然、更有温度。</li>
+              </ul>
+            </div>
+          </div>
+          <aside class="quote-card">
+            <p>“它既是一个安静的树洞，也是认真保存生活的时光手账。”</p>
+            <span>适合作为官网视觉里的产品主张，也让页面更有品牌记忆点。</span>
+          </aside>
+        </div>
+      </section>
+
+      <section id="safety" class="section">
+        <div class="section-header">
+          <div class="section-header-main">
+            <div class="section-kicker">Safety & Moderation</div>
+            <h2>安全与治理</h2>
+            <p>为了保障社区体验与上架合规，毛球日记已接入基础的用户生成内容治理能力。</p>
+          </div>
+          <div class="section-side-note">
+            明确展示治理链路，会让产品页在应用审核和品牌可信度上更完整。
+          </div>
+        </div>
+        <div class="timeline">
+          <article class="timeline-card">
+            <div class="step-badge">01</div>
+            <h3>登录前协议确认</h3>
+            <p>用户在首次执行登录相关操作前，需要明确勾选并查看用户服务协议与隐私政策。</p>
+          </article>
+          <article class="timeline-card">
+            <div class="step-badge">02</div>
+            <h3>举报与审核留痕</h3>
+            <p>支持从用户主页发起举报，提交举报原因与补充说明，便于后续核查与处理。</p>
+          </article>
+          <article class="timeline-card">
+            <div class="step-badge">03</div>
+            <h3>拉黑与内容过滤</h3>
+            <p>支持拉黑、取消拉黑，并在圈子内容和用户主页中进行对应的内容过滤与访问限制。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="faq" class="section">
+        <div class="section-header">
+          <div class="section-header-main">
+            <div class="section-kicker">FAQ</div>
+            <h2>常见问题</h2>
+            <p>如果你只是需要一个上架用官网地址，这一页已经可以直接承担产品介绍页的角色。</p>
+          </div>
+          <div class="section-side-note">
+            FAQ 卡片样式也做了统一，让页面底部不会显得松散或像文档页。
+          </div>
+        </div>
+        <div class="faq">
+          <article class="faq-item">
+            <h3>这是正式官网吗？</h3>
+            <p>是。这是为毛球日记生成的静态产品官网，可用于 App Store 或其他平台填写产品官方网站。</p>
+          </article>
+          <article class="faq-item">
+            <h3>官网页面是否和当前 App 功能一致？</h3>
+            <p>页面介绍基于当前仓库中的真实功能整理，包括日记、圈子、AI 问答、共享日记本以及内容治理能力。</p>
+          </article>
+          <article class="faq-item">
+            <h3>如何联系开发者？</h3>
+            <p>当前以应用内反馈功能作为主要联系入口。如需品牌邮箱、客服方式或独立域名，后续可以继续补充。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="cta-panel">
+          <div>
+            <div class="section-kicker">Official Website</div>
+            <h3>一页就能讲清楚产品，也足够支撑上架填写。</h3>
+            <p>现在这版页面更偏正式官网风格，既适合外部访问，也适合在应用商店中作为产品官网地址使用。</p>
+          </div>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#top">返回顶部</a>
+            <a class="btn btn-secondary" href="#faq">查看常见问题</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      <div class="footer-card">
+        <div>
+          <strong>毛球日记</strong>
+          <div>一个温暖的树洞，也是你专属的时光手账。</div>
+        </div>
+        <div class="footer-links">
+          <a href="#features">功能亮点</a>
+          <a href="#safety">安全治理</a>
+          <a href="#faq">常见问题</a>
+          <a href="#top">返回顶部</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

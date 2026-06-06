@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import * as RNIap from 'react-native-iap';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppLockOverlay } from './src/components/AppLockOverlay';
@@ -73,7 +74,6 @@ const checkAndSyncVIPStatus = async () => {
 
 function App() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
-  const user = useAuthStore((state) => state.user);
   const theme = useAppStore((state) => state.theme);
   const initTheme = useAppStore((state) => state.initTheme);
   const [appLoading, setAppLoading] = useState(true);
@@ -125,25 +125,27 @@ function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ToastProvider>
-        <PortalProvider>
-          <StatusBar style={actualTheme === 'dark' ? 'light' : 'dark'} />
-          {showCustomSplash ? (
-            <CustomSplashScreen
-              onFinish={() => {
-                setShowCustomSplash(false);
-              }}
-            />
-          ) : (
-            <AppQueryProvider>
-              <Navigation />
-              <AppLockOverlay />
-            </AppQueryProvider>
-          )}
-        </PortalProvider>
-      </ToastProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ToastProvider>
+          <PortalProvider>
+            <StatusBar style={actualTheme === 'dark' ? 'light' : 'dark'} />
+            {showCustomSplash ? (
+              <CustomSplashScreen
+                onFinish={() => {
+                  setShowCustomSplash(false);
+                }}
+              />
+            ) : (
+              <AppQueryProvider>
+                <Navigation />
+                <AppLockOverlay />
+              </AppQueryProvider>
+            )}
+          </PortalProvider>
+        </ToastProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

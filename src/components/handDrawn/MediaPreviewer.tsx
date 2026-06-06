@@ -14,6 +14,13 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Reanimated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { MediaResource } from '../../types';
 
@@ -26,9 +33,33 @@ interface MediaPreviewerProps {
   onClose: () => void;
 }
 
-const LivePhotoItem = ({ item, isFocused }: { item: MediaResource; isFocused: boolean }) => {
+const clamp = (value: number, min: number, max: number) => {
+  'worklet';
+  return Math.min(Math.max(value, min), max);
+};
+
+const getMaxOffset = (scale: number, size: number) => {
+  'worklet';
+  return Math.max(0, ((scale - 1) * size) / 2);
+};
+
+const LivePhotoItem = ({
+  item,
+  isFocused,
+  onZoomStateChange,
+}: {
+  item: MediaResource;
+  isFocused: boolean;
+  onZoomStateChange?: (isZoomed: boolean) => void;
+}) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<Video>(null);
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
 
   // When not focused, ensure it stops
   useEffect(() => {
@@ -36,6 +67,27 @@ const LivePhotoItem = ({ item, isFocused }: { item: MediaResource; isFocused: bo
       setIsPlaying(false);
     }
   }, [isFocused]);
+
+  useEffect(() => {
+    if (!isFocused) {
+      scale.value = withTiming(1);
+      savedScale.value = 1;
+      translateX.value = withTiming(0);
+      translateY.value = withTiming(0);
+      savedTranslateX.value = 0;
+      savedTranslateY.value = 0;
+      onZoomStateChange?.(false);
+    }
+  }, [
+    isFocused,
+    onZoomStateChange,
+    savedScale,
+    scale,
+    savedTranslateX,
+    savedTranslateY,
+    translateX,
+    translateY,
+  ]);
 
   const handlePressIn = () => {
     if (item.type === 'livePhoto') {
@@ -58,41 +110,155 @@ const LivePhotoItem = ({ item, isFocused }: { item: MediaResource; isFocused: bo
     }
   };
 
+  const reportZoomState = (nextScale: number) => {
+    onZoomStateChange?.(nextScale > 1.01);
+  };
+
+  const panGesture = Gesture.Pan()
+    .maxPointers(1)
+    .manualActivation(true)
+    .enabled(item.type === 'image' || item.type === 'livePhoto')
+    .onTouchesMove((event, stateManager) => {
+      if (event.numberOfTouches !== 1) {
+        stateManager.fail();
+        return;
+      }
+
+      // Let the outer preview keep handling swipe-to-close until the media is zoomed in.
+      if (scale.value <= 1.01) {
+        stateManager.fail();
+        return;
+      }
+
+      stateManager.activate();
+    })
+    .onUpdate((event) => {
+      if (scale.value <= 1.01) {
+        return;
+      }
+
+      const maxOffsetX = getMaxOffset(scale.value, width);
+      const maxOffsetY = getMaxOffset(scale.value, height);
+      translateX.value = clamp(savedTranslateX.value + event.translationX, -maxOffsetX, maxOffsetX);
+      translateY.value = clamp(savedTranslateY.value + event.translationY, -maxOffsetY, maxOffsetY);
+    })
+    .onEnd(() => {
+      if (scale.value <= 1.01) {
+        translateX.value = withTiming(0);
+        translateY.value = withTiming(0);
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+        return;
+      }
+
+      const maxOffsetX = getMaxOffset(scale.value, width);
+      const maxOffsetY = getMaxOffset(scale.value, height);
+      savedTranslateX.value = clamp(translateX.value, -maxOffsetX, maxOffsetX);
+      savedTranslateY.value = clamp(translateY.value, -maxOffsetY, maxOffsetY);
+    });
+
+  const pinchGesture = Gesture.Pinch()
+    .enabled(item.type === 'image' || item.type === 'livePhoto')
+    .onUpdate((event) => {
+      const nextScale = clamp(savedScale.value * event.scale, 1, 4);
+      scale.value = nextScale;
+      runOnJS(reportZoomState)(nextScale);
+    })
+    .onEnd(() => {
+      const finalScale = clamp(scale.value, 1, 4);
+      savedScale.value = finalScale;
+      if (finalScale <= 1.01) {
+        scale.value = withTiming(1);
+        savedScale.value = 1;
+        translateX.value = withTiming(0);
+        translateY.value = withTiming(0);
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+        runOnJS(reportZoomState)(1);
+        return;
+      }
+
+      const maxOffsetX = getMaxOffset(finalScale, width);
+      const maxOffsetY = getMaxOffset(finalScale, height);
+      translateX.value = withTiming(clamp(translateX.value, -maxOffsetX, maxOffsetX));
+      translateY.value = withTiming(clamp(translateY.value, -maxOffsetY, maxOffsetY));
+      savedTranslateX.value = clamp(savedTranslateX.value, -maxOffsetX, maxOffsetX);
+      savedTranslateY.value = clamp(savedTranslateY.value, -maxOffsetY, maxOffsetY);
+    });
+
+  const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .enabled(item.type === 'image' || item.type === 'livePhoto')
+    .onEnd(() => {
+      if (savedScale.value > 1.01) {
+        scale.value = withTiming(1);
+        savedScale.value = 1;
+        translateX.value = withTiming(0);
+        translateY.value = withTiming(0);
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+        runOnJS(reportZoomState)(1);
+      } else {
+        scale.value = withTiming(2);
+        savedScale.value = 2;
+        translateX.value = withTiming(0);
+        translateY.value = withTiming(0);
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+        runOnJS(reportZoomState)(2);
+      }
+    });
+
+  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture, doubleTapGesture);
+
+  const animatedImageStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { scale: scale.value }],
+  }));
+
   return (
-    <Pressable
-      style={styles.itemContainer}
-      onLongPress={handlePressIn}
-      onPressOut={handlePressOut}
-      delayLongPress={200}
-    >
-      <View style={styles.fullScreen}>
-        <Image
-          source={{ uri: item.thumbnail || item.uri }}
-          style={[styles.fullScreen, { opacity: isPlaying ? 0 : 1 }]}
-          resizeMode="contain"
-        />
+    <GestureDetector gesture={composedGesture}>
+      <Pressable
+        style={styles.itemContainer}
+        onLongPress={handlePressIn}
+        onPressOut={handlePressOut}
+        delayLongPress={200}
+      >
+        <View style={styles.fullScreen}>
+          <Reanimated.View style={[styles.zoomableContent, animatedImageStyle]}>
+            <Image
+              source={{ uri: item.thumbnail || item.uri }}
+              style={[styles.fullScreen, { opacity: isPlaying ? 0 : 1 }]}
+              resizeMode="contain"
+            />
 
-        {item.type === 'livePhoto' && item.livePhotoVideoUri && (
-          <Video
-            ref={videoRef}
-            source={{ uri: item.livePhotoVideoUri }}
-            style={[styles.fullScreen, styles.videoOverlay, { opacity: isPlaying ? 1 : 0 }]}
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay={isPlaying}
-            isLooping={false}
-            isMuted={false}
-            onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
-          />
-        )}
+            {item.type === 'livePhoto' && item.livePhotoVideoUri && (
+              <Video
+                ref={videoRef}
+                source={{ uri: item.livePhotoVideoUri }}
+                style={[styles.fullScreen, styles.videoOverlay, { opacity: isPlaying ? 1 : 0 }]}
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay={isPlaying}
+                isLooping={false}
+                isMuted={false}
+                onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
+              />
+            )}
+          </Reanimated.View>
 
-        {item.type === 'livePhoto' && (
-          <View style={styles.liveIndicator}>
-            <Ionicons name="aperture" size={16} color="#FFF" />
-            <Text style={styles.liveText}>实况</Text>
-          </View>
-        )}
-      </View>
-    </Pressable>
+          {item.type === 'livePhoto' && (
+            <View style={styles.liveIndicator}>
+              <Ionicons name="aperture" size={16} color="#FFF" />
+              <Text style={styles.liveText}>实况</Text>
+            </View>
+          )}
+          {(item.type === 'image' || item.type === 'livePhoto') && (
+            <View style={styles.zoomHint}>
+              <Text style={styles.zoomHintText}>双指缩放，双击还原</Text>
+            </View>
+          )}
+        </View>
+      </Pressable>
+    </GestureDetector>
   );
 };
 
@@ -103,7 +269,13 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   onClose,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [isZoomed, setIsZoomed] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const isZoomedRef = useRef(false);
+
+  useEffect(() => {
+    isZoomedRef.current = isZoomed;
+  }, [isZoomed]);
 
   // 手势相关动画值
   const panY = useRef(new Animated.Value(0)).current;
@@ -120,10 +292,15 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
         // 只有向下滑动且滑动距离超过一定阈值时才触发下拉关闭
-        return gestureState.dy > 5 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+        return (
+          gestureState.numberActiveTouches === 1 &&
+          !isZoomedRef.current &&
+          gestureState.dy > 5 &&
+          Math.abs(gestureState.dy) > Math.abs(gestureState.dx)
+        );
       },
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dy > 0) {
@@ -180,12 +357,14 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   useEffect(() => {
     if (visible) {
       setCurrentIndex(initialIndex);
+      setIsZoomed(false);
     }
   }, [visible, initialIndex]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
       setCurrentIndex(viewableItems[0].index);
+      setIsZoomed(false);
     }
   }).current;
 
@@ -212,7 +391,17 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     }
 
     if (item.type === 'livePhoto' || item.type === 'image') {
-      return <LivePhotoItem item={item} isFocused={isFocused} />;
+      return (
+        <LivePhotoItem
+          item={item}
+          isFocused={isFocused}
+          onZoomStateChange={(zoomed) => {
+            if (isFocused) {
+              setIsZoomed(zoomed);
+            }
+          }}
+        />
+      );
     }
 
     return null;
@@ -241,6 +430,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
             renderItem={renderItem}
             horizontal
             pagingEnabled
+            scrollEnabled={!isZoomed}
             showsHorizontalScrollIndicator={false}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
@@ -293,6 +483,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  zoomableContent: {
+    width: '100%',
+    height: '100%',
+  },
   videoOverlay: {
     position: 'absolute',
     top: 0,
@@ -316,5 +510,18 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  zoomHint: {
+    position: 'absolute',
+    bottom: 36,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  zoomHintText: {
+    color: '#FFF',
+    fontSize: 12,
   },
 });
