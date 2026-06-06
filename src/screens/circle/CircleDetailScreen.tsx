@@ -270,7 +270,10 @@ const CircleDetailScreen: React.FC = () => {
                 style={{ width: 48, height: 48, borderRadius: 24 }}
               />
             ) : (
-              <Text style={styles.avatarEmoji}>🐱</Text>
+              <Image
+                source={require('../../../assets/logo_bg.png')}
+                style={{ width: 48, height: 48, borderRadius: 24 }}
+              />
             )}
           </View>
           <View style={styles.authorInfo}>
@@ -532,9 +535,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-  },
-  avatarEmoji: {
-    fontSize: 24,
   },
   authorInfo: {
     flex: 1,
