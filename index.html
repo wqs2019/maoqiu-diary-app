@@ -47,6 +47,7 @@
         font-family:
           -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC',
           'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        overflow-x: hidden;
         background:
           radial-gradient(circle at 0% 0%, rgba(236, 72, 153, 0.16), transparent 26%),
           radial-gradient(circle at 100% 10%, rgba(139, 92, 246, 0.14), transparent 20%),
@@ -104,18 +105,18 @@
 
       .topbar {
         position: sticky;
-        top: 14px;
+        top: 10px;
         z-index: 20;
-        padding-top: 14px;
+        padding-top: 10px;
       }
 
       .topbar-inner {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
-        min-height: 76px;
-        padding: 14px 18px;
+        gap: 12px;
+        min-height: 64px;
+        padding: 10px 14px;
         border: 1px solid rgba(255, 255, 255, 0.74);
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.72);
@@ -126,7 +127,7 @@
       .brand {
         display: inline-flex;
         align-items: center;
-        gap: 14px;
+        gap: 10px;
         min-width: 0;
       }
 
@@ -134,9 +135,9 @@
         position: relative;
         display: grid;
         place-items: center;
-        width: 44px;
-        height: 44px;
-        border-radius: 16px;
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
         background: linear-gradient(135deg, #ffd6e8, #fff0f7);
         border: 1px solid rgba(255, 255, 255, 0.8);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
@@ -145,7 +146,7 @@
 
       .brand-badge::before {
         content: 'M';
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 800;
         color: var(--pink-deep);
         letter-spacing: 0.02em;
@@ -154,15 +155,15 @@
       .brand-meta small {
         display: block;
         color: var(--text-soft);
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.14em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
       }
 
       .brand-meta strong {
         display: block;
-        font-size: 17px;
+        font-size: 15px;
         font-weight: 800;
         color: var(--text);
       }
@@ -170,19 +171,22 @@
       .nav {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        padding: 6px;
+        gap: 6px;
+        padding: 4px;
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.66);
         border: 1px solid rgba(255, 255, 255, 0.86);
+        min-width: 0;
       }
 
       .nav a {
-        padding: 10px 14px;
+        flex: 0 0 auto;
+        padding: 8px 12px;
         border-radius: 999px;
         color: var(--text-soft);
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
+        white-space: nowrap;
         transition:
           background-color 0.22s ease,
           color 0.22s ease,
@@ -375,6 +379,7 @@
       .showcase {
         position: relative;
         min-height: 740px;
+        padding-inline: 12px;
       }
 
       .glow-orb {
@@ -906,6 +911,7 @@
       @media (max-width: 1120px) {
         .hero {
           grid-template-columns: 1fr;
+          gap: 22px;
         }
 
         .showcase {
@@ -924,9 +930,9 @@
       @media (max-width: 920px) {
         .topbar {
           top: 8px;
+          padding-top: 8px;
         }
 
-        .topbar-inner,
         .section-header,
         .panel-grid,
         .two-col,
@@ -938,14 +944,57 @@
         }
 
         .topbar-inner {
-          border-radius: 28px;
+          flex-direction: column;
+          align-items: center;
+          min-height: auto;
+          padding: 12px;
+          border-radius: 24px;
+        }
+
+        .brand {
+          width: auto;
+          justify-content: center;
+        }
+
+        .brand-meta {
+          text-align: center;
         }
 
         .nav {
-          width: 100%;
-          flex-wrap: wrap;
+          width: auto;
+          max-width: 100%;
+          display: flex;
+          flex-wrap: nowrap;
           justify-content: center;
-          border-radius: 20px;
+          align-self: center;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+          border-radius: 999px;
+        }
+
+        .nav::-webkit-scrollbar {
+          display: none;
+        }
+
+        .nav a {
+          width: auto;
+          min-width: max-content;
+          text-align: center;
+          padding-inline: 12px;
+        }
+
+        .hero {
+          padding-top: 24px;
+        }
+
+        .hero-metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .section-header {
+          align-items: stretch;
         }
 
         .section-side-note {
@@ -956,14 +1005,12 @@
           justify-items: start;
         }
 
+        .showcase {
+          padding-inline: 0;
+        }
+
         .floating-card {
-          position: relative;
-          margin: 14px auto 0;
-          left: auto;
-          right: auto;
-          top: auto;
-          bottom: auto;
-          max-width: none;
+          display: none;
         }
       }
 
@@ -972,16 +1019,41 @@
           width: min(calc(100% - 20px), var(--max-width));
         }
 
+        .topbar {
+          top: 4px;
+          padding-top: 4px;
+        }
+
         .topbar-inner {
-          padding: 16px;
+          gap: 10px;
+          padding: 10px;
         }
 
         .brand {
-          width: 100%;
+          width: auto;
           justify-content: center;
         }
 
+        .brand-meta {
+          text-align: center;
+        }
+
+        .nav {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 4px;
+          padding: 4px;
+          border-radius: 999px;
+        }
+
+        .nav a {
+          width: auto;
+          padding: 10px 8px;
+          font-size: 12px;
+        }
+
         .hero-card,
+        .metric-card,
         .feature-card,
         .panel,
         .faq-item,
@@ -991,27 +1063,170 @@
           padding: 22px;
         }
 
+        .hero {
+          gap: 18px;
+          padding-top: 10px;
+        }
+
         h1 {
           font-size: clamp(36px, 12vw, 52px);
         }
 
         .lead {
           font-size: 16px;
+          line-height: 1.75;
         }
 
         .hero-list,
+        .hero-metrics,
         .store-strip,
         .mini-grid {
           grid-template-columns: 1fr;
         }
 
+        .cta-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .btn {
+          width: 100%;
+        }
+
+        .metric-card strong {
+          font-size: 24px;
+        }
+
+        .phone-frame {
+          width: 100%;
+          padding: 14px;
+          border-radius: 32px;
+        }
+
+        .phone-frame::before {
+          top: 9px;
+          width: 96px;
+          height: 22px;
+        }
+
         .screen {
           min-height: auto;
+          padding: 24px 14px 18px;
+          border-radius: 22px;
         }
 
         .screen-header {
           align-items: start;
           flex-direction: column;
+        }
+
+        .screen-header h3 {
+          font-size: 24px;
+        }
+
+        .bubble-stack {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          width: 100%;
+        }
+
+        .bubble-stack span {
+          width: 100%;
+        }
+
+        .mini-feature-list div {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .quote-card p {
+          font-size: 22px;
+        }
+
+        .footer-card {
+          padding: 20px;
+          border-radius: 22px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .topbar-inner {
+          padding: 8px;
+          border-radius: 20px;
+        }
+
+        .brand {
+          gap: 8px;
+        }
+
+        .brand-badge {
+          width: 34px;
+          height: 34px;
+          border-radius: 12px;
+        }
+
+        .brand-badge::before {
+          font-size: 14px;
+        }
+
+        .brand-meta small {
+          font-size: 9px;
+        }
+
+        .brand-meta strong {
+          font-size: 14px;
+        }
+
+        .eyebrow,
+        .section-kicker,
+        .micro-label {
+          padding: 7px 12px;
+          font-size: 11px;
+        }
+
+        .hero-card,
+        .metric-card,
+        .feature-card,
+        .panel,
+        .faq-item,
+        .timeline-card,
+        .cta-panel,
+        .quote-card,
+        .floating-card {
+          padding: 18px;
+        }
+
+        h1 {
+          font-size: 34px;
+        }
+
+        .nav a {
+          padding: 8px 10px;
+        }
+
+        .hero {
+          padding: 8px 0 22px;
+        }
+
+        .screen-card {
+          padding: 16px;
+          border-radius: 20px;
+        }
+
+        .screen-card h4 {
+          font-size: 18px;
+        }
+
+        .screen-header h3 {
+          font-size: 22px;
+        }
+
+        .bubble-stack {
+          grid-template-columns: 1fr;
+        }
+
+        .showcase {
+          min-height: 0;
         }
       }
     </style>
