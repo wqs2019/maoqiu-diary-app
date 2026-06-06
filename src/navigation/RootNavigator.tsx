@@ -24,6 +24,7 @@ import EditProfileScreen from '@/screens/mine/EditProfileScreen';
 import FavoritesScreen from '@/screens/mine/FavoritesScreen';
 import FeedbackScreen from '@/screens/mine/FeedbackScreen';
 import MineScreen from '@/screens/mine/MineScreen';
+import MonitoringDashboardScreen from '@/screens/mine/MonitoringDashboardScreen';
 import NotebooksScreen from '@/screens/mine/NotebooksScreen';
 import SettingsScreen from '@/screens/mine/SettingsScreen';
 import SubscriptionScreen from '@/screens/mine/SubscriptionScreen';
@@ -78,6 +79,7 @@ export type RootStackParamList = {
   NotificationCenter: undefined;
   BlockedUsers: undefined;
   AdminCenter: undefined;
+  MonitoringDashboard: undefined;
   SystemConfig: undefined;
   AdminModeration:
     | {
@@ -246,6 +248,19 @@ export const RootNavigator = () => {
             component={EditProfileScreen}
             options={{
               headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="MonitoringDashboard"
+            component={MonitoringDashboardScreen}
+            options={{
+              title: '监控大盘',
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: colors.surface,
+              },
+              headerTintColor: colors.text,
+              headerBackTitle: '返回',
             }}
           />
           <RootStack.Screen

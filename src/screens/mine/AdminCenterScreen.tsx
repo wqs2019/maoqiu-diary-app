@@ -133,6 +133,15 @@ const AdminCenterScreen: React.FC = () => {
       onPress: () => openPlannedFeature('用户管理'),
     },
     {
+      key: 'monitoring-dashboard',
+      title: '监控大盘',
+      description: '查看页面 PV/UV 趋势、最近错误日志和用户报错明细',
+      icon: 'activity',
+      iconBg: isDark ? '#1F2937' : '#EEF2FF',
+      iconColor: isDark ? '#93C5FD' : '#2563EB',
+      onPress: () => navigation.navigate('MonitoringDashboard'),
+    },
+    {
       key: 'system-config',
       title: '系统配置',
       description: '配置 AI 入口、圈子入口等面向用户的全局展示开关',

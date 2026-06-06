@@ -1,0 +1,9 @@
+{
+  "name": "monitor",
+  "version": "1.0.0",
+  "description": "Page view and error monitoring cloud function",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "latest"
+  }
+}
