@@ -28,8 +28,10 @@ import NotebooksScreen from '@/screens/mine/NotebooksScreen';
 import SettingsScreen from '@/screens/mine/SettingsScreen';
 import SubscriptionScreen from '@/screens/mine/SubscriptionScreen';
 import AccountSecurityScreen from '@/screens/mine/AccountSecurityScreen';
+import AdminCenterScreen from '@/screens/mine/AdminCenterScreen';
 import ThemeSettingScreen from '@/screens/mine/ThemeSettingScreen';
 import WebScreen from '@/screens/mine/WebScreen';
+import AdminModerationScreen from '../screens/mine/AdminModerationScreen';
 import FollowersScreen from '@/screens/circle/FollowersScreen';
 import NotificationCenterScreen from '@/screens/mine/NotificationCenterScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
@@ -62,6 +64,13 @@ export type RootStackParamList = {
   Followers: { userId: string };
   NotificationCenter: undefined;
   BlockedUsers: undefined;
+  AdminCenter: undefined;
+  AdminModeration:
+    | {
+        feedbackId?: string;
+        initialStatus?: 'pending' | 'processing' | 'resolved' | 'rejected' | 'all';
+      }
+    | undefined;
 };
 
 export type AuthStackParamList = {
@@ -320,6 +329,20 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="BlockedUsers"
             component={BlockedUsersScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="AdminCenter"
+            component={AdminCenterScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="AdminModeration"
+            component={AdminModerationScreen}
             options={{
               headerShown: false,
             }}

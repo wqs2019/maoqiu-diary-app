@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuthStore } from '../store/authStore';
@@ -10,7 +9,12 @@ import { useNotebookStore } from '../store/notebookStore';
 export const useNotificationWatcher = () => {
   const user = useAuthStore((state) => state.user);
   const watcherRef = useRef<any>(null);
+  const latestPushTokenRef = useRef<string | undefined>(undefined);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    latestPushTokenRef.current = user?.pushToken;
+  }, [user?.pushToken]);
 
   useEffect(() => {
     if (!user?._id) {
@@ -29,7 +33,6 @@ export const useNotificationWatcher = () => {
         if (!app) return;
 
         const db = app.database();
-        const _ = db.command;
 
         // 监听未读的通知
         watcherRef.current = db.collection('notifications')
@@ -62,7 +65,7 @@ export const useNotificationWatcher = () => {
                 // 那么本地 watcher 就不需要再弹窗了，仅负责静默刷新 UI 即可
                 // 不再特判模拟器，因为如果模拟器共享了带有 pushToken 的账号，云端仍会发送远程推送，
                 // 特判会导致模拟器上出现本地+远程的重复弹窗。
-                if (!(user as any)?.pushToken) {
+                if (!latestPushTokenRef.current) {
                   // 触发本地系统通知
                   Notifications.scheduleNotificationAsync({
                     content: {
@@ -72,7 +75,9 @@ export const useNotificationWatcher = () => {
                       data: {
                         type: notif.type,
                         relatedId: notif.relatedId,
-                        notebookId: notif.extraData?.notebookId
+                        notebookId: notif.extraData?.notebookId,
+                        feedbackId: notif.extraData?.feedbackId,
+                        screen: notif.extraData?.screen,
                       }
                     },
                     trigger: null, // 立即触发
@@ -109,5 +114,5 @@ export const useNotificationWatcher = () => {
         watcherRef.current = null;
       }
     };
-  }, [user?._id]);
+  }, [queryClient, user?._id]);
 };

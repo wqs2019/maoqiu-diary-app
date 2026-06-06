@@ -27,7 +27,7 @@ const MineScreen: React.FC = () => {
   const { user, logout, fetchUserInfo } = useAuthStore();
   const insets = useSafeAreaInsets();
   const themeStyle = HAND_DRAWN_STYLES.soft; // 使用柔和手绘风格
-  const { isDark, colors } = useAppTheme();
+  const { isDark } = useAppTheme();
   const currentHealingColors = isDark
     ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS }
     : HEALING_COLORS;
@@ -67,7 +67,8 @@ const MineScreen: React.FC = () => {
     title: string,
     color: string,
     isLast = false,
-    onPress?: () => void
+    onPress?: () => void,
+    badgeCount?: number
   ) => (
     <TouchableOpacity
       style={[
@@ -89,11 +90,18 @@ const MineScreen: React.FC = () => {
       >
         {title}
       </Text>
-      <Feather
-        name="chevron-right"
-        size={20}
-        color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
-      />
+      <View style={styles.menuTrailing}>
+        {!!badgeCount && (
+          <View style={styles.menuBadge}>
+            <Text style={styles.menuBadgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
+          </View>
+        )}
+        <Feather
+          name="chevron-right"
+          size={20}
+          color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
+        />
+      </View>
     </TouchableOpacity>
   );
 
@@ -513,6 +521,35 @@ const MineScreen: React.FC = () => {
           )}
         </View>
 
+        {/* 管理员入口 */}
+        {user?.isAdmin && (
+          <View
+            style={[
+              styles.menuSection,
+              {
+                borderRadius: themeStyle.borderRadius,
+                shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+                shadowOpacity: themeStyle.shadowOpacity * 0.5,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 4,
+                backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+              },
+            ]}
+          >
+            {renderMenuItem(
+              'shield',
+              '管理员中心',
+              currentHealingColors.pink[600],
+              true,
+              () => {
+                navigation.navigate('AdminCenter');
+              }
+            )}
+          </View>
+        )}
+
         {/* 退出登录按钮 */}
         {user && (
           <TouchableOpacity
@@ -802,6 +839,25 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: HEALING_COLORS.gray[800],
     fontWeight: '600',
+  },
+  menuTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  menuBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   logoutButton: {
     marginHorizontal: 20,

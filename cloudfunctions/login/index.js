@@ -7,6 +7,16 @@ const app = cloud.init({
 
 const db = app.database();
 const usersCollection = db.collection('users');
+const adminCollection = db.collection('admin_list');
+
+const isPhoneAdmin = async (phone) => {
+  if (!phone) {
+    return false;
+  }
+
+  const result = await adminCollection.where({ phone }).limit(1).get();
+  return !!(result.data && result.data.length > 0);
+};
 
 exports.main = async (event, context) => {
   const { action, data } = event;
@@ -72,6 +82,7 @@ async function loginHandler(data) {
     }
 
     const userId = user.data[0]._id || user.data[0].id;
+    const isAdmin = await isPhoneAdmin(phone);
     // 生成Token
     const token = generateToken(userId);
 
@@ -83,6 +94,7 @@ async function loginHandler(data) {
         user: {
           ...user.data[0],
           _id: userId,
+          isAdmin,
         },
       },
     };
@@ -162,6 +174,8 @@ async function validateTokenHandler(data) {
       return { code: -1, message: '该账户已注销，登录已失效' };
     }
 
+    const isAdmin = await isPhoneAdmin(userData.phone);
+
     return {
       code: 0,
       message: 'Token验证成功',
@@ -169,6 +183,7 @@ async function validateTokenHandler(data) {
         user: {
           ...userData,
           _id: userData._id || userId,
+          isAdmin,
         },
       },
     };

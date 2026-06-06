@@ -16,6 +16,8 @@ export interface VipInfo {
 export interface UserInfo {
   _id: string;
   phone: string;
+  isAdmin?: boolean;
+  pushToken?: string;
   nickname?: string;
   avatar?: string;
   gender?: 'male' | 'female' | 'secret';

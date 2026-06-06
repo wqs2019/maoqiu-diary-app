@@ -1,11 +1,13 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { getNotifications, markNotificationRead, NotificationListResponse } from '../../services/notificationService';
+import { RootStackParamList } from '../../navigation/RootNavigator';
+import { getNotifications, markNotificationRead } from '../../services/notificationService';
 import { respondInvitation } from '../../services/notebookService';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
@@ -14,8 +16,8 @@ import { Notification } from '../../types';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 
 export default function NotificationCenterScreen() {
-  const navigation = useNavigation();
-  const { isDark, themeName } = useAppTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { isDark } = useAppTheme();
   // 因为消息通知页面还没有引入 currentHealingColors，所以我们使用全局的 HEALING_COLORS.pink[400]
   // 或者是深色模式特有的颜色
   const loadingColor = isDark ? '#FFB6C1' : HEALING_COLORS.pink[400];
@@ -81,12 +83,31 @@ export default function NotificationCenterScreen() {
     }
   };
 
+  const handleNotificationPress = useCallback(
+    (item: Notification) => {
+      const feedbackId = item.extraData?.feedbackId;
+      if (user?.isAdmin && feedbackId) {
+        navigation.navigate('AdminModeration', {
+          feedbackId,
+          initialStatus: 'all',
+        });
+      }
+    },
+    [navigation, user?.isAdmin]
+  );
+
   const renderItem = ({ item }: { item: Notification & { senderInfo?: { nickname?: string; avatar?: string } } }) => {
     const isInvite = item.type === 'invite_shared_notebook';
     const isPending = item.actionStatus === 'pending';
+    const canOpenReview = Boolean(user?.isAdmin && item.extraData?.feedbackId);
 
     return (
-      <View style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3' }]}>
+      <TouchableOpacity
+        activeOpacity={canOpenReview ? 0.85 : 1}
+        disabled={!canOpenReview}
+        onPress={() => handleNotificationPress(item)}
+        style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3' }]}
+      >
         <View style={styles.cardHeader}>
           <Image 
             source={item.senderInfo?.avatar ? { uri: item.senderInfo.avatar } : require('../../../assets/logo_bg.png')} 
@@ -103,6 +124,12 @@ export default function NotificationCenterScreen() {
         <Text style={[styles.content, { color: isDark ? '#D1D5DB' : '#4B5563' }]}>
           {item.content}
         </Text>
+
+        {canOpenReview && (
+          <Text style={[styles.jumpHint, { color: isDark ? '#F9A8D4' : HEALING_COLORS.pink[500] }]}>
+            点击查看对应审核记录
+          </Text>
+        )}
 
         {isInvite && (
           <View style={styles.actionContainer}>
@@ -132,7 +159,7 @@ export default function NotificationCenterScreen() {
             )}
           </View>
         )}
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -235,6 +262,11 @@ const styles = StyleSheet.create({
   content: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  jumpHint: {
+    marginTop: 10,
+    fontSize: 12,
+    fontWeight: '600',
   },
   actionContainer: {
     flexDirection: 'row',

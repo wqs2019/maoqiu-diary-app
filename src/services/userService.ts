@@ -52,7 +52,11 @@ export class UserService {
         // 所以真实的云函数返回体是 fetchResponse.data
         const cloudResult = fetchResponse.data;
         if (cloudResult.success && cloudResult.data) {
-          const updatedUser = cloudResult.data;
+          const cachedUser = await authService.getUserInfo();
+          const updatedUser = {
+            ...cloudResult.data,
+            isAdmin: cloudResult.data.isAdmin ?? cachedUser?.isAdmin ?? false,
+          };
           await authService.saveUserInfo(updatedUser); // 在服务层处理本地持久化
           return updatedUser;
         }
