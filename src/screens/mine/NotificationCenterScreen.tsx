@@ -15,6 +15,11 @@ import { Notification } from '../../types';
 
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 
+const SYSTEM_AVATAR_NOTIFICATION_SOURCES = new Set([
+  'report_review_result',
+  'diary_moderation_result',
+]);
+
 export default function NotificationCenterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDark } = useAppTheme();
@@ -100,6 +105,12 @@ export default function NotificationCenterScreen() {
     const isInvite = item.type === 'invite_shared_notebook';
     const isPending = item.actionStatus === 'pending';
     const canOpenReview = Boolean(user?.isAdmin && item.extraData?.feedbackId);
+    const shouldUseSystemAvatar =
+      item.type === 'system' && SYSTEM_AVATAR_NOTIFICATION_SOURCES.has(item.extraData?.source);
+    const avatarSource =
+      !shouldUseSystemAvatar && item.senderInfo?.avatar
+        ? { uri: item.senderInfo.avatar }
+        : require('../../../assets/logo_bg.png');
 
     return (
       <TouchableOpacity
@@ -109,9 +120,9 @@ export default function NotificationCenterScreen() {
         style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3' }]}
       >
         <View style={styles.cardHeader}>
-          <Image 
-            source={item.senderInfo?.avatar ? { uri: item.senderInfo.avatar } : require('../../../assets/logo_bg.png')} 
-            style={styles.avatar} 
+          <Image
+            source={avatarSource}
+            style={styles.avatar}
           />
           <View style={styles.headerTextContainer}>
             <Text style={[styles.title, { color: isDark ? '#FFF' : '#1F2937' }]}>{item.title}</Text>

@@ -52,6 +52,25 @@ const REPORT_REASON_OPTIONS: Array<{ value: ReportReason; label: string }> = [
   { value: 'other', label: '其他原因' },
 ];
 
+const getReportDiaryTitle = (diary: Diary): string => {
+  const title = diary.title?.trim();
+  if (title) return title;
+
+  const content = diary.content?.trim();
+  if (content) return content.slice(0, 24);
+
+  return '未命名公开笔记';
+};
+
+type SelectedReportDiary = {
+  _id: string;
+  title?: string;
+  content?: string;
+  mediaCount?: number;
+  createdAt?: string;
+  date?: string;
+};
+
 const UserProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -72,6 +91,7 @@ const UserProfileScreen: React.FC = () => {
   const [moreActionsVisible, setMoreActionsVisible] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedReportReason, setSelectedReportReason] = useState<ReportReason>('spam');
+  const [selectedReportDiary, setSelectedReportDiary] = useState<SelectedReportDiary | null>(null);
   const [reportDescription, setReportDescription] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [blockSubmitting, setBlockSubmitting] = useState(false);
@@ -111,6 +131,15 @@ const UserProfileScreen: React.FC = () => {
       fetchProfile();
     }
   }, [targetUserId, fetchProfile]);
+
+  useEffect(() => {
+    const pickedDiary = route.params?.selectedReportDiary as SelectedReportDiary | undefined;
+    if (!pickedDiary) return;
+
+    setSelectedReportDiary(pickedDiary);
+    setReportModalVisible(true);
+    navigation.setParams({ selectedReportDiary: undefined });
+  }, [navigation, route.params?.selectedReportDiary]);
 
   const onRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
@@ -200,6 +229,7 @@ const UserProfileScreen: React.FC = () => {
 
     setMoreActionsVisible(false);
     setSelectedReportReason('spam');
+    setSelectedReportDiary(null);
     setReportDescription('');
     setTimeout(() => {
       setReportModalVisible(true);
@@ -222,14 +252,24 @@ const UserProfileScreen: React.FC = () => {
       await feedbackService.submitUserReport({
         userId: currentUser._id,
         targetUserId,
+        targetDiaryId: selectedReportDiary?._id,
         reportReason: selectedReportReason,
         content: reportDescription.trim(),
         targetSnapshot: {
           nickname: profile.nickname,
           avatar: profile.avatar,
         },
+        targetDiarySnapshot: selectedReportDiary
+          ? {
+              _id: selectedReportDiary._id,
+              title: selectedReportDiary.title,
+              content: selectedReportDiary.content,
+              mediaCount: selectedReportDiary.mediaCount || 0,
+            }
+          : undefined,
       });
       setReportModalVisible(false);
+      setSelectedReportDiary(null);
       setReportDescription('');
       toast.success('举报已提交，我们会尽快处理');
     } catch (error: any) {
@@ -242,10 +282,23 @@ const UserProfileScreen: React.FC = () => {
     currentUser?._id,
     profile,
     reportDescription,
+    selectedReportDiary,
     selectedReportReason,
     targetUserId,
     toast,
   ]);
+
+  const handleOpenReportDiaryPicker = useCallback(() => {
+    if (!targetUserId) return;
+
+    setReportModalVisible(false);
+    setTimeout(() => {
+      navigation.navigate('ReportDiaryPicker', {
+        userId: targetUserId,
+        selectedDiaryId: selectedReportDiary?._id ?? null,
+      });
+    }, 180);
+  }, [navigation, selectedReportDiary?._id, targetUserId]);
 
   const handleToggleBlock = useCallback(() => {
     if (!currentUser?._id || !profile || !targetUserId) {
@@ -832,6 +885,70 @@ const UserProfileScreen: React.FC = () => {
                 );
               })}
             </View>
+            <View style={styles.reportDiarySection}>
+              <Text style={[styles.reportSectionTitle, { color: isDark ? '#FFF' : '#111827' }]}>
+                关联公开笔记（可选）
+              </Text>
+              <Text style={[styles.reportSectionHint, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                如果本次举报和该用户发布的某篇圈子公开笔记有关，可以一并关联，便于核查。
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.reportDiaryPickerButton,
+                  {
+                    backgroundColor: isDark ? '#2A2A2A' : '#F9FAFB',
+                    borderColor: selectedReportDiary
+                      ? HEALING_COLORS.pink[500]
+                      : isDark
+                        ? '#3F3F46'
+                        : '#E5E7EB',
+                  },
+                ]}
+                onPress={handleOpenReportDiaryPicker}
+              >
+                <View style={styles.reportDiaryPickerContent}>
+                  <Text style={[styles.reportDiaryPickerLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                    当前关联
+                  </Text>
+                  <Text
+                    style={[
+                      styles.reportDiaryPickerValue,
+                      { color: selectedReportDiary ? (isDark ? '#FFF' : '#111827') : (isDark ? '#AAA' : '#6B7280') },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {selectedReportDiary ? getReportDiaryTitle(selectedReportDiary as Diary) : '未选择'}
+                  </Text>
+                  {selectedReportDiary?.content ? (
+                    <Text
+                      style={[styles.reportDiaryContent, { color: isDark ? '#AAA' : '#6B7280' }]}
+                      numberOfLines={2}
+                    >
+                      {selectedReportDiary.content}
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={styles.reportDiaryPickerActions}>
+                  {selectedReportDiary ? (
+                    <TouchableOpacity
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        setSelectedReportDiary(null);
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={styles.reportDiaryClearText}>清除关联</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                  <Ionicons name="chevron-forward" size={18} color={isDark ? '#AAA' : '#9CA3AF'} />
+                </View>
+              </TouchableOpacity>
+              <Text style={[styles.reportDiaryEmpty, { color: isDark ? '#6B7280' : '#9CA3AF' }]}>
+                {selectedReportDiary
+                  ? FormatUtil.formatRelativeTime(selectedReportDiary.createdAt || selectedReportDiary.date || '')
+                  : '未关联公开笔记，可进入选择页挑选'}
+              </Text>
+            </View>
             <TextInput
               style={[
                 styles.reportInput,
@@ -994,6 +1111,61 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'right',
     marginTop: 8,
+  },
+  reportDiarySection: {
+    marginTop: 12,
+  },
+  reportSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  reportSectionHint: {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  reportDiaryPickerButton: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reportDiaryPickerContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  reportDiaryPickerActions: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+    paddingVertical: 2,
+  },
+  reportDiaryPickerLabel: {
+    fontSize: 12,
+  },
+  reportDiaryPickerValue: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reportDiaryContent: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  reportDiaryClearText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: HEALING_COLORS.pink[500],
+  },
+  reportDiaryEmpty: {
+    marginTop: 10,
+    fontSize: 12,
+    lineHeight: 18,
   },
   reportActionRow: {
     flexDirection: 'row',

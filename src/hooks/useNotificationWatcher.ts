@@ -6,6 +6,12 @@ import { useAuthStore } from '../store/authStore';
 import CloudService from '../services/tcb';
 import { useNotebookStore } from '../store/notebookStore';
 
+const REMOTE_PUSH_ONLY_SOURCES = new Set([
+  'diary_report',
+  'user_report',
+  'diary_recheck',
+]);
+
 export const useNotificationWatcher = () => {
   const user = useAuthStore((state) => state.user);
   const watcherRef = useRef<any>(null);
@@ -51,6 +57,10 @@ export const useNotificationWatcher = () => {
               
               newDocs.forEach((change: any) => {
                 const notif = change.doc;
+                const isAdminReviewNotification =
+                  notif.type === 'system' &&
+                  notif.extraData?.feedbackId &&
+                  REMOTE_PUSH_ONLY_SOURCES.has(notif.extraData?.source);
                 
                 // 根据不同类型设置不同的通知文案
                 let title = notif.title || '✨ 收到新通知';
@@ -65,7 +75,7 @@ export const useNotificationWatcher = () => {
                 // 那么本地 watcher 就不需要再弹窗了，仅负责静默刷新 UI 即可
                 // 不再特判模拟器，因为如果模拟器共享了带有 pushToken 的账号，云端仍会发送远程推送，
                 // 特判会导致模拟器上出现本地+远程的重复弹窗。
-                if (!latestPushTokenRef.current) {
+                if (!latestPushTokenRef.current && !isAdminReviewNotification) {
                   // 触发本地系统通知
                   Notifications.scheduleNotificationAsync({
                     content: {

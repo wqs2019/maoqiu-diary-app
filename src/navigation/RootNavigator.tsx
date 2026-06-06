@@ -32,6 +32,7 @@ import AdminCenterScreen from '@/screens/mine/AdminCenterScreen';
 import ThemeSettingScreen from '@/screens/mine/ThemeSettingScreen';
 import WebScreen from '@/screens/mine/WebScreen';
 import AdminModerationScreen from '../screens/mine/AdminModerationScreen';
+import ReportDiaryPickerScreen from '../screens/circle/ReportDiaryPickerScreen';
 import FollowersScreen from '@/screens/circle/FollowersScreen';
 import NotificationCenterScreen from '@/screens/mine/NotificationCenterScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
@@ -46,7 +47,18 @@ export type RootStackParamList = {
   EditDiary: { scenario?: string; diaryId?: string };
   DiaryDetail: { _id: string };
   CircleDetail: { _id: string };
-  UserProfile: { userId: string };
+  UserProfile: {
+    userId: string;
+    selectedReportDiary?: {
+      _id: string;
+      title?: string;
+      content?: string;
+      mediaCount?: number;
+      createdAt?: string;
+      date?: string;
+    };
+  };
+  ReportDiaryPicker: { userId: string; selectedDiaryId?: string | null };
   EditProfile: undefined;
   PhotoWall: { scenario?: string };
   About: undefined;
@@ -212,6 +224,19 @@ export const RootNavigator = () => {
             component={UserProfileScreen}
             options={{
               headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="ReportDiaryPicker"
+            component={ReportDiaryPickerScreen}
+            options={{
+              title: '选择关联笔记',
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: colors.surface,
+              },
+              headerTintColor: colors.text,
+              headerBackTitle: '返回',
             }}
           />
           <RootStack.Screen

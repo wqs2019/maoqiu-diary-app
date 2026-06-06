@@ -111,6 +111,11 @@ const getActionLabel = (item: FeedbackData, status: 'resolved' | 'rejected') => 
   return status === 'resolved' ? '已处理' : '驳回';
 };
 
+const isTerminalDiaryReport = (item: FeedbackData) => {
+  const status = item.status === 'processing' ? 'pending' : item.status || 'pending';
+  return !!item.targetDiaryId && (status === 'resolved' || status === 'rejected');
+};
+
 const getReasonSheetCopy = (item: FeedbackData, status: 'resolved' | 'rejected') => {
   if (item.source === 'diary_recheck') {
     return {
@@ -351,6 +356,10 @@ const AdminModerationScreen: React.FC = () => {
       return;
     }
 
+    if (isTerminalDiaryReport(item)) {
+      return;
+    }
+
     if (nextStatus === 'resolved' || nextStatus === 'rejected') {
       setPendingAction({ item, status: nextStatus });
       setReviewReason(item.reviewNote || '');
@@ -547,7 +556,10 @@ const AdminModerationScreen: React.FC = () => {
 
         <View style={styles.actionRow}>
           {REVIEW_ACTIONS.map((action) => {
-            const disabled = updatingId === item._id || status === action.status;
+            const disabled =
+              updatingId === item._id ||
+              isTerminalDiaryReport(item) ||
+              (!item.targetDiaryId && status === action.status);
             return (
               <TouchableOpacity
                 key={action.status}

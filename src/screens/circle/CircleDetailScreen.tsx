@@ -60,6 +60,7 @@ const CircleDetailScreen: React.FC = () => {
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [moreActionsVisible, setMoreActionsVisible] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedReportReason, setSelectedReportReason] = useState<ReportReason>('spam');
   const [reportDescription, setReportDescription] = useState('');
@@ -130,6 +131,23 @@ const CircleDetailScreen: React.FC = () => {
   };
 
   const hasLiked = user?._id ? (diary?.likedUserIds || []).includes(user._id) : false;
+  const canReportDiary = !!(user?._id && diary?.userId && user._id !== diary.userId);
+
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: canReportDiary
+        ? () => (
+            <TouchableOpacity
+              style={styles.headerMoreButton}
+              onPress={() => setMoreActionsVisible(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="ellipsis-horizontal" size={22} color={isDark ? '#FFFFFF' : '#111827'} />
+            </TouchableOpacity>
+          )
+        : undefined,
+    });
+  }, [canReportDiary, isDark, navigation]);
 
   const handleAction = async (type: 'like' | 'share') => {
     if (type === 'like') {
@@ -184,6 +202,17 @@ const CircleDetailScreen: React.FC = () => {
     } finally {
       setReportSubmitting(false);
     }
+  };
+
+  const handleOpenReportModal = () => {
+    if (!canReportDiary) return;
+
+    setMoreActionsVisible(false);
+    setSelectedReportReason('spam');
+    setReportDescription('');
+    setTimeout(() => {
+      setReportModalVisible(true);
+    }, 180);
   };
 
   if (isLoading) {
@@ -352,14 +381,43 @@ const CircleDetailScreen: React.FC = () => {
             <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('share')}>
               <Ionicons name="share-social-outline" size={26} color="#4B5563" />
             </TouchableOpacity>
-            {user?._id && diary.userId && user._id !== diary.userId ? (
-              <TouchableOpacity style={styles.actionIcon} onPress={() => setReportModalVisible(true)}>
-                <Ionicons name="flag-outline" size={24} color="#EF4444" />
-              </TouchableOpacity>
-            ) : null}
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <CommonModal visible={moreActionsVisible} onClose={() => setMoreActionsVisible(false)}>
+        <View style={styles.popupContainer}>
+          <TouchableOpacity style={styles.popupBackdrop} activeOpacity={1} onPress={() => setMoreActionsVisible(false)} />
+          <View
+            style={[
+              styles.popupCard,
+              {
+                backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                borderColor: isDark ? '#333' : '#E5E7EB',
+              },
+            ]}
+          >
+            <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>更多操作</Text>
+            <TouchableOpacity
+              style={styles.popupAction}
+              onPress={handleOpenReportModal}
+            >
+              <Ionicons name="flag-outline" size={18} color="#F59E0B" />
+              <Text style={[styles.popupActionText, { color: isDark ? '#FFF' : '#111827' }]}>
+                举报笔记
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.popupCancel}
+              onPress={() => setMoreActionsVisible(false)}
+            >
+              <Text style={[styles.popupCancelText, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                取消
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </CommonModal>
 
       <CommonModal visible={reportModalVisible} onClose={() => setReportModalVisible(false)}>
         <View style={styles.popupContainer}>
@@ -408,7 +466,7 @@ const CircleDetailScreen: React.FC = () => {
                   backgroundColor: isDark ? '#141414' : '#F9FAFB',
                 },
               ]}
-              value={reportDescription}
+              defaultValue={reportDescription}
               onChangeText={setReportDescription}
               placeholder="请补充违规内容描述，管理员会结合这段说明审核"
               placeholderTextColor={isDark ? '#777' : '#9CA3AF'}
@@ -597,13 +655,25 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 6,
   },
+  headerMoreButton: {
+    padding: 4,
+  },
   popupContainer: {
     flex: 1,
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   popupBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  popupCard: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingTop: 16,
+    paddingBottom: 8,
+    overflow: 'hidden',
   },
   reportCard: {
     borderTopLeftRadius: 24,
@@ -616,6 +686,28 @@ const styles = StyleSheet.create({
   popupTitle: {
     fontSize: 18,
     fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  popupAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  popupActionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  popupCancel: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  popupCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   reportHint: {
     marginTop: 8,
