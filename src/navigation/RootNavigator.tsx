@@ -29,6 +29,7 @@ import SettingsScreen from '@/screens/mine/SettingsScreen';
 import SubscriptionScreen from '@/screens/mine/SubscriptionScreen';
 import AccountSecurityScreen from '@/screens/mine/AccountSecurityScreen';
 import AdminCenterScreen from '@/screens/mine/AdminCenterScreen';
+import SystemConfigScreen from '@/screens/mine/SystemConfigScreen';
 import ThemeSettingScreen from '@/screens/mine/ThemeSettingScreen';
 import WebScreen from '@/screens/mine/WebScreen';
 import AdminModerationScreen from '../screens/mine/AdminModerationScreen';
@@ -77,6 +78,7 @@ export type RootStackParamList = {
   NotificationCenter: undefined;
   BlockedUsers: undefined;
   AdminCenter: undefined;
+  SystemConfig: undefined;
   AdminModeration:
     | {
         feedbackId?: string;
@@ -244,6 +246,19 @@ export const RootNavigator = () => {
             component={EditProfileScreen}
             options={{
               headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="SystemConfig"
+            component={SystemConfigScreen}
+            options={{
+              title: '系统配置',
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: colors.surface,
+              },
+              headerTintColor: colors.text,
+              headerBackTitle: '返回',
             }}
           />
           <RootStack.Screen

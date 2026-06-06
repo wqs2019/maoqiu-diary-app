@@ -135,13 +135,11 @@ const AdminCenterScreen: React.FC = () => {
     {
       key: 'system-config',
       title: '系统配置',
-      description: '后续可放社区开关、审核策略、支持文案等后台配置项',
+      description: '配置 AI 入口、圈子入口等面向用户的全局展示开关',
       icon: 'sliders',
       iconBg: isDark ? '#27272A' : '#FFF7ED',
       iconColor: isDark ? '#FDBA74' : '#EA580C',
-      actionLabel: '规划中',
-      disabled: true,
-      onPress: () => openPlannedFeature('系统配置'),
+      onPress: () => navigation.navigate('SystemConfig'),
     },
   ];
 

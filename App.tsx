@@ -14,8 +14,8 @@ import { Navigation } from '@/navigation';
 import { AppQueryProvider } from '@/providers/AppQueryProvider';
 import CustomSplashScreen from '@/screens/common/CustomSplashScreen';
 import LoadingScreen from '@/screens/common/LoadingScreen';
+import { fetchRemoteAppConfig } from '@/services/configService';
 import { ensureIAPConnection } from '@/services/iapManager';
-import CloudService from '@/services/tcb';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
 
@@ -90,22 +90,9 @@ function App() {
       await checkAndSyncVIPStatus();
       // 获取全局配置
       try {
-        await CloudService.ensureAuth();
-        const app = CloudService.getApp();
-        if (app) {
-          const db = app.database();
-          const configRes = await db.collection('config').get();
-          if (configRes.data && configRes.data.length > 0) {
-            // 合并所有配置项，或者取第一条
-            const configData = configRes.data[0];
-            useAppStore.getState().setAppConfig({
-              show_ai_chat: configData.show_ai_chat ?? true,
-              show_circle: configData.show_circle ?? true,
-              notification: configData.notification,
-            });
-            console.log('App config loaded:', configData);
-          }
-        }
+        const { doc, config } = await fetchRemoteAppConfig();
+        useAppStore.getState().setAppConfig(config);
+        console.log('App config loaded:', doc || config);
       } catch (error) {
         console.error('Failed to fetch app config:', error);
       }
