@@ -1,6 +1,26 @@
 import authService, { UserInfo } from './auth';
 import { CloudService } from './tcb';
 
+export interface UserProfileData {
+  _id: string;
+  nickname?: string;
+  avatar?: string;
+  profileBackground?: string;
+  publicDiariesCount: number;
+  followersCount: number;
+  totalLikes: number;
+  isFollowing: boolean;
+  isBlockedByCurrentUser?: boolean;
+  blockedByTargetUser?: boolean;
+}
+
+export interface BlockedUserListItem {
+  _id: string;
+  nickname?: string;
+  avatar?: string;
+  blockedAt?: number | null;
+}
+
 export class UserService {
   /**
    * 更新用户信息
@@ -74,7 +94,7 @@ export class UserService {
   /**
    * 获取用户公开主页信息
    */
-  async getProfile(targetUserId: string, currentUserId?: string): Promise<any> {
+  async getProfile(targetUserId: string, currentUserId?: string): Promise<UserProfileData> {
     try {
       const response: any = await CloudService.callFunction('user', {
         action: 'getProfile',
@@ -126,6 +146,93 @@ export class UserService {
     } catch (error) {
       console.error('UserService.follow error:', error);
       throw error;
+    }
+  }
+
+  async blockUser(userId: string, targetUserId: string): Promise<boolean> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'blockUser',
+        data: {
+          userId,
+          targetUserId,
+        },
+      });
+
+      if (response.code === 0 && response.data?.success) {
+        return true;
+      }
+
+      throw new Error(response.data?.message || response.message || '拉黑失败');
+    } catch (error) {
+      console.error('UserService.blockUser error:', error);
+      throw error;
+    }
+  }
+
+  async unblockUser(userId: string, targetUserId: string): Promise<boolean> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'unblockUser',
+        data: {
+          userId,
+          targetUserId,
+        },
+      });
+
+      if (response.code === 0 && response.data?.success) {
+        return true;
+      }
+
+      throw new Error(response.data?.message || response.message || '取消拉黑失败');
+    } catch (error) {
+      console.error('UserService.unblockUser error:', error);
+      throw error;
+    }
+  }
+
+  async getBlockedUserIds(userId: string): Promise<string[]> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'getBlockedUserIds',
+        data: {
+          userId,
+        },
+      });
+
+      if (response.code === 0 && response.data?.success) {
+        return response.data.data?.blockedUserIds || [];
+      }
+
+      return [];
+    } catch (error) {
+      console.error('UserService.getBlockedUserIds error:', error);
+      return [];
+    }
+  }
+
+  async getBlockedUsers(userId: string, page = 1, pageSize = 20): Promise<{ list: BlockedUserListItem[]; total: number }> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'getBlockedUsersList',
+        data: {
+          userId,
+          page,
+          pageSize,
+        },
+      });
+
+      if (response.code === 0 && response.data) {
+        const cloudResult = response.data;
+        if (cloudResult.success && cloudResult.data) {
+          return cloudResult.data;
+        }
+      }
+
+      return { list: [], total: 0 };
+    } catch (error) {
+      console.error('UserService.getBlockedUsers error:', error);
+      return { list: [], total: 0 };
     }
   }
 

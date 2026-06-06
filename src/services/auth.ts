@@ -27,6 +27,10 @@ export interface UserInfo {
   createdAt?: string | number;
   biometricEnabled?: boolean;
   profileBackground?: string;
+  blockedUsers?: Array<{
+    userId: string;
+    blockedAt?: number;
+  }>;
 }
 
 export interface TokenInfo {

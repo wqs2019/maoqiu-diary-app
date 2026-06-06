@@ -9,10 +9,20 @@ const db = app.database();
 // 添加反馈
 const addFeedback = async (data) => {
   try {
-    const { userId, type, content, contact, media } = data;
+    const { userId, type, content, contact, media, targetUserId, reportReason, targetSnapshot } = data;
 
     if (!userId || !type || !content) {
       return { success: false, message: '缺少必要参数' };
+    }
+
+    if (type === 'report_user') {
+      if (!targetUserId || !reportReason) {
+        return { success: false, message: '举报信息不完整' };
+      }
+
+      if (userId === targetUserId) {
+        return { success: false, message: '不能举报自己' };
+      }
     }
 
     const result = await db.collection('feedbacks').add({
@@ -21,6 +31,9 @@ const addFeedback = async (data) => {
       content,
       contact: contact || '',
       media: media || [],
+      targetUserId: targetUserId || '',
+      reportReason: reportReason || '',
+      targetSnapshot: targetSnapshot || null,
       status: 'pending', // 默认状态为待处理
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),

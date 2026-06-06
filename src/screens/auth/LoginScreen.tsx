@@ -1,4 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -27,9 +29,13 @@ import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useAuthStore } from '../../store/authStore';
 
+import { Modal as CommonModal } from '@/components/common/Modal';
 import { useToast } from '@/components/common/Toast';
 
 const { width } = Dimensions.get('window');
+const AGREEMENT_ACCEPTED_KEY = 'login_agreement_accepted';
+const USER_AGREEMENT_URL = 'https://www.xieyimao.com/doc/detailzh/token/1772109293_4012';
+const PRIVACY_POLICY_URL = 'https://www.xieyimao.com/doc/detailzh/token/1772108718_2251';
 
 // 动画背景组件
 const FloatingBlob = ({ 
@@ -106,10 +112,25 @@ const LoginScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [hasAcceptedAgreement, setHasAcceptedAgreement] = useState(false);
+  const [agreementModalVisible, setAgreementModalVisible] = useState(false);
   const { login, loginWithWechat, sendCode, loading, sendingCode } = useAuthStore();
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { isDark, colors } = useAppTheme();
+
+  useEffect(() => {
+    const loadAgreementState = async () => {
+      try {
+        const storedValue = await AsyncStorage.getItem(AGREEMENT_ACCEPTED_KEY);
+        setHasAcceptedAgreement(storedValue === '1');
+      } catch (error) {
+        console.error('Failed to load agreement state:', error);
+      }
+    };
+
+    loadAgreementState();
+  }, []);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -123,7 +144,57 @@ const LoginScreen: React.FC = () => {
     };
   }, [countdown]);
 
+  const openPolicyLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Open policy link failed:', error);
+      toast.error('打开协议失败，请稍后重试');
+    }
+  };
+
+  const toggleAgreement = async () => {
+    const nextValue = !hasAcceptedAgreement;
+    setHasAcceptedAgreement(nextValue);
+    try {
+      if (nextValue) {
+        await AsyncStorage.setItem(AGREEMENT_ACCEPTED_KEY, '1');
+      } else {
+        await AsyncStorage.removeItem(AGREEMENT_ACCEPTED_KEY);
+      }
+    } catch (error) {
+      console.error('Failed to persist agreement state:', error);
+    }
+  };
+
+  const acceptAgreementFromModal = async () => {
+    if (!hasAcceptedAgreement) {
+      setHasAcceptedAgreement(true);
+      try {
+        await AsyncStorage.setItem(AGREEMENT_ACCEPTED_KEY, '1');
+      } catch (error) {
+        console.error('Failed to persist agreement state:', error);
+      }
+    }
+    setAgreementModalVisible(false);
+  };
+
+  const ensureAgreementAccepted = async () => {
+    if (hasAcceptedAgreement) {
+      return true;
+    }
+
+    setAgreementModalVisible(true);
+    toast.error('请先阅读并同意协议');
+    return false;
+  };
+
   const handleSendCode = async () => {
+    const canContinue = await ensureAgreementAccepted();
+    if (!canContinue) {
+      return;
+    }
+
     if (phone?.length !== 11) {
       toast.error('请输入正确的手机号');
       return;
@@ -139,6 +210,11 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleLogin = async () => {
+    const canContinue = await ensureAgreementAccepted();
+    if (!canContinue) {
+      return;
+    }
+
     if (phone?.length !== 11) {
       toast.error('请输入正确的手机号');
       return;
@@ -282,6 +358,44 @@ const LoginScreen: React.FC = () => {
               <Ionicons name="arrow-forward" size={20} color={isDark ? '#000' : '#FFF'} />
             </TouchableOpacity>
 
+            <View style={styles.agreementRow}>
+              <TouchableOpacity
+                style={[
+                  styles.checkbox,
+                  {
+                    borderColor: hasAcceptedAgreement ? colors.primary : colors.textSecondary,
+                    backgroundColor: hasAcceptedAgreement ? colors.primary : 'transparent',
+                  },
+                ]}
+                onPress={toggleAgreement}
+                activeOpacity={0.8}
+              >
+                {hasAcceptedAgreement ? (
+                  <Ionicons name="checkmark" size={14} color={isDark ? '#000' : '#FFF'} />
+                ) : null}
+              </TouchableOpacity>
+              <Text style={[styles.agreementText, { color: colors.textSecondary }]}>
+                我已阅读并同意
+                <Text
+                  style={[styles.agreementLink, { color: colors.primary }]}
+                  onPress={() => {
+                    openPolicyLink(USER_AGREEMENT_URL);
+                  }}
+                >
+                  《用户服务协议》
+                </Text>
+                和
+                <Text
+                  style={[styles.agreementLink, { color: colors.primary }]}
+                  onPress={() => {
+                    openPolicyLink(PRIVACY_POLICY_URL);
+                  }}
+                >
+                  《隐私政策》
+                </Text>
+              </Text>
+            </View>
+
             {/* 微信登录（因个人开发者暂无权限，先隐藏以便后续使用） */}
             {false && (
               <>
@@ -294,6 +408,10 @@ const LoginScreen: React.FC = () => {
                 <TouchableOpacity
                   style={[styles.wechatButton, { backgroundColor: colors.surface }]}
                   onPress={async () => {
+                    const canContinue = await ensureAgreementAccepted();
+                    if (!canContinue) {
+                      return;
+                    }
                     await loginWithWechat();
                     const currentError = useAuthStore.getState().error;
                     if (currentError) toast.error(currentError);
@@ -308,6 +426,65 @@ const LoginScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+
+      <CommonModal visible={agreementModalVisible} onClose={() => setAgreementModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.agreementModalCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: isDark ? colors.border : COLORS.secondary,
+              },
+            ]}
+          >
+            <Text style={[styles.agreementModalTitle, { color: colors.text }]}>登录前请先同意协议</Text>
+            <Text style={[styles.agreementModalDesc, { color: colors.textSecondary }]}>
+              为了正常使用登录、验证码和后续社区功能，请先阅读并同意用户服务协议和隐私政策。
+            </Text>
+            <View style={styles.agreementModalLinks}>
+              <TouchableOpacity
+                style={[styles.agreementModalLinkButton, { borderColor: colors.border }]}
+                onPress={() => {
+                  openPolicyLink(USER_AGREEMENT_URL);
+                }}
+              >
+                <Text style={[styles.agreementModalLinkText, { color: colors.primary }]}>
+                  用户服务协议
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.agreementModalLinkButton, { borderColor: colors.border }]}
+                onPress={() => {
+                  openPolicyLink(PRIVACY_POLICY_URL);
+                }}
+              >
+                <Text style={[styles.agreementModalLinkText, { color: colors.primary }]}>
+                  隐私政策
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.agreementModalActions}>
+              <TouchableOpacity
+                style={[styles.modalSecondaryButton, { backgroundColor: isDark ? colors.background : '#F8F8F8' }]}
+                onPress={() => setAgreementModalVisible(false)}
+              >
+                <Text style={[styles.modalSecondaryButtonText, { color: colors.textSecondary }]}>
+                  暂不同意
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalPrimaryButton, { backgroundColor: colors.primary }]}
+                onPress={acceptAgreementFromModal}
+              >
+                <Text style={[styles.modalPrimaryButtonText, { color: isDark ? '#000' : '#FFF' }]}>
+                  同意并继续
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </CommonModal>
     </KeyboardAvoidingView>
   );
 };
@@ -440,6 +617,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginRight: SPACING.small,
   },
+  agreementRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: SPACING.large,
+    paddingHorizontal: SPACING.small,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.small,
+    marginTop: 2,
+  },
+  agreementText: {
+    flex: 1,
+    fontSize: FONT_SIZES.small,
+    lineHeight: 20,
+  },
+  agreementLink: {
+    fontWeight: '600',
+  },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -478,6 +679,67 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.large,
     fontWeight: '600',
     marginLeft: SPACING.small,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.large,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  agreementModalCard: {
+    borderRadius: 24,
+    padding: SPACING.large,
+    borderWidth: 1,
+  },
+  agreementModalTitle: {
+    fontSize: FONT_SIZES.xlarge,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: SPACING.medium,
+  },
+  agreementModalDesc: {
+    fontSize: FONT_SIZES.medium,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  agreementModalLinks: {
+    marginTop: SPACING.large,
+    gap: SPACING.small,
+  },
+  agreementModalLinkButton: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: SPACING.medium,
+    alignItems: 'center',
+  },
+  agreementModalLinkText: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: '600',
+  },
+  agreementModalActions: {
+    flexDirection: 'row',
+    marginTop: SPACING.large,
+    gap: SPACING.small,
+  },
+  modalSecondaryButton: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: SPACING.medium,
+    alignItems: 'center',
+  },
+  modalSecondaryButtonText: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: '600',
+  },
+  modalPrimaryButton: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: SPACING.medium,
+    alignItems: 'center',
+  },
+  modalPrimaryButtonText: {
+    fontSize: FONT_SIZES.medium,
+    fontWeight: '700',
   },
 });
 

@@ -1,15 +1,32 @@
 import { CloudService } from './tcb';
 import { MediaResource } from '../types';
 
+export type FeedbackType = 'bug' | 'feature' | 'other' | 'report_user';
+export type FeedbackStatus = 'pending' | 'processing' | 'resolved' | 'rejected';
+export type ReportReason =
+  | 'spam'
+  | 'abuse'
+  | 'harassment'
+  | 'pornography'
+  | 'violence'
+  | 'fraud'
+  | 'other';
+
 export interface FeedbackData {
   _id?: string;
   userId: string;
-  type: 'bug' | 'feature' | 'other';
+  type: FeedbackType;
   content: string;
   contact?: string;
-  status?: 'pending' | 'processing' | 'resolved';
+  status?: FeedbackStatus;
   createdAt?: string;
   media?: MediaResource[];
+  targetUserId?: string;
+  reportReason?: ReportReason;
+  targetSnapshot?: {
+    nickname?: string;
+    avatar?: string;
+  };
 }
 
 export interface FeedbackListResponse {
@@ -44,6 +61,24 @@ export class FeedbackService {
       console.error('FeedbackService.submitFeedback error:', error);
       throw error;
     }
+  }
+
+  async submitUserReport(data: {
+    userId: string;
+    targetUserId: string;
+    reportReason: ReportReason;
+    content: string;
+    contact?: string;
+    media?: MediaResource[];
+    targetSnapshot?: {
+      nickname?: string;
+      avatar?: string;
+    };
+  }): Promise<FeedbackData> {
+    return this.submitFeedback({
+      ...data,
+      type: 'report_user',
+    });
   }
 
   /**

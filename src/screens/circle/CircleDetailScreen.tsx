@@ -112,7 +112,6 @@ const CircleDetailScreen: React.FC = () => {
     });
   };
 
-  const isMyDiary = user?._id === diary?.userId;
   const hasLiked = user?._id ? (diary?.likedUserIds || []).includes(user._id) : false;
 
   const handleAction = async (type: 'like' | 'share') => {
@@ -161,7 +160,15 @@ const CircleDetailScreen: React.FC = () => {
         }
       >
         {/* 用户信息 */}
-        <View style={styles.authorSection}>
+        <TouchableOpacity
+          style={styles.authorSection}
+          activeOpacity={0.8}
+          onPress={() => {
+            if (diary.userId) {
+              navigation.navigate('UserProfile', { userId: diary.userId });
+            }
+          }}
+        >
           <View style={styles.avatarPlaceholder}>
             {diary.authorInfo?.avatar ? (
               <Image
@@ -196,7 +203,7 @@ const CircleDetailScreen: React.FC = () => {
               )}
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* 内容 */}
         <View style={styles.contentSection}>

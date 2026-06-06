@@ -6,6 +6,49 @@ const app = cloud.init({
   env: cloud.SYMBOL_CURRENT_ENV,
 });
 const db = app.database();
+const _ = db.command;
+
+const normalizeRelationIds = (items) =>
+  Array.isArray(items)
+    ? items
+        .map((item) => (typeof item === 'string' ? item : item && item.userId))
+        .filter((id) => typeof id === 'string' && id)
+    : [];
+
+const getUserDoc = async (userId) => {
+  if (!userId) return null;
+  const result = await db.collection('users').doc(userId).get();
+  return result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
+};
+
+const getBlockedUserIdsForViewer = async (viewerId) => {
+  if (!viewerId) return [];
+  const user = await getUserDoc(viewerId);
+  return normalizeRelationIds(user && user.blockedUsers);
+};
+
+const hasBlockRelationship = async (viewerId, targetUserId) => {
+  if (!viewerId || !targetUserId || viewerId === targetUserId) {
+    return false;
+  }
+
+  const [viewer, targetUser] = await Promise.all([
+    getUserDoc(viewerId),
+    getUserDoc(targetUserId),
+  ]);
+  const viewerBlockedIds = normalizeRelationIds(viewer && viewer.blockedUsers);
+  const targetBlockedIds = normalizeRelationIds(targetUser && targetUser.blockedUsers);
+
+  return viewerBlockedIds.includes(targetUserId) || targetBlockedIds.includes(viewerId);
+};
+
+const filterBlockedComments = (comments, blockedUserIds) => {
+  if (!Array.isArray(comments) || blockedUserIds.length === 0) {
+    return Array.isArray(comments) ? comments : [];
+  }
+
+  return comments.filter((comment) => !blockedUserIds.includes(comment.userId));
+};
 
 // 辅助函数：为日记列表填充最新的用户信息（头像、昵称）
 const populateUserInfo = async (diaries, db) => {
@@ -236,6 +279,13 @@ const getDiaryDetail = async (data) => {
 
     // 校验权限：只能查看自己的日记或公开日记，或者是活跃共享日记本中伴侣的非私密日记
     const diaryDataRaw = Array.isArray(result.data) ? result.data[0] : result.data;
+    if (userId && (await hasBlockRelationship(userId, diaryDataRaw.userId))) {
+      return {
+        success: false,
+        message: '由于拉黑关系，该内容暂不可见',
+      };
+    }
+
     let hasPermission = false;
 
     if (diaryDataRaw.userId === userId || diaryDataRaw.isPublic) {
@@ -261,7 +311,11 @@ const getDiaryDetail = async (data) => {
     }
 
     // 动态填充用户信息（因为前端期望数组，这里保持外层是数组，或者如果result.data本身是数组就直接传）
-    const diaryData = Array.isArray(result.data) ? result.data : [result.data];
+    const blockedUserIds = userId ? await getBlockedUserIdsForViewer(userId) : [];
+    const diaryData = (Array.isArray(result.data) ? result.data : [result.data]).map((diary) => ({
+      ...diary,
+      comments: filterBlockedComments(diary.comments, blockedUserIds),
+    }));
     const populatedData = await populateUserInfo(diaryData, db);
 
     return {
@@ -281,8 +335,7 @@ const getDiaryDetail = async (data) => {
 // 获取日记列表
 const getDiaryList = async (data) => {
   try {
-    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId, isFavorite, isPublic, likedByUserId, commentedByUserId } = data;
-    const _ = db.command;
+    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId, isFavorite, isPublic, likedByUserId, commentedByUserId, viewerId } = data;
 
     if (!userId && !isPublic && !likedByUserId && !commentedByUserId) {
       return {
@@ -293,6 +346,11 @@ const getDiaryList = async (data) => {
 
     // 构建查询条件
     let queryConditions = [];
+    const viewerBlockedUserIds = viewerId ? await getBlockedUserIdsForViewer(viewerId) : [];
+
+    if (viewerBlockedUserIds.length > 0) {
+      queryConditions.push({ userId: _.nin(viewerBlockedUserIds) });
+    }
 
     if (notebookId) {
       queryConditions.push({ notebookId: notebookId });
@@ -399,7 +457,11 @@ const getDiaryList = async (data) => {
       .get();
 
     // 动态填充用户信息
-    const populatedList = await populateUserInfo(result.data || [], db);
+    const filteredList = (result.data || []).map((diary) => ({
+      ...diary,
+      comments: filterBlockedComments(diary.comments, viewerBlockedUserIds),
+    }));
+    const populatedList = await populateUserInfo(filteredList, db);
 
     // 获取总数
     const countResult = await db.collection('diaries').where(finalQuery).count();
@@ -491,6 +553,9 @@ const likeDiary = async (data) => {
     }
 
     const diaryDataRaw = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
+    if (await hasBlockRelationship(userId, diaryDataRaw.userId)) {
+      return { success: false, message: '存在拉黑关系，无法继续操作' };
+    }
     
     let hasPermission = false;
     if (diaryDataRaw.userId === userId || diaryDataRaw.isPublic) {
@@ -557,6 +622,9 @@ const commentDiary = async (data) => {
     }
 
     const diaryDataRaw = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
+    if (await hasBlockRelationship(comment.userId, diaryDataRaw.userId)) {
+      return { success: false, message: '存在拉黑关系，无法发表评论' };
+    }
 
     let hasPermission = false;
     if (diaryDataRaw.userId === comment.userId || diaryDataRaw.isPublic) {
@@ -578,7 +646,6 @@ const commentDiary = async (data) => {
       return { success: false, message: '无权评论他人的私密日记' };
     }
 
-    const _ = db.command;
     await db.collection('diaries').doc(_id).update({
       comments: _.push([comment]),
       updatedAt: db.serverDate(),

@@ -18,6 +18,7 @@ import HomeScreen from '@/screens/home/HomeScreen';
 import AboutScreen from '@/screens/mine/AboutScreen';
 import AppLockSettingScreen from '@/screens/mine/AppLockSettingScreen';
 import BadgesScreen from '@/screens/mine/BadgesScreen';
+import BlockedUsersScreen from '@/screens/mine/BlockedUsersScreen';
 import CalendarScreen from '@/screens/mine/CalendarScreen';
 import EditProfileScreen from '@/screens/mine/EditProfileScreen';
 import FavoritesScreen from '@/screens/mine/FavoritesScreen';
@@ -60,6 +61,7 @@ export type RootStackParamList = {
   Web: { url: string; title?: string };
   Followers: { userId: string };
   NotificationCenter: undefined;
+  BlockedUsers: undefined;
 };
 
 export type AuthStackParamList = {
@@ -85,7 +87,7 @@ const AuthNavigator = () => (
 );
 
 const MainNavigator = () => {
-  const { themeName, colors, themeColor } = useAppTheme();
+  const { themeName, colors } = useAppTheme();
   const appConfig = useAppStore((state) => state.appConfig);
 
   // 引入全局主题配色
@@ -311,6 +313,13 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="NotificationCenter"
             component={NotificationCenterScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="BlockedUsers"
+            component={BlockedUsersScreen}
             options={{
               headerShown: false,
             }}

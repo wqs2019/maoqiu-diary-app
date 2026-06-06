@@ -30,7 +30,7 @@ import { scheduleDailyReminder, cancelDailyReminder } from '../../utils/notifica
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { themeName, isDark } = useAppTheme();
+  const { isDark } = useAppTheme();
 
   // 补全 DARK_HEALING_COLORS 中缺失的颜色，防止报错
   const currentHealingColors = isDark
@@ -283,9 +283,19 @@ const SettingsScreen: React.FC = () => {
             '账号与安全',
             currentHealingColors.blue[500],
             <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
-            true,
+            false,
             () => {
               navigation.navigate('AccountSecurity' as never);
+            }
+          )}
+          {renderSettingItem(
+            'slash',
+            '黑名单用户',
+            currentHealingColors.pink[500],
+            <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
+            true,
+            () => {
+              navigation.navigate('BlockedUsers' as never);
             }
           )}
         </View>

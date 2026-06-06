@@ -14,6 +14,33 @@ const app = cloud.init({
   env: cloud.SYMBOL_CURRENT_ENV, // 使用当前环境（从 cloudbaserc.json 读取）
 });
 const db = app.database();
+const _ = db.command;
+
+const normalizeRelationIds = (items) =>
+  Array.isArray(items)
+    ? items
+        .map((item) => (typeof item === 'string' ? item : item && item.userId))
+        .filter((id) => typeof id === 'string' && id)
+    : [];
+
+const getBlockedUserIdsFromUser = (userData) => normalizeRelationIds(userData && userData.blockedUsers);
+const buildLimitedProfileData = (userData, extra = {}) => ({
+  _id: userData._id,
+  nickname: userData.nickname,
+  avatar: userData.avatar,
+  profileBackground: userData.profileBackground,
+  publicDiariesCount: 0,
+  followersCount: 0,
+  totalLikes: 0,
+  isFollowing: false,
+  ...extra,
+});
+
+const getUserDoc = async (userId) => {
+  if (!userId) return null;
+  const result = await db.collection('users').doc(userId).get();
+  return result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
+};
 
 // Add new user
 const addUser = async (data) => {
@@ -26,6 +53,7 @@ const addUser = async (data) => {
       nickname,
       avatar,
       isVip: isVip || false,
+      blockedUsers: [],
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),
     });
@@ -390,6 +418,38 @@ const getProfile = async (data) => {
       return { success: false, message: '该用户已注销' };
     }
 
+    let currentUserData = null;
+    let currentUserBlockedIds = [];
+    let blockedByTargetUser = false;
+
+    if (currentUserId) {
+      currentUserData = await getUserDoc(currentUserId);
+      currentUserBlockedIds = getBlockedUserIdsFromUser(currentUserData);
+      blockedByTargetUser = getBlockedUserIdsFromUser(userData).includes(currentUserId);
+    }
+
+    const isBlockedByCurrentUser = currentUserBlockedIds.includes(targetUserId);
+
+    if (isBlockedByCurrentUser) {
+      return {
+        success: true,
+        data: buildLimitedProfileData(userData, {
+          isBlockedByCurrentUser: true,
+          blockedByTargetUser,
+        }),
+      };
+    }
+
+    if (blockedByTargetUser) {
+      return {
+        success: true,
+        data: buildLimitedProfileData(userData, {
+          isBlockedByCurrentUser: false,
+          blockedByTargetUser: true,
+        }),
+      };
+    }
+
     // get public diaries count and total likes
     const countRes = await db.collection('diaries').where({ 
       userId: targetUserId, 
@@ -449,6 +509,8 @@ const getProfile = async (data) => {
         followersCount: followersCount,
         totalLikes: totalLikes,
         isFollowing,
+        isBlockedByCurrentUser: false,
+        blockedByTargetUser,
       }
     };
   } catch (error) {
@@ -487,6 +549,12 @@ const follow = async (data) => {
       return { success: false, message: '您的账号已注销' };
     }
 
+    const followerBlockedIds = getBlockedUserIdsFromUser(followerUser);
+    const targetBlockedIds = getBlockedUserIdsFromUser(followingUser);
+    if (followerBlockedIds.includes(followingId) || targetBlockedIds.includes(followerId)) {
+      return { success: false, message: '存在拉黑关系，暂时无法关注' };
+    }
+
     let followers = Array.isArray(followingUser.followers) ? followingUser.followers : [];
     let following = Array.isArray(followerUser.following) ? followerUser.following : [];
 
@@ -513,6 +581,179 @@ const follow = async (data) => {
     return { success: true };
   } catch (error) {
     console.error('Follow error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+const blockUser = async (data) => {
+  try {
+    const { userId, targetUserId } = data;
+    if (!userId || !targetUserId) {
+      return { success: false, message: 'userId and targetUserId are required' };
+    }
+    if (userId === targetUserId) {
+      return { success: false, message: '不能拉黑自己' };
+    }
+
+    const user = await getUserDoc(userId);
+    const targetUser = await getUserDoc(targetUserId);
+    if (!user || !targetUser || targetUser.isDelete) {
+      return { success: false, message: '目标用户不存在' };
+    }
+
+    const blockedUsers = Array.isArray(user.blockedUsers) ? user.blockedUsers : [];
+    const exists = blockedUsers.some((item) => (typeof item === 'string' ? item : item.userId) === targetUserId);
+    if (!exists) {
+      blockedUsers.push({ userId: targetUserId, blockedAt: Date.now() });
+    }
+
+    const following = Array.isArray(user.following) ? user.following : [];
+    const targetFollowers = Array.isArray(targetUser.followers) ? targetUser.followers : [];
+
+    await db.collection('users').doc(userId).update({
+      blockedUsers,
+      following: following.filter((item) => (typeof item === 'string' ? item : item.userId) !== targetUserId),
+      updatedAt: db.serverDate(),
+    });
+
+    await db.collection('users').doc(targetUserId).update({
+      followers: targetFollowers.filter((item) => (typeof item === 'string' ? item : item.userId) !== userId),
+      updatedAt: db.serverDate(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Block user error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+const unblockUser = async (data) => {
+  try {
+    const { userId, targetUserId } = data;
+    if (!userId || !targetUserId) {
+      return { success: false, message: 'userId and targetUserId are required' };
+    }
+
+    const user = await getUserDoc(userId);
+    if (!user) {
+      return { success: false, message: '用户不存在' };
+    }
+
+    const blockedUsers = Array.isArray(user.blockedUsers) ? user.blockedUsers : [];
+    await db.collection('users').doc(userId).update({
+      blockedUsers: blockedUsers.filter((item) => (typeof item === 'string' ? item : item.userId) !== targetUserId),
+      updatedAt: db.serverDate(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unblock user error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+const getBlockedUserIds = async (data) => {
+  try {
+    const { userId } = data;
+    if (!userId) {
+      return { success: false, message: 'userId is required' };
+    }
+
+    const user = await getUserDoc(userId);
+    if (!user) {
+      return { success: true, data: { blockedUserIds: [] } };
+    }
+
+    return {
+      success: true,
+      data: {
+        blockedUserIds: getBlockedUserIdsFromUser(user),
+      },
+    };
+  } catch (error) {
+    console.error('Get blocked users error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+const getBlockedUsersList = async (data) => {
+  try {
+    const { userId, page = 1, pageSize = 20 } = data;
+    if (!userId) {
+      return { success: false, message: 'userId is required' };
+    }
+
+    const user = await getUserDoc(userId);
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+
+    let blockedUsers = Array.isArray(user.blockedUsers) ? [...user.blockedUsers] : [];
+    blockedUsers.reverse();
+
+    const total = blockedUsers.length;
+    const skip = (page - 1) * pageSize;
+    const pagedBlockedUsers = blockedUsers.slice(skip, skip + pageSize);
+
+    if (pagedBlockedUsers.length === 0) {
+      return { success: true, data: { list: [], total } };
+    }
+
+    const blockedIds = pagedBlockedUsers
+      .map((item) => (typeof item === 'string' ? item : item.userId))
+      .filter(Boolean);
+
+    const MAX_LIMIT = 100;
+    const tasks = [];
+    for (let i = 0; i < blockedIds.length; i += MAX_LIMIT) {
+      const batchIds = blockedIds.slice(i, i + MAX_LIMIT);
+      tasks.push(
+        db.collection('users').where({
+          _id: db.command.in(batchIds)
+        }).field({
+          _id: true,
+          nickname: true,
+          avatar: true,
+          isDelete: true
+        }).get()
+      );
+    }
+
+    const results = await Promise.all(tasks);
+    const usersMap = {};
+    for (const res of results) {
+      if (res.data) {
+        const users = Array.isArray(res.data) ? res.data : [res.data];
+        users.forEach((u) => {
+          usersMap[u._id] = u;
+        });
+      }
+    }
+
+    const list = pagedBlockedUsers
+      .map((item) => {
+        const id = typeof item === 'string' ? item : item.userId;
+        const userDetail = usersMap[id] || {};
+        return {
+          _id: id,
+          nickname: userDetail.nickname,
+          avatar: userDetail.avatar,
+          isDelete: userDetail.isDelete,
+          blockedAt: typeof item === 'object' && item.blockedAt ? item.blockedAt : null,
+        };
+      })
+      .filter((item) => !item.isDelete);
+
+    return {
+      success: true,
+      data: {
+        list,
+        total,
+      },
+    };
+  } catch (error) {
+    console.error('Get blocked users list error:', error);
     return { success: false, message: error.message };
   }
 };
@@ -628,6 +869,14 @@ exports.main = async (event, context) => {
       return await follow(data);
     case 'getFollowersList':
       return await getFollowersList(data);
+    case 'blockUser':
+      return await blockUser(data);
+    case 'unblockUser':
+      return await unblockUser(data);
+    case 'getBlockedUserIds':
+      return await getBlockedUserIds(data);
+    case 'getBlockedUsersList':
+      return await getBlockedUsersList(data);
     default:
       return {
         success: false,

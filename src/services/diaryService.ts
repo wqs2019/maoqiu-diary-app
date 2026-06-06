@@ -19,6 +19,7 @@ export interface DiaryListParams {
   isPublic?: boolean;
   likedByUserId?: string;
   commentedByUserId?: string;
+  viewerId?: string;
 }
 
 /**
@@ -56,6 +57,7 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
         isPublic: params.isPublic,
         likedByUserId: params.likedByUserId,
         commentedByUserId: params.commentedByUserId,
+        viewerId: params.viewerId,
       },
     }
   );

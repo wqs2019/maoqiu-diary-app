@@ -30,7 +30,7 @@ const CircleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const user = useAuthStore((state) => state.user);
-  const { isDark, colors } = useAppTheme();
+  const { isDark } = useAppTheme();
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -39,6 +39,7 @@ const CircleScreen: React.FC = () => {
     page: 1,
     pageSize: 100, // Fetch enough for now
     isPublic: true, // Fetch public diaries
+    viewerId: user?._id,
   });
 
   const onRefresh = useCallback(async () => {
