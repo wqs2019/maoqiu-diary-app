@@ -28,6 +28,10 @@ type SubscriptionScreenNavigationProp = NativeStackNavigationProp<
   'Subscription'
 >;
 
+const APPLE_EULA_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+const USER_AGREEMENT_URL = 'https://wqs2019.github.io/maoqiu-diary-app/terms.html';
+const PRIVACY_POLICY_URL = 'https://wqs2019.github.io/maoqiu-diary-app/privacy.html';
+
 const SubscriptionScreen: React.FC = () => {
   const navigation = useNavigation<SubscriptionScreenNavigationProp>();
   const { isDark } = useAppTheme();
@@ -601,7 +605,7 @@ const SubscriptionScreen: React.FC = () => {
               <TouchableOpacity
                 onPress={() => {
                   navigation.navigate('Web' as any, {
-                    url: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+                    url: APPLE_EULA_URL,
                     title: '用户协议(EULA)',
                   });
                 }}
@@ -621,7 +625,27 @@ const SubscriptionScreen: React.FC = () => {
               <TouchableOpacity
                 onPress={() => {
                   navigation.navigate('Web' as any, {
-                    url: 'https://www.xieyimao.com/doc/detailzh/token/1772108718_2251',
+                    url: USER_AGREEMENT_URL,
+                    title: '用户服务协议',
+                  });
+                }}
+              >
+                <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>
+                  用户服务协议
+                </Text>
+              </TouchableOpacity>
+              <Text
+                style={[
+                  styles.linkDot,
+                  { color: isDark ? '#6B7280' : currentHealingColors.gray[400] },
+                ]}
+              >
+                ・
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate('Web' as any, {
+                    url: PRIVACY_POLICY_URL,
                     title: '隐私政策',
                   });
                 }}

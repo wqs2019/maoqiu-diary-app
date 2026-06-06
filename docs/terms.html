@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>毛球日记 | 用户服务协议</title>
+    <meta
+      name="description"
+      content="毛球日记用户服务协议，包含账号使用规则、订阅说明、社区内容治理与零容忍条款、举报与拉黑机制等内容。"
+    />
+    <style>
+      :root {
+        --bg: #fff9fb;
+        --surface: rgba(255, 255, 255, 0.9);
+        --surface-strong: #ffffff;
+        --line: rgba(236, 72, 153, 0.14);
+        --text: #271f27;
+        --text-soft: #6f6571;
+        --pink: #ec4899;
+        --pink-deep: #be185d;
+        --purple: #8b5cf6;
+        --shadow: 0 24px 60px rgba(195, 56, 120, 0.12);
+        --radius-xl: 32px;
+        --radius-lg: 24px;
+        --radius-md: 18px;
+        --max-width: 1040px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC',
+          'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(236, 72, 153, 0.16), transparent 28%),
+          radial-gradient(circle at top right, rgba(139, 92, 246, 0.14), transparent 24%),
+          linear-gradient(180deg, #fff9fb 0%, #fffefe 100%);
+        color: var(--text);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .shell {
+        width: min(calc(100% - 32px), var(--max-width));
+        margin: 0 auto;
+      }
+
+      main {
+        padding: 24px 0 56px;
+      }
+
+      .hero,
+      .card,
+      .contact-card {
+        background: var(--surface);
+        border: 1px solid rgba(255, 255, 255, 0.82);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 40px;
+        border-radius: var(--radius-xl);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid var(--line);
+        color: var(--pink-deep);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+      }
+
+      h1 {
+        margin: 18px 0 14px;
+        font-size: clamp(34px, 6vw, 58px);
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+      }
+
+      .lead {
+        margin: 0;
+        max-width: 780px;
+        color: var(--text-soft);
+        font-size: 17px;
+        line-height: 1.85;
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      .pill {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.82);
+        color: var(--text-soft);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .content {
+        display: grid;
+        gap: 18px;
+        margin-top: 24px;
+      }
+
+      .card {
+        padding: 28px;
+        border-radius: var(--radius-lg);
+      }
+
+      .card h2 {
+        margin: 0 0 10px;
+        font-size: 26px;
+        letter-spacing: -0.03em;
+      }
+
+      .card h3 {
+        margin: 20px 0 10px;
+        font-size: 18px;
+      }
+
+      .card p,
+      .card li {
+        color: var(--text-soft);
+        font-size: 15px;
+        line-height: 1.92;
+      }
+
+      .card ul,
+      .card ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .card li + li {
+        margin-top: 8px;
+      }
+
+      .highlight {
+        padding: 18px 20px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(135deg, rgba(255, 238, 245, 0.92), rgba(248, 244, 255, 0.96));
+        border: 1px solid rgba(236, 72, 153, 0.14);
+      }
+
+      .highlight strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 16px;
+      }
+
+      .contact-card {
+        display: grid;
+        gap: 14px;
+        padding: 26px 28px;
+        margin-top: 24px;
+        border-radius: 28px;
+      }
+
+      .contact-card h2 {
+        margin: 0;
+        font-size: 24px;
+      }
+
+      .contact-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .contact-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 14px;
+        border-radius: 999px;
+        background: var(--surface-strong);
+        border: 1px solid rgba(255, 255, 255, 0.82);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .contact-chip.primary {
+        color: #fff;
+        background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+      }
+
+      footer {
+        padding-bottom: 40px;
+      }
+
+      .footer-card {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 22px 24px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.82);
+        box-shadow: 0 18px 42px rgba(195, 56, 120, 0.1);
+      }
+
+      .footer-card strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 17px;
+      }
+
+      .footer-card div {
+        color: var(--text-soft);
+        line-height: 1.7;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .footer-links a {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.84);
+        border: 1px solid rgba(255, 255, 255, 0.82);
+        color: var(--text-soft);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      @media (max-width: 820px) {
+        .hero,
+        .card,
+        .contact-card {
+          padding: 22px;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .shell {
+          width: min(calc(100% - 20px), var(--max-width));
+        }
+
+        .nav a {
+          white-space: nowrap;
+        }
+
+        .hero {
+          padding: 20px;
+        }
+
+        .contact-row,
+        .footer-links {
+          flex-direction: column;
+          align-items: stretch;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div class="eyebrow">User Service Agreement</div>
+        <h1>毛球日记 用户服务协议</h1>
+        <p class="lead">
+          欢迎使用毛球日记。为了保障你的账号权益、内容安全与社区体验，请在注册、登录或继续使用本产品前仔细阅读本协议。你完成勾选、注册、登录或继续使用的行为，即视为已充分理解并同意本协议全部内容。
+        </p>
+        <div class="hero-meta">
+          <span class="pill">适用于毛球日记 App 及其相关服务</span>
+          <span class="pill">最近更新：2026-06-06</span>
+          <span class="pill">运营方：AlanWu / 毛球工作室</span>
+        </div>
+      </section>
+
+      <section class="content">
+        <article class="card">
+          <h2>一、协议总则</h2>
+          <ol>
+            <li>本协议由毛球日记的运营方 AlanWu 与毛球日记注册用户共同缔结。</li>
+            <li>毛球日记提供包括但不限于账号注册、日记记录、圈子浏览、内容互动、AI 问答、共享日记本、会员订阅等服务。</li>
+            <li>你在注册、登录、购买订阅或使用任一功能前，应认真阅读本协议及相关页面提示。</li>
+            <li>如你不同意本协议任一内容，请立即停止使用毛球日记及相关服务。</li>
+          </ol>
+        </article>
+
+        <article class="card">
+          <h2>二、账号注册与使用</h2>
+          <ol>
+            <li>你应当提供真实、准确、合法且有效的注册信息，并及时更新。</li>
+            <li>你应妥善保管账号、验证码及设备登录状态，对账号下的全部行为承担责任。</li>
+            <li>未经运营方书面许可，你不得出租、出借、转让、赠与、售卖或共享账号。</li>
+            <li>如发现账号被他人冒用、盗用或存在异常登录风险，请及时通过支持邮箱与我们联系。</li>
+          </ol>
+        </article>
+
+        <article class="card">
+          <h2>三、服务内容与订阅说明</h2>
+          <ol>
+            <li>毛球日记可能同时提供免费功能和付费功能，付费项目以 App 内展示为准。</li>
+            <li>如你购买自动续费订阅，付款将在确认购买后记入你的 Apple ID / iTunes 账户。</li>
+            <li>订阅会在当前订阅周期结束前 24 小时内自动续费，除非你提前在 Apple 账户订阅管理中关闭自动续订。</li>
+            <li>会员权益、价格、优惠活动和展示方式可能根据产品更新进行调整，以实际页面说明为准。</li>
+          </ol>
+        </article>
+
+        <article class="card">
+          <h2>四、用户内容与授权</h2>
+          <ol>
+            <li>你在毛球日记中发布、上传、记录或分享的内容，包括文字、图片、视频、评论、头像、昵称等，统称为“用户内容”。</li>
+            <li>你应保证对用户内容享有合法权利，或已取得必要授权，不得侵犯他人的著作权、隐私权、肖像权、名誉权或其他合法权益。</li>
+            <li>你理解并同意，为实现产品功能、内容展示、审核处理、存储备份、投诉处置与安全合规，我们可在必要范围内处理你的用户内容。</li>
+          </ol>
+        </article>
+
+        <article class="card">
+          <h2>五、社区治理与零容忍规则</h2>
+          <div class="highlight">
+            <strong>毛球日记对令人反感、违法违规或伤害他人的内容及行为实行零容忍政策。</strong>
+            <p>
+              我们不允许任何用户利用毛球日记发布、传播、诱导或实施不良内容、骚扰行为或其他滥用行为。运营方有权根据平台规则立即采取内容删除、限制展示、功能限制、账号封禁、终止服务及向监管部门配合提供必要信息等措施。
+            </p>
+          </div>
+          <h3>你不得发布、传播或实施以下内容或行为：</h3>
+          <ol>
+            <li>色情低俗、裸露暗示、招嫖引流或其他令人反感的内容。</li>
+            <li>辱骂攻击、仇恨言论、骚扰他人、威胁恐吓、恶意挑衅或霸凌行为。</li>
+            <li>诈骗欺诈、虚假交易、垃圾营销、诱导转账、导流引流等行为。</li>
+            <li>暴力血腥、自残鼓励、违法犯罪、恐怖主义、极端主义或其他违法违规信息。</li>
+            <li>侵犯未成年人权益、泄露他人隐私、冒充他人身份或恶意散布谣言。</li>
+            <li>任何破坏社区秩序、影响平台安全或违反法律法规、公序良俗的行为。</li>
+          </ol>
+          <h3>平台治理措施</h3>
+          <ol>
+            <li>用户可通过举报功能提交违规用户线索，也可通过拉黑功能立即屏蔽相关公开内容。</li>
+            <li>拉黑后，对方公开内容会从你的前台视图中即时隐藏，相关治理记录会被留存用于后续核查。</li>
+            <li>我们会在收到有效举报后尽快处理，通常在 24 小时内完成初步审核，并根据情况删除内容、限制账号或永久封禁。</li>
+            <li>如发现严重违法违规行为，我们有权配合执法机关、监管机构进行调查处理。</li>
+          </ol>
+        </article>
+
+        <article class="card">
+          <h2>六、举报、拉黑与审核处理</h2>
+          <ol>
+            <li>你可针对其他用户发起举报，并提交举报原因与补充说明；恶意举报、虚假举报同样可能被限制使用相关功能。</li>
+            <li>你可对其他用户进行拉黑或取消拉黑。拉黑后，相关公开内容、主页内容及部分互动入口会即时过滤。</li>
+            <li>为维护平台秩序，我们会保留举报记录、处理状态、处理时间及必要的目标用户快照信息。</li>
+            <li>如你的内容被删除或账号被限制，你可通过支持邮箱进行申诉，我们会在合理期限内核查处理。</li>
+          </ol>
+        </article>
+
+        <article class="card">
+          <h2>七、隐私保护</h2>
+          <ol>
+            <li>我们重视你的个人信息与隐私安全，具体规则请见《隐私政策》。</li>
+            <li>在处理举报、安全审计、内容审核、支付验证及法律合规场景时，我们可能基于合法、正当、必要原则使用相关信息。</li>
+          </ol>
+        </article>
+
+        <article class="card">
+          <h2>八、服务变更、中断与终止</h2>
+          <ol>
+            <li>基于业务调整、法律合规、技术升级或平台安全，我们有权对功能、页面、规则或计费方式进行更新。</li>
+            <li>如遇系统维护、网络故障、不可抗力、第三方服务异常等情形，服务可能暂时中断或不可用。</li>
+            <li>如你违反本协议或相关法律法规，我们有权限制功能、暂停或终止向你提供服务。</li>
+          </ol>
+        </article>
+
+        <article class="card">
+          <h2>九、免责声明</h2>
+          <ol>
+            <li>在法律允许范围内，毛球日记将尽力保障服务稳定，但不对服务完全无中断、无故障或绝对安全作出保证。</li>
+            <li>因你个人原因、设备原因、网络原因、不可抗力或第三方服务原因造成的损失，我们将在法律规定范围内承担责任。</li>
+            <li>你应对自己发布和使用的内容承担相应责任；如因你的行为导致第三方索赔，你应自行承担相关责任。</li>
+          </ol>
+        </article>
+
+        <article class="card">
+          <h2>十、法律适用与争议解决</h2>
+          <ol>
+            <li>本协议的订立、生效、解释、履行与争议解决均适用中华人民共和国法律。</li>
+            <li>因本协议或使用毛球日记产生的争议，双方应优先友好协商；协商不成的，可向运营方所在地有管辖权的人民法院提起诉讼。</li>
+          </ol>
+        </article>
+      </section>
+
+      <section class="contact-card">
+        <h2>联系我们</h2>
+        <p>
+          如果你对本协议、内容治理规则、账号申诉或订阅相关问题有任何疑问，可通过以下方式联系我们。
+        </p>
+        <div class="contact-row">
+          <a class="contact-chip primary" href="mailto:alanwu574@126.com">支持邮箱：alanwu574@126.com</a>
+          <a class="contact-chip" href="./support.html">查看支持中心</a>
+          <a class="contact-chip" href="./privacy.html">查看隐私政策</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      <div class="footer-card">
+        <div>
+          <strong>毛球日记</strong>
+          <div>一个温暖的树洞，也是你专属的时光手账。</div>
+        </div>
+        <div class="footer-links">
+          <a href="./index.html">官网首页</a>
+          <a href="./privacy.html">隐私政策</a>
+          <a href="./support.html">支持中心</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

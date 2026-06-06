@@ -34,8 +34,8 @@ import { useToast } from '@/components/common/Toast';
 
 const { width } = Dimensions.get('window');
 const AGREEMENT_ACCEPTED_KEY = 'login_agreement_accepted';
-const USER_AGREEMENT_URL = 'https://www.xieyimao.com/doc/detailzh/token/1772109293_4012';
-const PRIVACY_POLICY_URL = 'https://www.xieyimao.com/doc/detailzh/token/1772108718_2251';
+const USER_AGREEMENT_URL = 'https://wqs2019.github.io/maoqiu-diary-app/terms.html';
+const PRIVACY_POLICY_URL = 'https://wqs2019.github.io/maoqiu-diary-app/privacy.html';
 
 // 动画背景组件
 const FloatingBlob = ({ 
@@ -440,7 +440,7 @@ const LoginScreen: React.FC = () => {
           >
             <Text style={[styles.agreementModalTitle, { color: colors.text }]}>登录前请先同意协议</Text>
             <Text style={[styles.agreementModalDesc, { color: colors.textSecondary }]}>
-              为了正常使用登录、验证码和后续社区功能，请先阅读并同意用户服务协议和隐私政策。
+              为了正常使用登录、验证码和后续社区功能，请先阅读并同意用户服务协议和隐私政策。毛球日记对骚扰、诈骗、色情低俗等不良内容和违规用户实行零容忍。
             </Text>
             <View style={styles.agreementModalLinks}>
               <TouchableOpacity

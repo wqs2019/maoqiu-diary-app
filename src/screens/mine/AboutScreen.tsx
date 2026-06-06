@@ -22,6 +22,8 @@ const { width } = Dimensions.get('window');
 const FEATURE_CARD_WIDTH = width - 64;
 const FEATURE_CARD_GAP = 10;
 const FEATURE_SNAP_INTERVAL = FEATURE_CARD_WIDTH + FEATURE_CARD_GAP;
+const USER_AGREEMENT_URL = 'https://wqs2019.github.io/maoqiu-diary-app/terms.html';
+const PRIVACY_POLICY_URL = 'https://wqs2019.github.io/maoqiu-diary-app/privacy.html';
 
 const FEATURE_CARDS = [
   {
@@ -347,7 +349,7 @@ const AboutScreen: React.FC = () => {
             ]}
             onPress={() =>
               (navigation as any).navigate('Web', {
-                url: 'https://www.xieyimao.com/doc/detailzh/token/1772109293_4012',
+                url: USER_AGREEMENT_URL,
                 title: '用户服务协议',
               })
             }
@@ -367,7 +369,7 @@ const AboutScreen: React.FC = () => {
             style={styles.menuItem}
             onPress={() =>
               (navigation as any).navigate('Web', {
-                url: 'https://www.xieyimao.com/doc/detailzh/token/1772108718_2251',
+                url: PRIVACY_POLICY_URL,
                 title: '隐私保护政策',
               })
             }
