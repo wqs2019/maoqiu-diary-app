@@ -120,6 +120,8 @@ export interface MediaResource {
   livePhotoVideoUri?: string; // 实况视频的 URL（Live Photo 用）
 }
 
+export type DiaryModerationStatus = 'normal' | 'violation' | 'pending_recheck';
+
 // 日记接口
 export interface Diary {
   _id: string;
@@ -155,6 +157,11 @@ export interface Diary {
     createTime: string;
     image?: string;
   }[];
+  moderationStatus?: DiaryModerationStatus;
+  violationReason?: string;
+  violationFeedbackId?: string;
+  violationMarkedAt?: string;
+  reReviewRequestedAt?: string;
 }
 
 // 日记列表响应

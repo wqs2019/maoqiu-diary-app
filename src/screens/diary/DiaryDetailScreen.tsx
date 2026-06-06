@@ -140,6 +140,12 @@ const DiaryDetailScreen: React.FC = () => {
 
   const ipLocation = diary.ipLocation;
   const formattedIpLocation = FormatUtil.formatIpLocation(ipLocation);
+  const moderationBadgeText =
+    diary.moderationStatus === 'pending_recheck'
+      ? '整改复审中'
+      : diary.moderationStatus === 'violation'
+        ? '笔记违规'
+        : '';
 
   return (
     <View style={styles.container}>
@@ -176,6 +182,27 @@ const DiaryDetailScreen: React.FC = () => {
           </View>
 
           {/* Title */}
+          {moderationBadgeText ? (
+            <View
+              style={[
+                styles.moderationBadge,
+                diary.moderationStatus === 'pending_recheck'
+                  ? styles.recheckBadge
+                  : styles.violationBadge,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.moderationBadgeText,
+                  diary.moderationStatus === 'pending_recheck'
+                    ? styles.recheckBadgeText
+                    : styles.violationBadgeText,
+                ]}
+              >
+                {moderationBadgeText}
+              </Text>
+            </View>
+          ) : null}
           <Text style={styles.title} selectable>
             {diary.title || '无标题'}
           </Text>
@@ -332,6 +359,29 @@ const styles = StyleSheet.create({
   },
   favoriteBtn: {
     padding: 4,
+  },
+  moderationBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginBottom: 12,
+  },
+  moderationBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  violationBadge: {
+    backgroundColor: '#FEE2E2',
+  },
+  violationBadgeText: {
+    color: '#B91C1C',
+  },
+  recheckBadge: {
+    backgroundColor: '#FEF3C7',
+  },
+  recheckBadgeText: {
+    color: '#B45309',
   },
   title: {
     fontSize: 28,

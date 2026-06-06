@@ -2,11 +2,67 @@
 // Supports create, update, get, delete, list operations
 
 const cloud = require('@cloudbase/node-sdk');
+const https = require('https');
 const app = cloud.init({
   env: cloud.SYMBOL_CURRENT_ENV,
 });
 const db = app.database();
 const _ = db.command;
+const REVIEWABLE_FEEDBACK_TYPE = 'report_user';
+const HIDDEN_MODERATION_STATUSES = ['violation', 'pending_recheck'];
+
+const usersCollection = db.collection('users');
+const adminCollection = db.collection('admin_list');
+const diariesCollection = db.collection('diaries');
+const feedbacksCollection = db.collection('feedbacks');
+const notificationsCollection = db.collection('notifications');
+
+const sendPushNotification = (expoPushToken, title, body, data = {}) =>
+  new Promise((resolve, reject) => {
+    if (!expoPushToken) {
+      resolve();
+      return;
+    }
+
+    const message = {
+      to: expoPushToken,
+      sound: 'default',
+      title,
+      body,
+      data,
+    };
+
+    const req = https.request(
+      {
+        hostname: 'exp.host',
+        path: '/--/api/v2/push/send',
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-encoding': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      },
+      (res) => {
+        let responseData = '';
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+        res.on('end', () => resolve(responseData));
+      }
+    );
+
+    req.on('error', (error) => {
+      console.error('Push notification error:', error);
+      reject(error);
+    });
+
+    req.write(JSON.stringify(message));
+    req.end();
+  });
+
+const getDocData = (result) =>
+  result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
 
 const normalizeRelationIds = (items) =>
   Array.isArray(items)
@@ -17,8 +73,199 @@ const normalizeRelationIds = (items) =>
 
 const getUserDoc = async (userId) => {
   if (!userId) return null;
-  const result = await db.collection('users').doc(userId).get();
-  return result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
+  const result = await usersCollection.doc(userId).get();
+  return getDocData(result);
+};
+
+const buildUserSnapshot = (user) => ({
+  _id: user && user._id ? user._id : '',
+  nickname: user && user.nickname ? user.nickname : '',
+  avatar: user && user.avatar ? user.avatar : '',
+  phone: user && user.phone ? user.phone : '',
+});
+
+const buildDiarySnapshot = (diary) => ({
+  _id: diary && diary._id ? diary._id : '',
+  title: diary && diary.title ? diary.title : '',
+  content: diary && diary.content ? String(diary.content).slice(0, 120) : '',
+  mediaCount: diary && Array.isArray(diary.media) ? diary.media.length : 0,
+});
+
+const isDiaryModeratedHidden = (diary) =>
+  !!(diary && HIDDEN_MODERATION_STATUSES.includes(diary.moderationStatus));
+
+const isAdminUser = async (userId) => {
+  const user = await getUserDoc(userId);
+  if (!user || !user.phone) {
+    return false;
+  }
+
+  const adminResult = await adminCollection.where({ phone: user.phone }).limit(1).get();
+  return !!(adminResult.data && adminResult.data.length > 0);
+};
+
+const canBypassDiaryModeration = async (viewerId, diaryOwnerId) => {
+  if (!viewerId) {
+    return false;
+  }
+
+  if (viewerId === diaryOwnerId) {
+    return true;
+  }
+
+  return isAdminUser(viewerId);
+};
+
+const getAdminUsers = async () => {
+  const adminResult = await adminCollection.get();
+  const adminPhones = [...new Set((adminResult.data || []).map((item) => item.phone).filter(Boolean))];
+
+  if (adminPhones.length === 0) {
+    return [];
+  }
+
+  const usersResult = await usersCollection
+    .where({
+      phone: _.in(adminPhones),
+    })
+    .field({
+      _id: true,
+      phone: true,
+      nickname: true,
+      pushToken: true,
+    })
+    .get();
+
+  return usersResult.data || [];
+};
+
+const sendAdminDiaryRecheckNotifications = async ({
+  feedbackId,
+  reporterUser,
+  targetUserId,
+  targetDiaryId,
+  targetSnapshot,
+  targetDiarySnapshot,
+}) => {
+  const adminUsers = await getAdminUsers();
+  if (adminUsers.length === 0) {
+    return { success: true, count: 0 };
+  }
+
+  const targetName =
+    (targetSnapshot && (targetSnapshot.nickname || targetSnapshot.phone)) || targetUserId || '某位用户';
+  const diaryTitle =
+    (targetDiarySnapshot && targetDiarySnapshot.title) || '该笔记';
+  const title = '收到新的笔记复审申请';
+  const content = `「${targetName}」修改了违规笔记「${diaryTitle}」，请尽快前往内容审核复审。`;
+
+  const notifications = adminUsers
+    .filter((adminUser) => adminUser._id && adminUser._id !== (reporterUser && reporterUser._id))
+    .map((adminUser) => ({
+      receiverId: adminUser._id,
+      senderId: reporterUser && reporterUser._id ? reporterUser._id : '',
+      type: 'system',
+      title,
+      content,
+      extraData: {
+        feedbackId,
+        targetUserId: targetUserId || '',
+        targetDiaryId: targetDiaryId || '',
+        reportReason: 'other',
+        source: 'diary_recheck',
+        screen: 'AdminModeration',
+      },
+      isRead: false,
+      createdAt: db.serverDate(),
+    }));
+
+  if (notifications.length === 0) {
+    return { success: true, count: 0 };
+  }
+
+  await Promise.all(notifications.map((notification) => notificationsCollection.add(notification)));
+
+  const pushTargets = adminUsers.filter(
+    (adminUser) => adminUser._id && adminUser._id !== (reporterUser && reporterUser._id) && adminUser.pushToken
+  );
+
+  if (pushTargets.length > 0) {
+    await Promise.allSettled(
+      pushTargets.map((adminUser) =>
+        sendPushNotification(adminUser.pushToken, title, content, {
+          type: 'admin_recheck',
+          feedbackId,
+          targetUserId: targetUserId || '',
+          targetDiaryId: targetDiaryId || '',
+          reportReason: 'other',
+          screen: 'AdminModeration',
+        })
+      )
+    );
+  }
+
+  return { success: true, count: notifications.length, pushCount: pushTargets.length };
+};
+
+const hasModerationRelevantChanges = (updateData) =>
+  ['title', 'content', 'media', 'isPublic', 'location', 'tags', 'scenario'].some(
+    (key) => Object.prototype.hasOwnProperty.call(updateData || {}, key)
+  );
+
+const createDiaryRecheckTask = async ({ diaryId, diaryOwnerId, diaryAfterUpdate }) => {
+  const existing = await feedbacksCollection
+    .where({
+      type: REVIEWABLE_FEEDBACK_TYPE,
+      targetDiaryId: diaryId,
+      source: 'diary_recheck',
+      status: _.in(['pending', 'processing']),
+    })
+    .limit(1)
+    .get();
+
+  const existingFeedback = getDocData(existing);
+  if (existingFeedback) {
+    return { success: true, feedbackId: existingFeedback._id || existingFeedback.id, reused: true };
+  }
+
+  const owner = await getUserDoc(diaryOwnerId);
+  const targetSnapshot = buildUserSnapshot(owner);
+  const targetDiarySnapshot = buildDiarySnapshot(diaryAfterUpdate);
+  const addResult = await feedbacksCollection.add({
+    userId: diaryOwnerId,
+    type: REVIEWABLE_FEEDBACK_TYPE,
+    content: '用户已修改违规笔记，申请管理员重新审核。',
+    contact: '',
+    media: [],
+    targetUserId: diaryOwnerId,
+    targetDiaryId: diaryId,
+    reportReason: 'other',
+    targetSnapshot,
+    targetDiarySnapshot,
+    source: 'diary_recheck',
+    autoGenerated: true,
+    governanceTrigger: 'diary_recheck',
+    status: 'pending',
+    createdAt: db.serverDate(),
+    updatedAt: db.serverDate(),
+  });
+
+  const feedbackId = addResult.id || addResult._id;
+
+  try {
+    await sendAdminDiaryRecheckNotifications({
+      feedbackId,
+      reporterUser: owner,
+      targetUserId: diaryOwnerId,
+      targetDiaryId: diaryId,
+      targetSnapshot,
+      targetDiarySnapshot,
+    });
+  } catch (notifyError) {
+    console.error('Send diary recheck notifications error:', notifyError);
+  }
+
+  return { success: true, feedbackId, reused: false };
 };
 
 const getBlockedUserIdsForViewer = async (viewerId) => {
@@ -139,7 +386,7 @@ const createDiary = async (data) => {
     }
 
     // 创建日记记录
-    const result = await db.collection('diaries').add({
+    const result = await diariesCollection.add({
       userId,
       notebookId: notebookId,
       title: title || '',
@@ -158,6 +405,11 @@ const createDiary = async (data) => {
       likedUserIds: [],
       comments: [],
       authorInfo: data.authorInfo || null,
+      moderationStatus: 'normal',
+      violationReason: '',
+      violationFeedbackId: '',
+      violationMarkedAt: null,
+      reReviewRequestedAt: null,
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),
     });
@@ -183,6 +435,7 @@ const createDiary = async (data) => {
         isFavorite: false,
         isPrivate: data.isPrivate || false,
         authorInfo: data.authorInfo || null,
+        moderationStatus: 'normal',
       },
     };
   } catch (error) {
@@ -216,7 +469,7 @@ const updateDiary = async (data) => {
     
     console.log('更新日记ID：', _id)
 
-    const diaryRes = await db.collection('diaries').doc(_id).get();
+    const diaryRes = await diariesCollection.doc(_id).get();
     if (!diaryRes.data || (Array.isArray(diaryRes.data) && diaryRes.data.length === 0)) {
       return {
         success: false,
@@ -234,13 +487,29 @@ const updateDiary = async (data) => {
     }
 
     // 更新日记
-    await db
-      .collection('diaries')
-      .doc(_id)
-      .update({
-        ...updateData,
-        updatedAt: db.serverDate(),
+    const shouldTriggerReReview =
+      HIDDEN_MODERATION_STATUSES.includes(diaryData.moderationStatus) &&
+      hasModerationRelevantChanges(updateData);
+
+    await diariesCollection.doc(_id).update({
+      ...updateData,
+      moderationStatus: shouldTriggerReReview ? 'pending_recheck' : diaryData.moderationStatus,
+      reReviewRequestedAt: shouldTriggerReReview ? db.serverDate() : diaryData.reReviewRequestedAt || null,
+      updatedAt: db.serverDate(),
+    });
+
+    if (shouldTriggerReReview) {
+      await createDiaryRecheckTask({
+        diaryId: _id,
+        diaryOwnerId: userId,
+        diaryAfterUpdate: {
+          ...diaryData,
+          ...updateData,
+          _id,
+          moderationStatus: 'pending_recheck',
+        },
       });
+    }
 
     return {
       success: true,
@@ -268,7 +537,7 @@ const getDiaryDetail = async (data) => {
       };
     }
 
-    const result = await db.collection('diaries').doc(_id).get();
+    const result = await diariesCollection.doc(_id).get();
 
     if (!result.data) {
       return {
@@ -279,6 +548,16 @@ const getDiaryDetail = async (data) => {
 
     // 校验权限：只能查看自己的日记或公开日记，或者是活跃共享日记本中伴侣的非私密日记
     const diaryDataRaw = Array.isArray(result.data) ? result.data[0] : result.data;
+    if (isDiaryModeratedHidden(diaryDataRaw)) {
+      const canBypass = await canBypassDiaryModeration(userId, diaryDataRaw.userId);
+      if (!canBypass) {
+        return {
+          success: false,
+          message: '该笔记因违规处理暂不可查看',
+        };
+      }
+    }
+
     if (userId && (await hasBlockRelationship(userId, diaryDataRaw.userId))) {
       return {
         success: false,
@@ -395,6 +674,10 @@ const getDiaryList = async (data) => {
       }
     }
 
+    if (isPublic === true || likedByUserId || commentedByUserId) {
+      queryConditions.push({ moderationStatus: _.nin(HIDDEN_MODERATION_STATUSES) });
+    }
+
     if (scenario) {
       queryConditions.push({ scenario: scenario });
     }
@@ -464,7 +747,7 @@ const getDiaryList = async (data) => {
     const populatedList = await populateUserInfo(filteredList, db);
 
     // 获取总数
-    const countResult = await db.collection('diaries').where(finalQuery).count();
+    const countResult = await diariesCollection.where(finalQuery).count();
 
     return {
       success: true,
@@ -506,7 +789,7 @@ const deleteDiary = async (data) => {
 
     console.log('删除日记ID：', _id)
 
-    const diaryRes = await db.collection('diaries').doc(_id).get();
+    const diaryRes = await diariesCollection.doc(_id).get();
     if (!diaryRes.data || (Array.isArray(diaryRes.data) && diaryRes.data.length === 0)) {
       return {
         success: false,
@@ -523,7 +806,7 @@ const deleteDiary = async (data) => {
       };
     }
 
-    await db.collection('diaries').doc(_id).remove();
+    await diariesCollection.doc(_id).remove();
 
     return {
       success: true,
@@ -547,12 +830,19 @@ const likeDiary = async (data) => {
       return { success: false, message: '日记 ID 或用户 ID 不能为空' };
     }
     
-    const diaryRes = await db.collection('diaries').doc(_id).get();
+    const diaryRes = await diariesCollection.doc(_id).get();
     if (!diaryRes.data) {
       return { success: false, message: '日记不存在' };
     }
 
     const diaryDataRaw = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
+    if (isDiaryModeratedHidden(diaryDataRaw)) {
+      const canBypass = await canBypassDiaryModeration(userId, diaryDataRaw.userId);
+      if (!canBypass) {
+        return { success: false, message: '该笔记当前不可互动' };
+      }
+    }
+
     if (await hasBlockRelationship(userId, diaryDataRaw.userId)) {
       return { success: false, message: '存在拉黑关系，无法继续操作' };
     }
@@ -588,7 +878,7 @@ const likeDiary = async (data) => {
     if (nextAction === 'unlike') {
       // 取消点赞：过滤掉目标 userId
       const newLikedUserIds = validLikedUserIds.filter(id => id !== userId);
-      await db.collection('diaries').doc(_id).update({
+      await diariesCollection.doc(_id).update({
         likedUserIds: newLikedUserIds,
         updatedAt: db.serverDate(),
       });
@@ -596,7 +886,7 @@ const likeDiary = async (data) => {
     } else {
       // 点赞：添加目标 userId（并去重）
       const newLikedUserIds = [...new Set([...validLikedUserIds, userId])];
-      await db.collection('diaries').doc(_id).update({
+      await diariesCollection.doc(_id).update({
         likedUserIds: newLikedUserIds,
         updatedAt: db.serverDate(),
       });
@@ -616,12 +906,19 @@ const commentDiary = async (data) => {
       return { success: false, message: '参数不完整' };
     }
 
-    const diaryRes = await db.collection('diaries').doc(_id).get();
+    const diaryRes = await diariesCollection.doc(_id).get();
     if (!diaryRes.data) {
       return { success: false, message: '日记不存在' };
     }
 
     const diaryDataRaw = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
+    if (isDiaryModeratedHidden(diaryDataRaw)) {
+      const canBypass = await canBypassDiaryModeration(comment.userId, diaryDataRaw.userId);
+      if (!canBypass) {
+        return { success: false, message: '该笔记当前不可评论' };
+      }
+    }
+
     if (await hasBlockRelationship(comment.userId, diaryDataRaw.userId)) {
       return { success: false, message: '存在拉黑关系，无法发表评论' };
     }
@@ -646,7 +943,7 @@ const commentDiary = async (data) => {
       return { success: false, message: '无权评论他人的私密日记' };
     }
 
-    await db.collection('diaries').doc(_id).update({
+    await diariesCollection.doc(_id).update({
       comments: _.push([comment]),
       updatedAt: db.serverDate(),
     });

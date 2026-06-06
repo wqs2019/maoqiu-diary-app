@@ -54,11 +54,6 @@ const REVIEW_ACTIONS: Array<{ status: FeedbackStatus; label: string; color: stri
   { status: 'rejected', label: '驳回', color: '#EF4444' },
 ];
 const PAGE_SIZE = 20;
-const REVIEW_REASON_PLACEHOLDER: Record<'resolved' | 'rejected', string> = {
-  resolved: '请填写处理原因，用户会在站内信中看到这段说明',
-  rejected: '请填写驳回原因，用户会在站内信中看到这段说明',
-};
-
 const formatTime = (value?: string | number) => {
   if (!value) {
     return '未知时间';
@@ -77,7 +72,76 @@ const buildReviewSummary = (item: FeedbackData) => {
     return '系统已自动留痕，建议结合历史举报和公开内容复核。';
   }
 
+  if (item.source === 'diary_recheck') {
+    return '用户已修改违规笔记，等待管理员复审后决定解除或维持违规状态。';
+  }
+
+  if (item.targetDiaryId) {
+    return '用户主动举报某篇公开笔记，若核实属实将下架该笔记并保留作者查看权限。';
+  }
+
   return '用户主动提交举报，建议尽快完成初步审核。';
+};
+
+const getReviewTypeLabel = (item: FeedbackData) => {
+  if (item.source === 'block_auto') {
+    return '拉黑自动留痕';
+  }
+
+  if (item.source === 'diary_recheck') {
+    return '笔记整改复审';
+  }
+
+  if (item.targetDiaryId) {
+    return '笔记举报';
+  }
+
+  return '用户举报';
+};
+
+const getActionLabel = (item: FeedbackData, status: 'resolved' | 'rejected') => {
+  if (item.source === 'diary_recheck') {
+    return status === 'resolved' ? '解除违规' : '保持违规';
+  }
+
+  if (item.targetDiaryId) {
+    return status === 'resolved' ? '判定违规' : '驳回举报';
+  }
+
+  return status === 'resolved' ? '已处理' : '驳回';
+};
+
+const getReasonSheetCopy = (item: FeedbackData, status: 'resolved' | 'rejected') => {
+  if (item.source === 'diary_recheck') {
+    return {
+      title: status === 'resolved' ? '填写解除原因' : '填写维持原因',
+      desc: '这段内容会展示给笔记作者，请说明为什么解除违规，或为什么仍需继续整改。',
+      placeholder:
+        status === 'resolved'
+          ? '请填写解除违规的原因，用户会在站内信中看到这段说明'
+          : '请填写维持违规的原因，用户会在站内信中看到这段说明',
+    };
+  }
+
+  if (item.targetDiaryId) {
+    return {
+      title: status === 'resolved' ? '填写违规原因' : '填写驳回原因',
+      desc: '这段内容会展示给举报发起人；若判定违规，笔记作者也会同步收到违规处理说明。',
+      placeholder:
+        status === 'resolved'
+          ? '请填写判定违规的原因，举报人和作者都会收到这段说明'
+          : '请填写驳回原因，举报人会在站内信中看到这段说明',
+    };
+  }
+
+  return {
+    title: status === 'resolved' ? '填写处理原因' : '填写驳回原因',
+    desc: '这段内容会展示给举报发起人，请填写清晰、可理解的回复说明。',
+    placeholder:
+      status === 'resolved'
+        ? '请填写处理原因，用户会在站内信中看到这段说明'
+        : '请填写驳回原因，用户会在站内信中看到这段说明',
+  };
 };
 
 const AdminModerationScreen: React.FC = () => {
@@ -222,6 +286,17 @@ const AdminModerationScreen: React.FC = () => {
     loadFirstPage(nextFilter);
   };
 
+  const handleOpenTargetDiary = useCallback(
+    (item: FeedbackData) => {
+      if (!item.targetDiaryId) {
+        return;
+      }
+
+      navigation.navigate('CircleDetail', { _id: item.targetDiaryId });
+    },
+    [navigation]
+  );
+
   const applyReviewStatus = useCallback(
     async (item: FeedbackData, nextStatus: FeedbackStatus, note: string) => {
       if (!user?._id || !item._id) {
@@ -360,6 +435,8 @@ const AdminModerationScreen: React.FC = () => {
       item.targetSnapshot?.nickname || item.targetSnapshot?.phone || item.targetUserId || '未知用户';
     const status = item.status === 'processing' ? 'pending' : item.status || 'pending';
     const isHighlighted = item._id === targetFeedbackId;
+    const diaryTitle = item.targetDiarySnapshot?.title?.trim();
+    const diaryExcerpt = item.targetDiarySnapshot?.content?.trim();
 
     return (
       <View
@@ -375,7 +452,7 @@ const AdminModerationScreen: React.FC = () => {
         <View style={styles.cardHeader}>
           <View style={styles.headerLeft}>
             <Text style={[styles.cardTitle, { color: textColor }]}>
-              {isAutoRecord ? '拉黑自动留痕' : '用户举报'}
+              {getReviewTypeLabel(item)}
             </Text>
             <View
               style={[
@@ -435,6 +512,32 @@ const AdminModerationScreen: React.FC = () => {
           {item.content || (isAutoRecord ? '用户触发拉黑，系统自动生成审核记录。' : '未填写说明')}
         </Text>
 
+        {item.targetDiaryId ? (
+          <View style={[styles.noteBox, { backgroundColor: isDark ? '#262626' : '#F5F3FF' }]}>
+            <Text style={[styles.noteLabel, { color: subTextColor }]}>关联笔记</Text>
+            <Text style={[styles.noteText, { color: textColor }]}>{diaryTitle || '无标题笔记'}</Text>
+            {diaryExcerpt ? (
+              <Text style={[styles.noteText, { color: subTextColor, marginTop: 6 }]} numberOfLines={3}>
+                {diaryExcerpt}
+              </Text>
+            ) : null}
+            <TouchableOpacity
+              style={[
+                styles.linkButton,
+                {
+                  backgroundColor: isDark ? '#312E81' : '#EEF2FF',
+                },
+              ]}
+              onPress={() => handleOpenTargetDiary(item)}
+            >
+              <Ionicons name="open-outline" size={15} color={isDark ? '#C7D2FE' : '#4F46E5'} />
+              <Text style={[styles.linkButtonText, { color: isDark ? '#C7D2FE' : '#4F46E5' }]}>
+                查看被举报笔记
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {item.reviewNote ? (
           <View style={[styles.noteBox, { backgroundColor: isDark ? '#262626' : '#FFF7ED' }]}>
             <Text style={[styles.noteLabel, { color: subTextColor }]}>审核备注</Text>
@@ -463,7 +566,9 @@ const AdminModerationScreen: React.FC = () => {
                     { color: disabled ? subTextColor : '#FFFFFF' },
                   ]}
                 >
-                  {updatingId === item._id && status !== action.status ? '提交中' : action.label}
+                  {updatingId === item._id && status !== action.status
+                    ? '提交中'
+                    : getActionLabel(item, action.status as 'resolved' | 'rejected')}
                 </Text>
               </TouchableOpacity>
             );
@@ -577,12 +682,15 @@ const AdminModerationScreen: React.FC = () => {
                 ]}
               />
               <View style={[styles.modalHandle, { backgroundColor: isDark ? '#3A3A3A' : '#E5E7EB' }]} />
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                {pendingAction?.status === 'resolved' ? '填写处理原因' : '填写驳回原因'}
-              </Text>
-              <Text style={[styles.modalDesc, { color: subTextColor }]}>
-                这段内容会展示给举报发起人，请填写清晰、可理解的回复说明。
-              </Text>
+              {pendingAction ? (() => {
+                const copy = getReasonSheetCopy(pendingAction.item, pendingAction.status);
+                return (
+                  <>
+                    <Text style={[styles.modalTitle, { color: textColor }]}>{copy.title}</Text>
+                    <Text style={[styles.modalDesc, { color: subTextColor }]}>{copy.desc}</Text>
+                  </>
+                );
+              })() : null}
               <TextInput
                 style={[
                   styles.modalInput,
@@ -594,9 +702,7 @@ const AdminModerationScreen: React.FC = () => {
                 ]}
                 value={reviewReason}
                 onChangeText={setReviewReason}
-                placeholder={
-                  pendingAction ? REVIEW_REASON_PLACEHOLDER[pendingAction.status] : '请填写处理原因'
-                }
+                placeholder={pendingAction ? getReasonSheetCopy(pendingAction.item, pendingAction.status).placeholder : '请填写处理原因'}
                 placeholderTextColor={subTextColor}
                 multiline
                 maxLength={200}
@@ -743,6 +849,20 @@ const styles = StyleSheet.create({
   noteText: {
     fontSize: 13,
     lineHeight: 20,
+  },
+  linkButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  linkButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   actionRow: {
     flexDirection: 'row',

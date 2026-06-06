@@ -20,13 +20,25 @@ import {
 
 import { CommentList } from '@/components/handDrawn/CommentList';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
+import { Modal as CommonModal } from '@/components/common/Modal';
+import { useToast } from '@/components/common/Toast';
 import { HEALING_COLORS, DARK_HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useDiaryDetail, useLikeDiary, useCommentDiary } from '@/hooks/useDiaryQuery';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import feedbackService, { ReportReason } from '@/services/feedbackService';
 import { useAuthStore } from '@/store/authStore';
 import { FormatUtil } from '@/utils/format';
 
 const { width } = Dimensions.get('window');
+const REPORT_REASON_OPTIONS: Array<{ value: ReportReason; label: string }> = [
+  { value: 'spam', label: '垃圾营销' },
+  { value: 'abuse', label: '辱骂攻击' },
+  { value: 'harassment', label: '骚扰他人' },
+  { value: 'pornography', label: '色情低俗' },
+  { value: 'violence', label: '暴力血腥' },
+  { value: 'fraud', label: '诈骗欺诈' },
+  { value: 'other', label: '其他原因' },
+];
 
 type CircleDetailRouteProp = RouteProp<{ params: { _id: string } }, 'params'>;
 
@@ -34,6 +46,7 @@ const CircleDetailScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<CircleDetailRouteProp>();
   const { _id } = route.params;
+  const toast = useToast();
 
   const { isDark } = useAppTheme();
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
@@ -47,6 +60,10 @@ const CircleDetailScreen: React.FC = () => {
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [selectedReportReason, setSelectedReportReason] = useState<ReportReason>('spam');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   const [replyToComment, setReplyToComment] = useState<any>(null);
   const inputRef = useRef<TextInput>(null);
@@ -127,6 +144,48 @@ const CircleDetailScreen: React.FC = () => {
     }
   };
 
+  const handleSubmitReport = async () => {
+    if (!user?._id || !diary?.userId) {
+      Alert.alert('提示', '请先登录后再举报');
+      return;
+    }
+
+    if (!reportDescription.trim()) {
+      Alert.alert('提示', '请补充举报说明');
+      return;
+    }
+
+    try {
+      setReportSubmitting(true);
+      await feedbackService.submitUserReport({
+        userId: user._id,
+        targetUserId: diary.userId,
+        targetDiaryId: diary._id,
+        reportReason: selectedReportReason,
+        content: reportDescription.trim(),
+        targetSnapshot: {
+          nickname: diary.authorInfo?.nickname,
+          avatar: diary.authorInfo?.avatar,
+        },
+        targetDiarySnapshot: {
+          _id: diary._id,
+          title: diary.title,
+          content: diary.content,
+          mediaCount: diary.media?.length || 0,
+        },
+      });
+      setReportModalVisible(false);
+      setReportDescription('');
+      setSelectedReportReason('spam');
+      toast.success('举报已提交，我们会尽快处理');
+    } catch (error: any) {
+      console.error('Submit diary report failed:', error);
+      Alert.alert('提交失败', error.message || '举报提交失败，请稍后再试');
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -144,6 +203,12 @@ const CircleDetailScreen: React.FC = () => {
   }
 
   const formattedDate = FormatUtil.formatRelativeTime(diary.createdAt || diary.date);
+  const moderationBadgeText =
+    diary.moderationStatus === 'pending_recheck'
+      ? '整改复审中'
+      : diary.moderationStatus === 'violation'
+        ? '笔记违规'
+        : '';
 
   return (
     <View style={styles.container}>
@@ -207,6 +272,27 @@ const CircleDetailScreen: React.FC = () => {
 
         {/* 内容 */}
         <View style={styles.contentSection}>
+          {moderationBadgeText ? (
+            <View
+              style={[
+                styles.moderationBadge,
+                diary.moderationStatus === 'pending_recheck'
+                  ? styles.recheckBadge
+                  : styles.violationBadge,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.moderationBadgeText,
+                  diary.moderationStatus === 'pending_recheck'
+                    ? styles.recheckBadgeText
+                    : styles.violationBadgeText,
+                ]}
+              >
+                {moderationBadgeText}
+              </Text>
+            </View>
+          ) : null}
           {!!diary.title && <Text style={styles.title}>{diary.title}</Text>}
           {!!diary.content && <Text style={styles.content}>{diary.content}</Text>}
         </View>
@@ -266,9 +352,92 @@ const CircleDetailScreen: React.FC = () => {
             <TouchableOpacity style={styles.actionIcon} onPress={() => handleAction('share')}>
               <Ionicons name="share-social-outline" size={26} color="#4B5563" />
             </TouchableOpacity>
+            {user?._id && diary.userId && user._id !== diary.userId ? (
+              <TouchableOpacity style={styles.actionIcon} onPress={() => setReportModalVisible(true)}>
+                <Ionicons name="flag-outline" size={24} color="#EF4444" />
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <CommonModal visible={reportModalVisible} onClose={() => setReportModalVisible(false)}>
+        <View style={styles.popupContainer}>
+          <TouchableOpacity style={styles.popupBackdrop} activeOpacity={1} onPress={() => setReportModalVisible(false)} />
+          <View
+            style={[
+              styles.reportCard,
+              {
+                backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                borderColor: isDark ? '#333' : '#E5E7EB',
+              },
+            ]}
+          >
+            <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>举报笔记</Text>
+            <Text style={[styles.reportHint, { color: isDark ? '#AAA' : '#6B7280' }]}>
+              请选择举报原因，并补充说明，帮助管理员更快判断是否需要下架这篇笔记。
+            </Text>
+            <View style={styles.reasonList}>
+              {REPORT_REASON_OPTIONS.map((option) => {
+                const active = selectedReportReason === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.reasonChip,
+                      {
+                        backgroundColor: active ? currentHealingColors.pink[500] : isDark ? '#2A2A2A' : '#F9FAFB',
+                        borderColor: active ? currentHealingColors.pink[500] : isDark ? '#333' : '#E5E7EB',
+                      },
+                    ]}
+                    onPress={() => setSelectedReportReason(option.value)}
+                  >
+                    <Text style={[styles.reasonChipText, { color: active ? '#FFF' : isDark ? '#DDD' : '#374151' }]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TextInput
+              style={[
+                styles.reportInput,
+                {
+                  color: isDark ? '#FFF' : '#111827',
+                  borderColor: isDark ? '#333' : '#E5E7EB',
+                  backgroundColor: isDark ? '#141414' : '#F9FAFB',
+                },
+              ]}
+              value={reportDescription}
+              onChangeText={setReportDescription}
+              placeholder="请补充违规内容描述，管理员会结合这段说明审核"
+              placeholderTextColor={isDark ? '#777' : '#9CA3AF'}
+              multiline
+              textAlignVertical="top"
+              maxLength={200}
+            />
+            <Text style={[styles.reportCounter, { color: isDark ? '#777' : '#9CA3AF' }]}>
+              {reportDescription.length}/200
+            </Text>
+            <View style={styles.reportActions}>
+              <TouchableOpacity
+                style={[styles.reportSecondaryBtn, { borderColor: isDark ? '#333' : '#E5E7EB' }]}
+                onPress={() => setReportModalVisible(false)}
+                disabled={reportSubmitting}
+              >
+                <Text style={[styles.reportSecondaryText, { color: isDark ? '#DDD' : '#374151' }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reportPrimaryBtn}
+                onPress={handleSubmitReport}
+                disabled={reportSubmitting}
+              >
+                <Text style={styles.reportPrimaryText}>{reportSubmitting ? '提交中...' : '提交举报'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </CommonModal>
     </View>
   );
 };
@@ -334,6 +503,29 @@ const styles = StyleSheet.create({
   contentSection: {
     paddingHorizontal: 16,
     paddingBottom: 16,
+  },
+  moderationBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginBottom: 12,
+  },
+  moderationBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  violationBadge: {
+    backgroundColor: '#FEE2E2',
+  },
+  violationBadgeText: {
+    color: '#B91C1C',
+  },
+  recheckBadge: {
+    backgroundColor: '#FEF3C7',
+  },
+  recheckBadgeText: {
+    color: '#B45309',
   },
   title: {
     fontSize: 22,
@@ -404,6 +596,92 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginLeft: 6,
+  },
+  popupContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  popupBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  reportCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 28,
+  },
+  popupTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  reportHint: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  reasonList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 14,
+  },
+  reasonChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  reasonChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  reportInput: {
+    marginTop: 16,
+    minHeight: 120,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  reportCounter: {
+    marginTop: 8,
+    textAlign: 'right',
+    fontSize: 12,
+  },
+  reportActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  reportSecondaryBtn: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reportPrimaryBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: HEALING_COLORS.pink[500],
+  },
+  reportSecondaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reportPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 

@@ -8,6 +8,7 @@ const app = cloud.init({
 const db = app.database();
 const usersCollection = db.collection('users');
 const adminCollection = db.collection('admin_list');
+const diariesCollection = db.collection('diaries');
 const feedbacksCollection = db.collection('feedbacks');
 const notificationsCollection = db.collection('notifications');
 const REVIEWABLE_FEEDBACK_TYPE = 'report_user';
@@ -69,6 +70,15 @@ const getUserById = async (userId) => {
   return getDocData(result);
 };
 
+const getDiaryById = async (diaryId) => {
+  if (!diaryId) {
+    return null;
+  }
+
+  const result = await diariesCollection.doc(diaryId).get();
+  return getDocData(result);
+};
+
 const isAdminUser = async (userId) => {
   const user = await getUserById(userId);
   if (!user || !user.phone) {
@@ -86,6 +96,13 @@ const buildUserSnapshot = (user) => ({
   phone: user && user.phone ? user.phone : '',
 });
 
+const buildDiarySnapshot = (diary) => ({
+  _id: diary && diary._id ? diary._id : '',
+  title: diary && diary.title ? diary.title : '',
+  content: diary && diary.content ? String(diary.content).slice(0, 120) : '',
+  mediaCount: diary && Array.isArray(diary.media) ? diary.media.length : 0,
+});
+
 const buildReviewFilter = (status = 'pending') => {
   const filter = {
     type: REVIEWABLE_FEEDBACK_TYPE,
@@ -101,6 +118,47 @@ const buildReviewFilter = (status = 'pending') => {
 };
 
 const buildReviewResultNotification = ({ feedback, status, reviewNote }) => {
+  if (feedback.source === 'diary_recheck' && feedback.targetDiaryId) {
+    const diaryTitle =
+      (feedback.targetDiarySnapshot && feedback.targetDiarySnapshot.title) || '你的笔记';
+    const noteText = reviewNote ? ` 处理说明：${reviewNote}` : '';
+
+    if (status === 'resolved') {
+      return {
+        title: '你的笔记已恢复展示',
+        content: `你修改后的笔记「${diaryTitle}」已通过复审，现已恢复在圈子里展示。${noteText}`,
+      };
+    }
+
+    if (status === 'rejected') {
+      return {
+        title: '你的笔记仍需继续整改',
+        content: `你修改后的笔记「${diaryTitle}」复审未通过，当前仍保持违规下架状态。${noteText}`,
+      };
+    }
+  }
+
+  if (feedback.targetDiaryId) {
+    const diaryTitle =
+      (feedback.targetDiarySnapshot && feedback.targetDiarySnapshot.title) || '该笔记';
+    const reviewerName = '毛球管理员';
+    const noteText = reviewNote ? ` 处理说明：${reviewNote}` : '';
+
+    if (status === 'resolved') {
+      return {
+        title: '你举报的笔记已处理',
+        content: `${reviewerName} 已处理你举报的笔记「${diaryTitle}」，感谢你的反馈。${noteText}`,
+      };
+    }
+
+    if (status === 'rejected') {
+      return {
+        title: '你举报的笔记未通过',
+        content: `${reviewerName} 已复核你举报的笔记「${diaryTitle}」，当前结果为未通过。${noteText}`,
+      };
+    }
+  }
+
   const targetName =
     (feedback.targetSnapshot && (feedback.targetSnapshot.nickname || feedback.targetSnapshot.phone)) ||
     feedback.targetUserId ||
@@ -123,6 +181,20 @@ const buildReviewResultNotification = ({ feedback, status, reviewNote }) => {
   }
 
   return null;
+};
+
+const buildDiaryOwnerModerationNotification = ({ feedback, reviewNote }) => {
+  if (!feedback || !feedback.targetDiaryId || feedback.source === 'diary_recheck') {
+    return null;
+  }
+
+  const diaryTitle = (feedback.targetDiarySnapshot && feedback.targetDiarySnapshot.title) || '你的笔记';
+  const noteText = reviewNote ? ` 处理说明：${reviewNote}` : '';
+
+  return {
+    title: '你的笔记已被标记违规',
+    content: `由于举报核实属实，你的笔记「${diaryTitle}」已停止在圈子里展示。你仍可查看并修改，修改后系统会再次通知管理员复审。${noteText}`,
+  };
 };
 
 const sendReviewResultNotificationToReporter = async ({ feedback, adminUser, status, reviewNote }) => {
@@ -160,6 +232,40 @@ const sendReviewResultNotificationToReporter = async ({ feedback, adminUser, sta
   return { success: true, sent: true };
 };
 
+const sendDiaryOwnerModerationNotification = async ({ feedback, adminUser, status, reviewNote }) => {
+  if (!feedback || !feedback.targetDiaryId || !feedback.targetUserId || status !== 'resolved') {
+    return { success: true, sent: false };
+  }
+
+  const notificationPayload = buildDiaryOwnerModerationNotification({
+    feedback,
+    reviewNote,
+  });
+
+  if (!notificationPayload) {
+    return { success: true, sent: false };
+  }
+
+  await notificationsCollection.add({
+    receiverId: feedback.targetUserId,
+    senderId: adminUser && adminUser._id ? adminUser._id : '',
+    type: 'system',
+    title: notificationPayload.title,
+    content: notificationPayload.content,
+    extraData: {
+      feedbackId: feedback._id || '',
+      targetDiaryId: feedback.targetDiaryId || '',
+      reviewStatus: status,
+      source: 'diary_moderation_result',
+      screen: 'DiaryDetail',
+    },
+    isRead: false,
+    createdAt: db.serverDate(),
+  });
+
+  return { success: true, sent: true };
+};
+
 const getAdminUsers = async () => {
   const adminResult = await adminCollection.get();
   const adminPhones = [...new Set((adminResult.data || []).map((item) => item.phone).filter(Boolean))];
@@ -187,8 +293,11 @@ const sendAdminReportNotifications = async ({
   feedbackId,
   reporterUser,
   targetUserId,
+  targetDiaryId,
   reportReason,
   targetSnapshot,
+  targetDiarySnapshot,
+  source,
 }) => {
   const adminUsers = await getAdminUsers();
   if (adminUsers.length === 0) {
@@ -199,19 +308,29 @@ const sendAdminReportNotifications = async ({
     (reporterUser && (reporterUser.nickname || reporterUser.phone)) || '某位用户';
   const targetName =
     (targetSnapshot && (targetSnapshot.nickname || targetSnapshot.phone)) || targetUserId || '某位用户';
+  const diaryTitle =
+    (targetDiarySnapshot && targetDiarySnapshot.title) || '该笔记';
+  const isDiaryRecheck = source === 'diary_recheck';
+  const title = isDiaryRecheck ? '收到新的笔记复审申请' : '收到新的用户举报';
+  const content = isDiaryRecheck
+    ? `「${targetName}」修改了违规笔记「${diaryTitle}」，请尽快前往内容审核复审。`
+    : targetDiaryId
+      ? `「${reporterName}」举报了「${targetName}」的笔记「${diaryTitle}」，请尽快前往内容审核处理。`
+      : `「${reporterName}」举报了「${targetName}」，请尽快前往内容审核处理。`;
   const notifications = adminUsers
     .filter((adminUser) => adminUser._id && adminUser._id !== (reporterUser && reporterUser._id))
     .map((adminUser) => ({
       receiverId: adminUser._id,
       senderId: reporterUser && reporterUser._id ? reporterUser._id : '',
       type: 'system',
-      title: '收到新的用户举报',
-      content: `「${reporterName}」举报了「${targetName}」，请尽快前往内容审核处理。`,
+      title,
+      content,
       extraData: {
         feedbackId,
         targetUserId: targetUserId || '',
+        targetDiaryId: targetDiaryId || '',
         reportReason: reportReason || 'other',
-        source: 'report_user',
+        source: source || 'report_user',
         screen: 'AdminModeration',
       },
       isRead: false,
@@ -233,12 +352,13 @@ const sendAdminReportNotifications = async ({
       pushTargets.map((adminUser) =>
         sendPushNotification(
           adminUser.pushToken,
-          '收到新的用户举报',
-          `「${reporterName}」举报了「${targetName}」，请尽快前往内容审核处理。`,
+          title,
+          content,
           {
-            type: 'admin_review',
+            type: isDiaryRecheck ? 'admin_recheck' : 'admin_review',
             feedbackId,
             targetUserId: targetUserId || '',
+            targetDiaryId: targetDiaryId || '',
             reportReason: reportReason || 'other',
             screen: 'AdminModeration',
           }
@@ -248,6 +368,55 @@ const sendAdminReportNotifications = async ({
   }
 
   return { success: true, count: notifications.length, pushCount: pushTargets.length };
+};
+
+const applyDiaryModerationResult = async ({ feedbackId, feedback, status, reviewNote }) => {
+  if (!feedback || !feedback.targetDiaryId || !['resolved', 'rejected'].includes(status)) {
+    return { success: true, updated: false };
+  }
+
+  const diary = await getDiaryById(feedback.targetDiaryId);
+  if (!diary) {
+    return { success: false, updated: false, message: '被举报笔记不存在' };
+  }
+
+  if (feedback.source === 'diary_recheck') {
+    if (status === 'resolved') {
+      await diariesCollection.doc(feedback.targetDiaryId).update({
+        moderationStatus: 'normal',
+        violationReason: '',
+        violationFeedbackId: '',
+        violationMarkedAt: null,
+        reReviewRequestedAt: null,
+        updatedAt: db.serverDate(),
+      });
+      return { success: true, updated: true };
+    }
+
+    await diariesCollection.doc(feedback.targetDiaryId).update({
+      moderationStatus: 'violation',
+      violationReason: reviewNote,
+      violationFeedbackId: feedbackId,
+      violationMarkedAt: db.serverDate(),
+      reReviewRequestedAt: null,
+      updatedAt: db.serverDate(),
+    });
+    return { success: true, updated: true };
+  }
+
+  if (status === 'resolved') {
+    await diariesCollection.doc(feedback.targetDiaryId).update({
+      moderationStatus: 'violation',
+      violationReason: reviewNote,
+      violationFeedbackId: feedbackId,
+      violationMarkedAt: db.serverDate(),
+      reReviewRequestedAt: null,
+      updatedAt: db.serverDate(),
+    });
+    return { success: true, updated: true };
+  }
+
+  return { success: true, updated: false };
 };
 
 const fetchUsersMap = async (userIds) => {
@@ -299,7 +468,19 @@ const enrichFeedbackItem = (item, usersMap) => {
 // 添加反馈
 const addFeedback = async (data) => {
   try {
-    const { userId, type, content, contact, media, targetUserId, reportReason, targetSnapshot } = data;
+    const {
+      userId,
+      type,
+      content,
+      contact,
+      media,
+      targetUserId,
+      targetDiaryId,
+      reportReason,
+      targetSnapshot,
+      targetDiarySnapshot,
+      source,
+    } = data;
 
     if (!userId || !type || !content) {
       return { success: false, message: '缺少必要参数' };
@@ -315,6 +496,18 @@ const addFeedback = async (data) => {
       }
     }
 
+    let diary = null;
+    if (targetDiaryId) {
+      diary = await getDiaryById(targetDiaryId);
+      if (!diary) {
+        return { success: false, message: '被举报笔记不存在' };
+      }
+
+      if (targetUserId && diary.userId !== targetUserId) {
+        return { success: false, message: '被举报笔记与目标用户不匹配' };
+      }
+    }
+
     const result = await feedbacksCollection.add({
       userId,
       type,
@@ -322,8 +515,11 @@ const addFeedback = async (data) => {
       contact: contact || '',
       media: media || [],
       targetUserId: targetUserId || '',
+      targetDiaryId: targetDiaryId || '',
       reportReason: reportReason || '',
       targetSnapshot: targetSnapshot || null,
+      targetDiarySnapshot: targetDiarySnapshot || (diary ? buildDiarySnapshot(diary) : null),
+      source: source || (targetDiaryId ? 'diary_report' : 'user_report'),
       status: 'pending', // 默认状态为待处理
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),
@@ -336,8 +532,11 @@ const addFeedback = async (data) => {
           feedbackId: result.id || result._id,
           reporterUser,
           targetUserId,
+          targetDiaryId,
           reportReason,
           targetSnapshot,
+          targetDiarySnapshot: targetDiarySnapshot || (diary ? buildDiarySnapshot(diary) : null),
+          source: source || (targetDiaryId ? 'diary_report' : 'user_report'),
         });
       } catch (notifyError) {
         console.error('Send admin report notifications error:', notifyError);
@@ -546,6 +745,20 @@ const adminUpdateFeedback = async (data) => {
 
     const adminUser = await getUserById(adminUserId);
 
+    const moderationResult = await applyDiaryModerationResult({
+      feedbackId,
+      feedback: {
+        ...feedback,
+        _id: feedbackId,
+      },
+      status,
+      reviewNote,
+    });
+
+    if (!moderationResult.success) {
+      return { success: false, message: moderationResult.message || '更新笔记违规状态失败' };
+    }
+
     await feedbacksCollection.doc(feedbackId).update({
       status,
       reviewNote,
@@ -557,6 +770,16 @@ const adminUpdateFeedback = async (data) => {
     if (['resolved', 'rejected'].includes(status)) {
       try {
         await sendReviewResultNotificationToReporter({
+          feedback: {
+            ...feedback,
+            _id: feedbackId,
+          },
+          adminUser,
+          status,
+          reviewNote,
+        });
+
+        await sendDiaryOwnerModerationNotification({
           feedback: {
             ...feedback,
             _id: feedbackId,

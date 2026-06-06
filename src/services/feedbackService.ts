@@ -22,12 +22,19 @@ export interface FeedbackData {
   createdAt?: string;
   media?: MediaResource[];
   targetUserId?: string;
+  targetDiaryId?: string;
   reportReason?: ReportReason;
   targetSnapshot?: {
     _id?: string;
     nickname?: string;
     avatar?: string;
     phone?: string;
+  };
+  targetDiarySnapshot?: {
+    _id?: string;
+    title?: string;
+    content?: string;
+    mediaCount?: number;
   };
   reporterSnapshot?: {
     _id?: string;
@@ -99,6 +106,7 @@ export class FeedbackService {
   async submitUserReport(data: {
     userId: string;
     targetUserId: string;
+    targetDiaryId?: string;
     reportReason: ReportReason;
     content: string;
     contact?: string;
@@ -106,6 +114,12 @@ export class FeedbackService {
     targetSnapshot?: {
       nickname?: string;
       avatar?: string;
+    };
+    targetDiarySnapshot?: {
+      _id?: string;
+      title?: string;
+      content?: string;
+      mediaCount?: number;
     };
   }): Promise<FeedbackData> {
     return this.submitFeedback({
