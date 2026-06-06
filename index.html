@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>毛球日记 | 收集日常里微小而确定的幸福</title>
+    <meta
+      name="description"
+      content="毛球日记是一款温暖治愈的日记应用，支持图文记录、生活分类、圈子分享、AI 问答与共享日记本。"
+    />
+    <style>
+      :root {
+        --bg: #fffaf7;
+        --surface: rgba(255, 255, 255, 0.82);
+        --surface-strong: #ffffff;
+        --text: #2b2b2b;
+        --muted: #6b7280;
+        --pink: #f472b6;
+        --pink-deep: #db2777;
+        --peach: #fff1f2;
+        --purple: #8b5cf6;
+        --teal: #14b8a6;
+        --yellow: #f59e0b;
+        --line: rgba(244, 114, 182, 0.16);
+        --shadow: 0 20px 60px rgba(219, 39, 119, 0.12);
+        --radius-xl: 28px;
+        --radius-lg: 22px;
+        --radius-md: 18px;
+        --max-width: 1120px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(244, 114, 182, 0.18), transparent 32%),
+          radial-gradient(circle at top right, rgba(139, 92, 246, 0.12), transparent 28%),
+          linear-gradient(180deg, #fffaf7 0%, #fffefe 50%, #fff7fb 100%);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .shell {
+        width: min(calc(100% - 32px), var(--max-width));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        backdrop-filter: blur(18px);
+        background: rgba(255, 250, 247, 0.72);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+      }
+
+      .topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 72px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        font-weight: 700;
+      }
+
+      .brand-badge {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #ffd5e7, #ffe9f1);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        font-size: 22px;
+      }
+
+      .brand-meta small {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+      }
+
+      .brand-meta strong {
+        display: block;
+        font-size: 17px;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .nav a:hover {
+        color: var(--pink-deep);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 28px;
+        padding: 48px 0 36px;
+        align-items: center;
+      }
+
+      .hero-card,
+      .panel,
+      .feature-card,
+      .timeline-card,
+      .faq-item {
+        background: var(--surface);
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .hero-card {
+        padding: 40px;
+        border-radius: var(--radius-xl);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: #fff0f6;
+        color: var(--pink-deep);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 18px 0 14px;
+        font-size: clamp(34px, 5vw, 58px);
+        line-height: 1.1;
+      }
+
+      .lead {
+        margin: 0;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.75;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 28px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 20px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 15px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        color: #fff;
+        background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+        box-shadow: 0 16px 36px rgba(219, 39, 119, 0.24);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--text);
+        border: 1px solid rgba(244, 114, 182, 0.14);
+      }
+
+      .hero-note {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .pill {
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.88);
+        color: var(--muted);
+        font-size: 13px;
+        border: 1px solid rgba(244, 114, 182, 0.1);
+      }
+
+      .phone {
+        position: relative;
+        padding: 18px;
+        border-radius: 40px;
+        background: linear-gradient(180deg, #2a1b27, #20161d);
+        box-shadow: 0 28px 70px rgba(43, 43, 43, 0.28);
+        max-width: 410px;
+        margin-left: auto;
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        width: 120px;
+        height: 28px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .screen {
+        min-height: 700px;
+        padding: 30px 22px 24px;
+        border-radius: 28px;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at top right, rgba(244, 114, 182, 0.16), transparent 22%),
+          linear-gradient(180deg, #fff8fb, #fffdfd);
+      }
+
+      .screen-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #111827;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .journal-card {
+        margin-top: 24px;
+        padding: 22px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid var(--line);
+        box-shadow: 0 16px 34px rgba(244, 114, 182, 0.12);
+      }
+
+      .journal-card h3 {
+        margin: 0 0 8px;
+        font-size: 22px;
+      }
+
+      .journal-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .tags span {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #fff0f6;
+        color: var(--pink-deep);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .grid div {
+        aspect-ratio: 1;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #ffe4ef, #fff6ef);
+      }
+
+      .section {
+        padding: 28px 0;
+      }
+
+      .section-header {
+        margin-bottom: 22px;
+      }
+
+      .section-header h2 {
+        margin: 0 0 10px;
+        font-size: clamp(28px, 4vw, 40px);
+      }
+
+      .section-header p {
+        margin: 0;
+        max-width: 760px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+      }
+
+      .feature-card {
+        padding: 26px;
+        border-radius: var(--radius-lg);
+      }
+
+      .feature-icon {
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        border-radius: 16px;
+        color: #fff;
+        font-size: 24px;
+        margin-bottom: 18px;
+      }
+
+      .feature-card h3 {
+        margin: 0 0 10px;
+        font-size: 22px;
+      }
+
+      .feature-card p {
+        margin: 0 0 14px;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .feature-card ul {
+        margin: 0;
+        padding-left: 18px;
+        color: #4b5563;
+        line-height: 1.8;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+
+      .panel {
+        padding: 28px;
+        border-radius: var(--radius-lg);
+      }
+
+      .panel h3 {
+        margin: 0 0 12px;
+        font-size: 24px;
+      }
+
+      .panel p,
+      .panel li {
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .panel ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+
+      .timeline-card {
+        padding: 24px;
+        border-radius: var(--radius-lg);
+      }
+
+      .timeline-card strong {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        margin-bottom: 16px;
+        background: #fff0f6;
+        color: var(--pink-deep);
+      }
+
+      .timeline-card h3 {
+        margin: 0 0 10px;
+      }
+
+      .timeline-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .faq {
+        display: grid;
+        gap: 14px;
+      }
+
+      .faq-item {
+        padding: 22px 24px;
+        border-radius: 20px;
+      }
+
+      .faq-item h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      .faq-item p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      footer {
+        padding: 28px 0 60px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .footer-card {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 24px 26px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.76);
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        box-shadow: var(--shadow);
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+
+      @media (max-width: 960px) {
+        .hero,
+        .feature-grid,
+        .two-col,
+        .timeline {
+          grid-template-columns: 1fr;
+        }
+
+        .phone {
+          margin: 0 auto;
+          width: 100%;
+        }
+
+        .screen {
+          min-height: auto;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .topbar-inner {
+          flex-direction: column;
+          justify-content: center;
+          padding: 14px 0;
+        }
+
+        .nav {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .hero-card,
+        .feature-card,
+        .panel,
+        .timeline-card,
+        .faq-item {
+          padding: 22px;
+        }
+
+        .screen {
+          padding: 28px 18px 22px;
+        }
+
+        .grid {
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <a class="brand" href="#top">
+          <span class="brand-badge">🐾</span>
+          <span class="brand-meta">
+            <small>HEALING DIARY APP</small>
+            <strong>毛球日记</strong>
+          </span>
+        </a>
+        <nav class="nav">
+          <a href="#features">核心功能</a>
+          <a href="#values">产品特点</a>
+          <a href="#safety">安全与治理</a>
+          <a href="#faq">常见问题</a>
+          <a href="https://github.com/wqs2019/maoqiu-diary-app" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top" class="shell">
+      <section class="hero">
+        <div class="hero-card">
+          <div class="eyebrow">收集日常里微小而确定的幸福</div>
+          <h1>把情绪、灵感与回忆，温柔地留在毛球日记里。</h1>
+          <p class="lead">
+            毛球日记是一款温暖治愈的日记应用，支持图文记录、生活分类、照片墙回顾、圈子分享、AI
+            问答与共享日记本。它既是一个安静的树洞，也是认真保存生活的时光手账。
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#features">了解功能亮点</a>
+            <a class="btn btn-secondary" href="https://github.com/wqs2019/maoqiu-diary-app/issues" target="_blank" rel="noreferrer">反馈与联系</a>
+          </div>
+          <div class="hero-note">
+            <span class="pill">支持图文和视频记录</span>
+            <span class="pill">支持圈子互动与用户主页</span>
+            <span class="pill">支持 AI 问答与共享日记本</span>
+            <span class="pill">支持举报、拉黑与协议确认</span>
+          </div>
+        </div>
+
+        <div class="phone" aria-hidden="true">
+          <div class="screen">
+            <div class="screen-top">
+              <span>毛球日记</span>
+              <span>09:41</span>
+            </div>
+            <div class="journal-card">
+              <h3>今天的幸福值 +1</h3>
+              <p>
+                早晨喝到一杯刚刚好的拿铁，傍晚散步时拍到了晚霞。把这些小小的瞬间写下来，日子就有了被认真珍惜的感觉。
+              </p>
+              <div class="tags">
+                <span>图文日记</span>
+                <span>生活分类</span>
+                <span>心情记录</span>
+              </div>
+              <div class="grid">
+                <div></div>
+                <div></div>
+                <div></div>
+              </div>
+            </div>
+            <div class="journal-card">
+              <h3>圈子与陪伴</h3>
+              <p>看看别人真实的生活片段，也把自己的温柔分享出去。想倾诉时，还可以和 AI 聊一聊。</p>
+              <div class="tags">
+                <span>圈子分享</span>
+                <span>AI 问答</span>
+                <span>共享日记本</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="section">
+        <div class="section-header">
+          <h2>核心功能</h2>
+          <p>
+            页面内容基于当前应用真实能力整理，既能用作官网介绍，也适合作为上架时填写的产品官网地址。
+          </p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #f472b6, #db2777)">✍️</div>
+            <h3>写日记</h3>
+            <p>支持记录文字、图片、视频与生活场景，把开心、委屈、灵感和想法都安静收纳起来。</p>
+            <ul>
+              <li>图文视频混排记录</li>
+              <li>按场景分类整理内容</li>
+              <li>支持搜索与时间轴回顾</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9)">🌏</div>
+            <h3>圈子分享</h3>
+            <p>浏览公开日记、进入他人主页、查看互动内容，在同频的人之间感受理解与共鸣。</p>
+            <ul>
+              <li>公开内容浏览与互动</li>
+              <li>用户主页与关注关系</li>
+              <li>支持举报、拉黑与内容过滤</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #14b8a6, #0f766e)">🤖</div>
+            <h3>AI 问答</h3>
+            <p>当你想倾诉、想被理解，或者只是想找点灵感时，AI 能提供即时陪伴与温柔回应。</p>
+            <ul>
+              <li>日常倾诉与情绪陪伴</li>
+              <li>灵感启发与轻量问答</li>
+              <li>随时可用的陪伴体验</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706)">💞</div>
+            <h3>共享日记本</h3>
+            <p>邀请恋人、家人或好友共同记录生活，把那些双向奔赴的普通日常写成只属于彼此的回忆。</p>
+            <ul>
+              <li>多人共享记录空间</li>
+              <li>适合情侣、家人与好友</li>
+              <li>让共同回忆更有仪式感</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="values" class="section">
+        <div class="section-header">
+          <h2>产品特点</h2>
+          <p>毛球日记希望做的不只是记录工具，而是一个能让人安心停留、愿意反复回来的情绪空间。</p>
+        </div>
+        <div class="two-col">
+          <div class="panel">
+            <h3>温柔治愈的记录体验</h3>
+            <ul>
+              <li>围绕“生活、情绪、回忆”设计整体体验，适合长期书写与回看。</li>
+              <li>支持分类、照片墙、时间轴等多种回顾方式，帮助用户重新看见自己的生活轨迹。</li>
+              <li>提供主题模式、通知提醒和应用锁等能力，兼顾仪式感与私密性。</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>真实、克制的社交关系</h3>
+            <ul>
+              <li>用户可以选择在圈子中分享公开内容，也可以把更多日常留在自己的私人空间。</li>
+              <li>通过关注、主页浏览与互动建立连接，但仍以“记录自己”而非“被动表演”为核心。</li>
+              <li>共享日记本让亲密关系中的共同记录更自然、更有温度。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="safety" class="section">
+        <div class="section-header">
+          <h2>安全与治理</h2>
+          <p>为了保障社区体验与上架合规，毛球日记已接入基础的用户生成内容治理能力。</p>
+        </div>
+        <div class="timeline">
+          <article class="timeline-card">
+            <strong>1</strong>
+            <h3>登录前协议确认</h3>
+            <p>用户在首次执行登录相关操作前，需要明确勾选并查看用户服务协议与隐私政策。</p>
+          </article>
+          <article class="timeline-card">
+            <strong>2</strong>
+            <h3>举报与审核留痕</h3>
+            <p>支持从用户主页发起举报，提交举报原因与补充说明，便于后续核查与处理。</p>
+          </article>
+          <article class="timeline-card">
+            <strong>3</strong>
+            <h3>拉黑与内容过滤</h3>
+            <p>支持拉黑、取消拉黑，并在圈子内容和用户主页中进行对应的内容过滤与访问限制。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="faq" class="section">
+        <div class="section-header">
+          <h2>常见问题</h2>
+          <p>如果你只是需要一个上架用官网地址，这一页已经可以直接承担产品介绍页的角色。</p>
+        </div>
+        <div class="faq">
+          <article class="faq-item">
+            <h3>这是正式官网吗？</h3>
+            <p>是。这是为毛球日记生成的静态产品官网，可用于 App Store 或其他平台填写产品官方网站。</p>
+          </article>
+          <article class="faq-item">
+            <h3>官网页面是否和当前 App 功能一致？</h3>
+            <p>页面介绍基于当前仓库中的真实功能整理，包括日记、圈子、AI 问答、共享日记本以及内容治理能力。</p>
+          </article>
+          <article class="faq-item">
+            <h3>如何联系开发者？</h3>
+            <p>
+              当前页面默认使用 GitHub 仓库与 Issues 作为外部联系入口。如需品牌邮箱或独立域名，后续可以继续补充。
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      <div class="footer-card">
+        <div>
+          <strong>毛球日记</strong>
+          <div>一个温暖的树洞，也是你专属的时光手账。</div>
+        </div>
+        <div class="footer-links">
+          <a href="#features">功能亮点</a>
+          <a href="#safety">安全治理</a>
+          <a href="https://github.com/wqs2019/maoqiu-diary-app" target="_blank" rel="noreferrer">GitHub 仓库</a>
+          <a href="https://github.com/wqs2019/maoqiu-diary-app/issues" target="_blank" rel="noreferrer">反馈建议</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
