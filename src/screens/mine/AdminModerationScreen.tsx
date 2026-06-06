@@ -1,6 +1,6 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -54,6 +54,21 @@ const REVIEW_ACTIONS: Array<{ status: FeedbackStatus; label: string; color: stri
   { status: 'rejected', label: '驳回', color: '#EF4444' },
 ];
 const PAGE_SIZE = 20;
+
+const getReviewKey = (item: FeedbackData) => item._id || `${item.userId}-${item.targetUserId}-${item.createdAt}`;
+
+const dedupeReviews = (items: FeedbackData[]) => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = getReviewKey(item);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+};
+
 const formatTime = (value?: string | number) => {
   if (!value) {
     return '未知时间';
@@ -157,6 +172,7 @@ const AdminModerationScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const targetFeedbackId = route.params?.feedbackId;
   const initialStatus = route.params?.initialStatus;
+  const hasAppliedRouteFilterRef = useRef(false);
 
   const [reviews, setReviews] = useState<FeedbackData[]>([]);
   const [focusedReview, setFocusedReview] = useState<FeedbackData | null>(null);
@@ -223,11 +239,11 @@ const AdminModerationScreen: React.FC = () => {
           status: nextFilter,
         });
 
-        const nextList = result.list || [];
+        const nextList = dedupeReviews(result.list || []);
         setReviews(nextList);
         setPage(2);
         setHasMore(nextList.length === PAGE_SIZE);
-        if (targetFeedbackId) {
+        if (targetFeedbackId && nextFilter === 'all') {
           await loadFocusedReview();
         } else {
           setFocusedReview(null);
@@ -244,8 +260,12 @@ const AdminModerationScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const nextFilter = targetFeedbackId ? initialStatus || 'all' : statusFilter;
-      if (nextFilter !== statusFilter) {
+      const shouldApplyRouteFilter = Boolean(targetFeedbackId && !hasAppliedRouteFilterRef.current);
+      const nextFilter = shouldApplyRouteFilter ? initialStatus || 'all' : statusFilter;
+      if (shouldApplyRouteFilter) {
+        hasAppliedRouteFilterRef.current = true;
+      }
+      if (shouldApplyRouteFilter && nextFilter !== statusFilter) {
         setStatusFilter(nextFilter);
       }
       setLoading(true);
@@ -268,8 +288,8 @@ const AdminModerationScreen: React.FC = () => {
         pageSize: PAGE_SIZE,
         status: statusFilter,
       });
-      const nextList = result.list || [];
-      setReviews((prev) => [...prev, ...nextList]);
+      const nextList = dedupeReviews(result.list || []);
+      setReviews((prev) => dedupeReviews([...prev, ...nextList]));
       setPage((prev) => prev + 1);
       setHasMore(nextList.length === PAGE_SIZE);
     } catch (error: any) {
@@ -288,7 +308,6 @@ const AdminModerationScreen: React.FC = () => {
     setPage(1);
     setHasMore(true);
     setFocusedReview(null);
-    loadFirstPage(nextFilter);
   };
 
   const handleOpenTargetDiary = useCallback(
@@ -404,10 +423,10 @@ const AdminModerationScreen: React.FC = () => {
 
   const displayReviews = useMemo(() => {
     if (!focusedReview?._id) {
-      return reviews;
+      return dedupeReviews(reviews);
     }
 
-    return [focusedReview, ...reviews.filter((item) => item._id !== focusedReview._id)];
+    return dedupeReviews([focusedReview, ...reviews]);
   }, [focusedReview, reviews]);
 
   const renderFilter = ({ key, label }: { key: ReviewFilter; label: string }) => {
@@ -443,7 +462,7 @@ const AdminModerationScreen: React.FC = () => {
     const target =
       item.targetSnapshot?.nickname || item.targetSnapshot?.phone || item.targetUserId || '未知用户';
     const status = item.status === 'processing' ? 'pending' : item.status || 'pending';
-    const isHighlighted = item._id === targetFeedbackId;
+    const isHighlighted = statusFilter === 'all' && item._id === targetFeedbackId;
     const diaryTitle = item.targetDiarySnapshot?.title?.trim();
     const diaryExcerpt = item.targetDiarySnapshot?.content?.trim();
 
@@ -630,7 +649,7 @@ const AdminModerationScreen: React.FC = () => {
       ) : (
         <FlatList
           data={displayReviews}
-          keyExtractor={(item) => item._id || `${item.userId}-${item.targetUserId}-${item.createdAt}`}
+          keyExtractor={getReviewKey}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           refreshing={refreshing}
