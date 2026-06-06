@@ -53,86 +53,8 @@
         margin: 0 auto;
       }
 
-      .topbar {
-        position: sticky;
-        top: 10px;
-        z-index: 10;
-        padding-top: 10px;
-      }
-
-      .topbar-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        min-height: 64px;
-        padding: 10px 14px;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.78);
-        background: rgba(255, 255, 255, 0.74);
-        backdrop-filter: blur(20px);
-        box-shadow: 0 18px 40px rgba(44, 24, 51, 0.08);
-      }
-
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 0;
-      }
-
-      .brand-badge {
-        display: grid;
-        place-items: center;
-        width: 38px;
-        height: 38px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #ffd6e8, #fff0f7);
-        color: var(--pink-deep);
-        font-size: 16px;
-        font-weight: 800;
-      }
-
-      .brand-meta small {
-        display: block;
-        font-size: 10px;
-        color: var(--text-soft);
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-      }
-
-      .brand-meta strong {
-        display: block;
-        font-size: 15px;
-        font-weight: 800;
-      }
-
-      .nav {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.72);
-        border: 1px solid rgba(255, 255, 255, 0.88);
-      }
-
-      .nav a {
-        padding: 8px 12px;
-        border-radius: 999px;
-        color: var(--text-soft);
-        font-size: 13px;
-        font-weight: 600;
-      }
-
-      .nav a:hover {
-        color: var(--pink-deep);
-        background: rgba(255, 255, 255, 0.92);
-      }
-
       main {
-        padding: 34px 0 56px;
+        padding: 24px 0 56px;
       }
 
       .hero,
@@ -326,19 +248,6 @@
       }
 
       @media (max-width: 820px) {
-        .topbar-inner {
-          flex-direction: column;
-          align-items: center;
-          border-radius: 24px;
-          padding: 12px;
-        }
-
-        .nav {
-          width: auto;
-          max-width: 100%;
-          overflow-x: auto;
-        }
-
         .hero,
         .card,
         .contact-card {
@@ -368,23 +277,6 @@
     </style>
   </head>
   <body>
-    <header class="topbar">
-      <div class="shell topbar-inner">
-        <a class="brand" href="./index.html">
-          <span class="brand-badge">M</span>
-          <span class="brand-meta">
-            <small>Healing Diary App</small>
-            <strong>毛球日记</strong>
-          </span>
-        </a>
-        <nav class="nav">
-          <a href="./index.html">官网首页</a>
-          <a href="./privacy.html">隐私政策</a>
-          <a href="./support.html">支持中心</a>
-        </nav>
-      </div>
-    </header>
-
     <main class="shell">
       <section class="hero">
         <div class="eyebrow">User Service Agreement</div>
