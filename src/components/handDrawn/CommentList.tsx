@@ -13,6 +13,7 @@ export interface Comment {
   time?: string; // 兼容旧数据
   parentId?: string; // 新增：父评论 ID
   replyToUser?: string; // 新增：回复的目标用户名称
+  replyToUserId?: string; // 新增：回复的目标用户 ID
   replies?: Comment[]; // 新增：嵌套的回复列表
 }
 

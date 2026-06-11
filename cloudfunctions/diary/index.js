@@ -91,6 +91,125 @@ const buildDiarySnapshot = (diary) => ({
   mediaCount: diary && Array.isArray(diary.media) ? diary.media.length : 0,
 });
 
+const getUserDisplayName = (user, fallback = '有人') =>
+  (user && (user.nickname || user.phone)) || fallback;
+
+const getDiaryDisplayText = (diary) => {
+  const title = diary && diary.title ? String(diary.title).trim() : '';
+  if (title) {
+    return title;
+  }
+
+  const content = diary && diary.content ? String(diary.content).replace(/\s+/g, ' ').trim() : '';
+  if (content) {
+    return content.slice(0, 18) + (content.length > 18 ? '...' : '');
+  }
+
+  return '这篇日记';
+};
+
+const getCommentPreview = (content) => {
+  const normalized = content ? String(content).replace(/\s+/g, ' ').trim() : '';
+  if (!normalized) {
+    return '给你留了一条评论';
+  }
+  return normalized.slice(0, 26) + (normalized.length > 26 ? '...' : '');
+};
+
+const createDiaryInteractionNotification = async ({
+  diary,
+  senderId,
+  type,
+  commentContent,
+  receiverIds,
+  isReply = false,
+}) => {
+  if (!diary || !diary._id || !diary.userId || !senderId) {
+    return;
+  }
+
+  const normalizedReceiverIds = [...new Set((receiverIds || [diary.userId]).filter(Boolean))].filter(
+    (receiverId) => receiverId !== senderId
+  );
+
+  if (normalizedReceiverIds.length === 0) {
+    return;
+  }
+
+  const [senderUser, ...receiverUsers] = await Promise.all([
+    getUserDoc(senderId),
+    ...normalizedReceiverIds.map((receiverId) => getUserDoc(receiverId)),
+  ]);
+  const senderName = getUserDisplayName(senderUser);
+  const diaryText = getDiaryDisplayText(diary);
+  const title =
+    type === 'like'
+      ? '有人赞了你的日记'
+      : isReply
+        ? '有人回复了你的评论'
+        : '有人评论了你的日记';
+  const content =
+    type === 'like'
+      ? `「${senderName}」赞了你的日记「${diaryText}」`
+      : isReply
+        ? `「${senderName}」回复了你的评论：${getCommentPreview(commentContent)}`
+        : `「${senderName}」评论了你的日记：${getCommentPreview(commentContent)}`;
+  const extraData = {
+    diaryId: diary._id,
+    diaryTitle: diaryText,
+    screen: 'CircleDetail',
+    isReply,
+  };
+
+  if (type === 'comment') {
+    extraData.commentPreview = getCommentPreview(commentContent);
+  }
+
+  await Promise.all(
+    normalizedReceiverIds.map((receiverId) =>
+      notificationsCollection.add({
+        receiverId,
+        senderId,
+        type,
+        title,
+        content,
+        relatedId: diary._id,
+        extraData,
+        isRead: false,
+        createdAt: db.serverDate(),
+      })
+    )
+  );
+
+  await Promise.allSettled(
+    receiverUsers
+      .filter((receiverUser) => receiverUser && receiverUser.pushToken)
+      .map((receiverUser) =>
+        sendPushNotification(receiverUser.pushToken, title, content, {
+          type,
+          relatedId: diary._id,
+          diaryId: diary._id,
+          screen: 'CircleDetail',
+          isReply,
+        })
+      )
+  );
+};
+
+const removeUnreadLikeNotification = async ({ diaryId, receiverId, senderId }) => {
+  if (!diaryId || !receiverId || !senderId) {
+    return;
+  }
+
+  await notificationsCollection.where({
+    receiverId,
+    senderId,
+    type: 'like',
+    relatedId: diaryId,
+    isRead: false,
+  }).remove();
+};
+
 const isDiaryModeratedHidden = (diary) =>
   !!(diary && HIDDEN_MODERATION_STATUSES.includes(diary.moderationStatus));
 
@@ -882,6 +1001,17 @@ const likeDiary = async (data) => {
         likedUserIds: newLikedUserIds,
         updatedAt: db.serverDate(),
       });
+      if (hasLiked) {
+        try {
+          await removeUnreadLikeNotification({
+            diaryId: _id,
+            receiverId: diaryDataRaw.userId,
+            senderId: userId,
+          });
+        } catch (notificationError) {
+          console.error('Remove unread like notification failed:', notificationError);
+        }
+      }
       return { success: true, message: '取消点赞成功', data: { action: 'unlike' } };
     } else {
       // 点赞：添加目标 userId（并去重）
@@ -890,6 +1020,17 @@ const likeDiary = async (data) => {
         likedUserIds: newLikedUserIds,
         updatedAt: db.serverDate(),
       });
+      if (!hasLiked) {
+        try {
+          await createDiaryInteractionNotification({
+            diary: diaryDataRaw,
+            senderId: userId,
+            type: 'like',
+          });
+        } catch (notificationError) {
+          console.error('Create like notification failed:', notificationError);
+        }
+      }
       return { success: true, message: '点赞成功', data: { action: 'like' } };
     }
   } catch (error) {
@@ -947,6 +1088,27 @@ const commentDiary = async (data) => {
       comments: _.push([comment]),
       updatedAt: db.serverDate(),
     });
+
+    try {
+      const receiverIds = [];
+      if (comment.replyToUserId && comment.replyToUserId !== comment.userId) {
+        receiverIds.push(comment.replyToUserId);
+      }
+      if (diaryDataRaw.userId && diaryDataRaw.userId !== comment.userId) {
+        receiverIds.push(diaryDataRaw.userId);
+      }
+
+      await createDiaryInteractionNotification({
+        diary: diaryDataRaw,
+        senderId: comment.userId,
+        type: 'comment',
+        commentContent: comment.content,
+        receiverIds,
+        isReply: !!comment.replyToUserId && comment.replyToUserId !== comment.userId,
+      });
+    } catch (notificationError) {
+      console.error('Create comment notification failed:', notificationError);
+    }
 
     return { success: true, message: '评论成功' };
   } catch (error) {

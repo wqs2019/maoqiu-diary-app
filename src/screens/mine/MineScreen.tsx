@@ -54,7 +54,11 @@ const MineScreen: React.FC = () => {
 
   useEffect(() => {
     if (user?._id && isFocused) {
-      getUnreadNotificationCount(user._id).then(setUnreadCount).catch(console.error);
+      getUnreadNotificationCount(user._id)
+        .then((count) => {
+          setUnreadCount(count);
+        })
+        .catch(console.error);
     }
   }, [user?._id, isFocused]);
 

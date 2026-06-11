@@ -90,6 +90,12 @@ export default function NotificationCenterScreen() {
 
   const handleNotificationPress = useCallback(
     (item: Notification) => {
+      const diaryId = item.relatedId || item.extraData?.diaryId;
+      if ((item.type === 'like' || item.type === 'comment') && diaryId) {
+        navigation.navigate('CircleDetail', { _id: diaryId });
+        return;
+      }
+
       const feedbackId = item.extraData?.feedbackId;
       if (user?.isAdmin && feedbackId) {
         navigation.navigate('AdminModeration', {
@@ -104,6 +110,7 @@ export default function NotificationCenterScreen() {
   const renderItem = ({ item }: { item: Notification & { senderInfo?: { nickname?: string; avatar?: string } } }) => {
     const isInvite = item.type === 'invite_shared_notebook';
     const isPending = item.actionStatus === 'pending';
+    const canOpenDiary = (item.type === 'like' || item.type === 'comment') && !!(item.relatedId || item.extraData?.diaryId);
     const canOpenReview = Boolean(user?.isAdmin && item.extraData?.feedbackId);
     const shouldUseSystemAvatar =
       item.type === 'system' && SYSTEM_AVATAR_NOTIFICATION_SOURCES.has(item.extraData?.source);
@@ -114,8 +121,8 @@ export default function NotificationCenterScreen() {
 
     return (
       <TouchableOpacity
-        activeOpacity={canOpenReview ? 0.85 : 1}
-        disabled={!canOpenReview}
+        activeOpacity={canOpenReview || canOpenDiary ? 0.85 : 1}
+        disabled={!canOpenReview && !canOpenDiary}
         onPress={() => handleNotificationPress(item)}
         style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3' }]}
       >
@@ -139,6 +146,12 @@ export default function NotificationCenterScreen() {
         {canOpenReview && (
           <Text style={[styles.jumpHint, { color: isDark ? '#F9A8D4' : HEALING_COLORS.pink[500] }]}>
             点击查看对应审核记录
+          </Text>
+        )}
+
+        {canOpenDiary && (
+          <Text style={[styles.jumpHint, { color: isDark ? '#F9A8D4' : HEALING_COLORS.pink[500] }]}>
+            点击查看对应日记
           </Text>
         )}
 

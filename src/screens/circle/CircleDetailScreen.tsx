@@ -105,6 +105,7 @@ const CircleDetailScreen: React.FC = () => {
     if (replyToComment) {
       newComment.parentId = replyToComment.parentId || replyToComment.id;
       newComment.replyToUser = replyToComment.user;
+      newComment.replyToUserId = replyToComment.userId;
     }
 
     // 乐观更新（与服务端 push 行为保持一致，追加到末尾）

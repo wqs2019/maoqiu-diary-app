@@ -153,9 +153,13 @@ export interface Diary {
     id: string;
     user: string;
     userId: string;
+    avatar?: string;
     content: string;
     createTime: string;
     image?: string;
+    parentId?: string;
+    replyToUser?: string;
+    replyToUserId?: string;
   }[];
   moderationStatus?: DiaryModerationStatus;
   violationReason?: string;

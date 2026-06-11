@@ -48,6 +48,7 @@ export const markNotificationRead = async (
 };
 
 export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
+
   const result = await CloudService.callFunction<CloudFunctionResponse<number>>('notification', {
     action: 'getUnreadCount',
     data: { userId },
@@ -56,5 +57,6 @@ export const getUnreadNotificationCount = async (userId: string): Promise<number
   if (result.data?.success) {
     return result.data.data;
   }
+
   return 0;
 };
