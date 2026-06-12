@@ -5,20 +5,37 @@ const app = cloud.init({
 const db = app.database();
 const _ = db.command;
 
+const buildNotificationQuery = ({ userId, types, excludeTypes, unreadOnly = false }) => {
+  const condition = { receiverId: userId };
+
+  if (unreadOnly) {
+    condition.isRead = false;
+  }
+
+  if (Array.isArray(types) && types.length > 0) {
+    condition.type = _.in(types);
+  } else if (Array.isArray(excludeTypes) && excludeTypes.length > 0) {
+    condition.type = _.nin(excludeTypes);
+  }
+
+  return condition;
+};
+
 // 获取通知列表
 const getNotifications = async (data) => {
   try {
-    const { userId, page = 1, pageSize = 20 } = data;
+    const { userId, page = 1, pageSize = 20, types, excludeTypes } = data;
 
     if (!userId) {
       return { success: false, message: '用户ID不能为空' };
     }
 
     const skip = (page - 1) * pageSize;
+    const condition = buildNotificationQuery({ userId, types, excludeTypes });
 
     // 先查出当前用户的通知
     const result = await db.collection('notifications')
-      .where({ receiverId: userId })
+      .where(condition)
       .orderBy('createdAt', 'desc')
       .skip(skip)
       .limit(pageSize)
@@ -40,7 +57,7 @@ const getNotifications = async (data) => {
     }
 
     // 获取总数
-    const countRes = await db.collection('notifications').where({ receiverId: userId }).count();
+    const countRes = await db.collection('notifications').where(condition).count();
 
     return {
       success: true,
@@ -90,14 +107,15 @@ const markNotificationRead = async (data) => {
 // 获取未读通知数量
 const getUnreadCount = async (data) => {
   try {
-    const { userId } = data;
+    const { userId, types, excludeTypes } = data;
 
     if (!userId) {
       return { success: false, message: '用户ID不能为空' };
     }
 
+    const condition = buildNotificationQuery({ userId, types, excludeTypes, unreadOnly: true });
     const result = await db.collection('notifications')
-      .where({ receiverId: userId, isRead: false })
+      .where(condition)
       .count();
 
     return { success: true, data: result.total };

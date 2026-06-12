@@ -11,6 +11,7 @@ import { getNotifications, markNotificationRead } from '../../services/notificat
 import { respondInvitation } from '../../services/notebookService';
 import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import { Notification } from '../../types';
 
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
@@ -19,6 +20,7 @@ const SYSTEM_AVATAR_NOTIFICATION_SOURCES = new Set([
   'report_review_result',
   'diary_moderation_result',
 ]);
+const CIRCLE_INTERACTION_TYPES: Notification['type'][] = ['like', 'comment'];
 
 export default function NotificationCenterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -34,17 +36,20 @@ export default function NotificationCenterScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const fetchNotebooks = useNotebookStore(state => state.fetchNotebooks);
+  const setCenterUnreadCount = useNotificationStore((state) => state.setCenterUnreadCount);
 
   const fetchNotifications = useCallback(async () => {
     if (!user?._id) return;
     try {
-      const res = await getNotifications(user._id, 1, 50);
+      const res = await getNotifications(user._id, 1, 50, { excludeTypes: CIRCLE_INTERACTION_TYPES });
       setNotifications(res.list);
+      const unreadIds = res.list.filter(n => !n.isRead).map(n => n._id);
+      setCenterUnreadCount(unreadIds.length);
       
       // Mark all as read when entering or refreshing
-      const unreadIds = res.list.filter(n => !n.isRead).map(n => n._id);
       if (unreadIds.length > 0) {
-        await markNotificationRead(user._id, undefined, true);
+        await markNotificationRead(user._id, unreadIds, false);
+        setCenterUnreadCount(0);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -52,7 +57,7 @@ export default function NotificationCenterScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?._id]);
+  }, [setCenterUnreadCount, user?._id]);
 
   useEffect(() => {
     fetchNotifications();
@@ -90,12 +95,6 @@ export default function NotificationCenterScreen() {
 
   const handleNotificationPress = useCallback(
     (item: Notification) => {
-      const diaryId = item.relatedId || item.extraData?.diaryId;
-      if ((item.type === 'like' || item.type === 'comment') && diaryId) {
-        navigation.navigate('CircleDetail', { _id: diaryId });
-        return;
-      }
-
       const feedbackId = item.extraData?.feedbackId;
       if (user?.isAdmin && feedbackId) {
         navigation.navigate('AdminModeration', {
@@ -110,7 +109,6 @@ export default function NotificationCenterScreen() {
   const renderItem = ({ item }: { item: Notification & { senderInfo?: { nickname?: string; avatar?: string } } }) => {
     const isInvite = item.type === 'invite_shared_notebook';
     const isPending = item.actionStatus === 'pending';
-    const canOpenDiary = (item.type === 'like' || item.type === 'comment') && !!(item.relatedId || item.extraData?.diaryId);
     const canOpenReview = Boolean(user?.isAdmin && item.extraData?.feedbackId);
     const shouldUseSystemAvatar =
       item.type === 'system' && SYSTEM_AVATAR_NOTIFICATION_SOURCES.has(item.extraData?.source);
@@ -121,8 +119,8 @@ export default function NotificationCenterScreen() {
 
     return (
       <TouchableOpacity
-        activeOpacity={canOpenReview || canOpenDiary ? 0.85 : 1}
-        disabled={!canOpenReview && !canOpenDiary}
+        activeOpacity={canOpenReview ? 0.85 : 1}
+        disabled={!canOpenReview}
         onPress={() => handleNotificationPress(item)}
         style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#FFF0F3' }]}
       >
@@ -146,12 +144,6 @@ export default function NotificationCenterScreen() {
         {canOpenReview && (
           <Text style={[styles.jumpHint, { color: isDark ? '#F9A8D4' : HEALING_COLORS.pink[500] }]}>
             点击查看对应审核记录
-          </Text>
-        )}
-
-        {canOpenDiary && (
-          <Text style={[styles.jumpHint, { color: isDark ? '#F9A8D4' : HEALING_COLORS.pink[500] }]}>
-            点击查看对应日记
           </Text>
         )}
 

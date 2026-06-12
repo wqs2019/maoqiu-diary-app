@@ -15,10 +15,10 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryStats } from '../../hooks/useDiaryQuery';
 import { useJoinDays } from '../../hooks/useJoinDays';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { useAuthStore } from '../../store/authStore';
 import { useNotebookStore } from '../../store/notebookStore';
-import { getUnreadNotificationCount } from '../../services/notificationService';
 import { useIsFocused } from '@react-navigation/native';
+import { useAuthStore } from '../../store/authStore';
+import { useNotificationStore } from '../../store/notificationStore';
 
 type MineScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -38,7 +38,8 @@ const MineScreen: React.FC = () => {
   const fetchNotebooks = useNotebookStore((state) => state.fetchNotebooks);
   const notebookCount = user?._id ? getNotebooks(user._id).length : 0;
   const isFocused = useIsFocused();
-  const [unreadCount, setUnreadCount] = React.useState(0);
+  const centerUnreadCount = useNotificationStore((state) => state.centerUnreadCount);
+  const refreshUnreadCount = useNotificationStore((state) => state.refreshUnreadCount);
 
   // 使用 hook 计算加入天数
   const joinDays = useJoinDays(user);
@@ -54,13 +55,9 @@ const MineScreen: React.FC = () => {
 
   useEffect(() => {
     if (user?._id && isFocused) {
-      getUnreadNotificationCount(user._id)
-        .then((count) => {
-          setUnreadCount(count);
-        })
-        .catch(console.error);
+      refreshUnreadCount(user._id);
     }
-  }, [user?._id, isFocused]);
+  }, [user?._id, isFocused, refreshUnreadCount]);
 
   const handleLogout = async () => {
     await logout();
@@ -173,9 +170,9 @@ const MineScreen: React.FC = () => {
           onPress={() => navigation.navigate('NotificationCenter' as any)}
         >
           <Feather name="bell" size={20} color={isDark ? '#E5E7EB' : HEALING_COLORS.gray[800]} />
-          {unreadCount > 0 && (
+          {centerUnreadCount > 0 && (
             <View style={styles.redDot}>
-              <Text style={styles.redDotText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              <Text style={styles.redDotText}>{centerUnreadCount > 99 ? '99+' : centerUnreadCount}</Text>
             </View>
           )}
         </TouchableOpacity>

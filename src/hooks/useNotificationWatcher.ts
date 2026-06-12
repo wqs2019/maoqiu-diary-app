@@ -3,8 +3,9 @@ import * as Notifications from 'expo-notifications';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuthStore } from '../store/authStore';
-import CloudService from '../services/tcb';
 import { useNotebookStore } from '../store/notebookStore';
+import { useNotificationStore } from '../store/notificationStore';
+import CloudService from '../services/tcb';
 
 const REMOTE_PUSH_ONLY_SOURCES = new Set([
   'diary_report',
@@ -17,6 +18,8 @@ export const useNotificationWatcher = () => {
   const watcherRef = useRef<any>(null);
   const latestPushTokenRef = useRef<string | undefined>(undefined);
   const queryClient = useQueryClient();
+  const refreshUnreadCount = useNotificationStore((state) => state.refreshUnreadCount);
+  const resetUnreadCount = useNotificationStore((state) => state.resetUnreadCount);
 
   useEffect(() => {
     latestPushTokenRef.current = user?.pushToken;
@@ -28,6 +31,7 @@ export const useNotificationWatcher = () => {
         watcherRef.current.close();
         watcherRef.current = null;
       }
+      resetUnreadCount();
       return;
     }
 
@@ -49,8 +53,11 @@ export const useNotificationWatcher = () => {
           .watch({
             onChange: (snapshot: any) => {
               if (snapshot.type === 'init') {
+                refreshUnreadCount(user._id);
                 return; // 初始加载不触发本地通知
               }
+
+              refreshUnreadCount(user._id);
 
               // 只处理新增的文档
               const newDocs = snapshot.docChanges.filter((change: any) => change.dataType === 'add');
@@ -124,5 +131,5 @@ export const useNotificationWatcher = () => {
         watcherRef.current = null;
       }
     };
-  }, [queryClient, user?._id]);
+  }, [queryClient, refreshUnreadCount, resetUnreadCount, user?._id]);
 };

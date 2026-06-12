@@ -38,8 +38,10 @@ import ReportDiaryPickerScreen from '../screens/circle/ReportDiaryPickerScreen';
 import FollowersScreen from '@/screens/circle/FollowersScreen';
 import NotificationCenterScreen from '@/screens/mine/NotificationCenterScreen';
 import OnboardingScreen from '@/screens/onboarding/OnboardingScreen';
+import { getUnreadNotificationCount } from '@/services/notificationService';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
 
 // Types
 export type RootStackParamList = {
@@ -114,10 +116,35 @@ const AuthNavigator = () => (
 const MainNavigator = () => {
   const { themeName, colors } = useAppTheme();
   const appConfig = useAppStore((state) => state.appConfig);
+  const user = useAuthStore((state) => state.user);
+  const circleUnreadCount = useNotificationStore((state) => state.circleUnreadCount);
+  const setCenterUnreadCount = useNotificationStore((state) => state.setCenterUnreadCount);
+  const setCircleUnreadCount = useNotificationStore((state) => state.setCircleUnreadCount);
 
   // 引入全局主题配色
   const { HEALING_COLORS, DARK_HEALING_COLORS } = require('@/config/handDrawnTheme');
   const currentHealingColors = themeName === 'dark' ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
+
+  React.useEffect(() => {
+    if (!user?._id) {
+      setCenterUnreadCount(0);
+      setCircleUnreadCount(0);
+      return;
+    }
+
+    Promise.all([
+      getUnreadNotificationCount(user._id, { excludeTypes: ['like', 'comment'] }),
+      getUnreadNotificationCount(user._id, { types: ['like', 'comment'] }),
+    ])
+      .then(([centerCount, tabCount]) => {
+        setCenterUnreadCount(centerCount);
+        setCircleUnreadCount(tabCount);
+      })
+      .catch(() => {
+        setCenterUnreadCount(0);
+        setCircleUnreadCount(0);
+      });
+  }, [setCenterUnreadCount, setCircleUnreadCount, user?._id]);
 
   return (
     <MainTab.Navigator
@@ -144,6 +171,21 @@ const MainNavigator = () => {
         },
         tabBarActiveTintColor: currentHealingColors.pink[500],
         tabBarInactiveTintColor: colors.textSecondary,
+        tabBarBadge:
+          route.name === 'Circle' && circleUnreadCount > 0
+            ? circleUnreadCount > 99
+              ? '99+'
+              : circleUnreadCount
+            : undefined,
+        tabBarBadgeStyle:
+          route.name === 'Circle'
+            ? {
+                backgroundColor: '#FF4D6D',
+                color: '#FFFFFF',
+                fontSize: 10,
+                fontWeight: '700',
+              }
+            : undefined,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,

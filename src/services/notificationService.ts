@@ -15,14 +15,20 @@ export interface NotificationListResponse {
   pageSize: number;
 }
 
+export interface NotificationQueryOptions {
+  types?: Notification['type'][];
+  excludeTypes?: Notification['type'][];
+}
+
 export const getNotifications = async (
   userId: string,
   page: number = 1,
-  pageSize: number = 20
+  pageSize: number = 20,
+  options: NotificationQueryOptions = {}
 ): Promise<NotificationListResponse> => {
   const result = await CloudService.callFunction<CloudFunctionResponse<NotificationListResponse>>('notification', {
     action: 'getNotifications',
-    data: { userId, page, pageSize },
+    data: { userId, page, pageSize, ...options },
   });
 
   if (result.data?.success && result.data.data) {
@@ -47,16 +53,17 @@ export const markNotificationRead = async (
   }
 };
 
-export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
-
+export const getUnreadNotificationCount = async (
+  userId: string,
+  options: NotificationQueryOptions = {}
+): Promise<number> => {
   const result = await CloudService.callFunction<CloudFunctionResponse<number>>('notification', {
     action: 'getUnreadCount',
-    data: { userId },
+    data: { userId, ...options },
   });
 
   if (result.data?.success) {
     return result.data.data;
   }
-
   return 0;
 };
