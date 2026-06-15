@@ -120,6 +120,7 @@ const createDiaryInteractionNotification = async ({
   diary,
   senderId,
   type,
+  commentId,
   commentContent,
   receiverIds,
   isReply = false,
@@ -159,6 +160,7 @@ const createDiaryInteractionNotification = async ({
   };
 
   if (type === 'comment') {
+    extraData.commentId = commentId || '';
     extraData.commentPreview = getCommentPreview(commentContent);
   }
 
@@ -191,6 +193,60 @@ const removeUnreadLikeNotification = async ({ diaryId, receiverId, senderId }) =
     type: 'like',
     relatedId: diaryId,
     isRead: false,
+  }).remove();
+};
+
+const removeCommentNotifications = async ({ diaryId, removedComments }) => {
+  if (!diaryId || !Array.isArray(removedComments) || removedComments.length === 0) {
+    return;
+  }
+
+  const senderIds = [...new Set(removedComments.map((item) => item && item.userId).filter(Boolean))];
+  if (senderIds.length === 0) {
+    return;
+  }
+
+  const notificationRes = await notificationsCollection.where({
+    type: 'comment',
+    relatedId: diaryId,
+    senderId: _.in(senderIds),
+  }).get();
+
+  const notifications = notificationRes.data || [];
+  if (notifications.length === 0) {
+    return;
+  }
+
+  const removedCommentIds = new Set(removedComments.map((item) => item && item.id).filter(Boolean));
+  const removedCommentPreviews = new Set(
+    removedComments.map((item) => getCommentPreview(item && item.content)).filter(Boolean)
+  );
+
+  const matchedNotificationIds = notifications
+    .filter((notification) => {
+      const extraData = notification.extraData || {};
+      const commentId = extraData.commentId;
+      const commentPreview = extraData.commentPreview;
+
+      if (commentId && removedCommentIds.has(commentId)) {
+        return true;
+      }
+
+      if (commentPreview && removedCommentPreviews.has(commentPreview) && removedCommentIds.size > 0) {
+        return true;
+      }
+
+      return false;
+    })
+    .map((notification) => notification._id)
+    .filter(Boolean);
+
+  if (matchedNotificationIds.length === 0) {
+    return;
+  }
+
+  await notificationsCollection.where({
+    _id: _.in(matchedNotificationIds),
   }).remove();
 };
 
@@ -1086,6 +1142,7 @@ const commentDiary = async (data) => {
         diary: diaryDataRaw,
         senderId: comment.userId,
         type: 'comment',
+        commentId: comment.id,
         commentContent: comment.content,
         receiverIds,
         isReply: !!comment.replyToUserId && comment.replyToUserId !== comment.userId,
@@ -1126,6 +1183,17 @@ const deleteCommentDiary = async (data) => {
     }
 
     const shouldDeleteReplies = !targetComment.parentId;
+    const removedComments = comments.filter((item) => {
+      if (!item) {
+        return false;
+      }
+
+      if (item.id === commentId) {
+        return true;
+      }
+
+      return shouldDeleteReplies && item.parentId === commentId;
+    });
     const nextComments = comments.filter((item) => {
       if (!item) {
         return false;
@@ -1146,6 +1214,15 @@ const deleteCommentDiary = async (data) => {
       comments: nextComments,
       updatedAt: db.serverDate(),
     });
+
+    try {
+      await removeCommentNotifications({
+        diaryId: _id,
+        removedComments,
+      });
+    } catch (notificationError) {
+      console.error('Remove comment notifications failed:', notificationError);
+    }
 
     return { success: true, message: '删除评论成功' };
   } catch (error) {
