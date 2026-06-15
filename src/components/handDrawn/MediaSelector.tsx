@@ -38,6 +38,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   onDragStart,
   onDragEnd,
 }) => {
+  const MAX_CONCURRENT_UPLOADS = 3;
   const isUploading = useRef(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -241,16 +242,41 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   };
 
   // 批量上传媒体到云端
-  const uploadAllMedia = async (mediaList: MediaResource[]): Promise<MediaResource[]> => {
-    const uploadedMedia: MediaResource[] = [];
-
-    for (let i = 0; i < mediaList.length; i++) {
-      const item = mediaList[i];
-      console.log(`[MediaUpload] Processing media ${i + 1}/${mediaList.length}`);
-
-      const uploadedItem = await uploadMediaItem(item);
-      uploadedMedia.push(uploadedItem); // 总是添加，即使失败也保留
+  const uploadAllMedia = async (
+    mediaList: MediaResource[],
+    options?: {
+      concurrency?: number;
+      onItemComplete?: (index: number, item: MediaResource) => void;
     }
+  ): Promise<MediaResource[]> => {
+    if (mediaList.length === 0) return [];
+
+    const uploadedMedia = new Array<MediaResource>(mediaList.length);
+    const concurrency = Math.max(
+      1,
+      Math.min(options?.concurrency ?? MAX_CONCURRENT_UPLOADS, mediaList.length)
+    );
+    let nextIndex = 0;
+
+    const worker = async () => {
+      while (true) {
+        const currentIndex = nextIndex++;
+        if (currentIndex >= mediaList.length) {
+          return;
+        }
+
+        const item = mediaList[currentIndex];
+        console.log(
+          `[MediaUpload] Processing media ${currentIndex + 1}/${mediaList.length} (concurrency ${concurrency})`
+        );
+
+        const uploadedItem = await uploadMediaItem(item);
+        uploadedMedia[currentIndex] = uploadedItem;
+        options?.onItemComplete?.(currentIndex, uploadedItem);
+      }
+    };
+
+    await Promise.all(Array.from({ length: concurrency }, () => worker()));
 
     return uploadedMedia;
   };
@@ -301,47 +327,42 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         onMediaChange(latestMediaState);
         isUploading.current = true;
 
-        // 2. 逐个进行上传
-        for (let i = 0; i < assets.length; i++) {
-          const asset = assets[i];
-          const localItem = localMedia[i];
-          
-          try {
-            // 执行上传
-            const uploadedItem = await uploadMediaItem(localItem);
-            
-            // 更新当前图片的上传结果
-            const newMedia = [...latestMediaState];
-            const targetIndex = newMedia.findIndex(m => m.uri === asset.uri);
-            if (targetIndex >= 0) {
-              newMedia[targetIndex] = {
-                ...uploadedItem,
-                uploadStatus: uploadedItem.uploadError ? 'fail' : 'success',
-              };
-            }
-            latestMediaState = newMedia;
-            onMediaChange(latestMediaState);
-            
-          } catch (err: any) {
-            console.error(`[MediaUpload] Error processing asset ${i+1}:`, err);
-            // 发生异常，更新状态为失败
-            const newMedia = [...latestMediaState];
-            const targetIndex = newMedia.findIndex(m => m.uri === asset.uri);
-            if (targetIndex >= 0) {
-              const errorMessage = err.message || '处理异常';
-              newMedia[targetIndex] = {
-                ...newMedia[targetIndex],
-                uploadStatus: 'fail',
-                subUploadStatus: 'unknown',
-                uploadError: errorMessage,
-              };
-            }
-            latestMediaState = newMedia;
-            onMediaChange(latestMediaState);
-          }
+        // 2. 限流并发上传，单个完成后立即刷新对应卡片状态
+        try {
+          await uploadAllMedia(localMedia, {
+            concurrency: Math.min(MAX_CONCURRENT_UPLOADS, localMedia.length),
+            onItemComplete: (index, uploadedItem) => {
+              const targetUri = localMedia[index]?.uri;
+              if (!targetUri) return;
+
+              const newMedia = [...latestMediaState];
+              const targetIndex = newMedia.findIndex((m) => m.uri === targetUri);
+              if (targetIndex >= 0) {
+                newMedia[targetIndex] = {
+                  ...uploadedItem,
+                  uploadStatus: uploadedItem.uploadError ? 'fail' : 'success',
+                };
+              }
+              latestMediaState = newMedia;
+              onMediaChange(latestMediaState);
+            },
+          });
+        } catch (err: any) {
+          console.error('[MediaUpload] Batch image upload failed:', err);
+          latestMediaState = latestMediaState.map((item) =>
+            item.uploadStatus === 'loading'
+              ? {
+                  ...item,
+                  uploadStatus: 'fail',
+                  subUploadStatus: 'unknown',
+                  uploadError: err?.message || '批量上传异常',
+                }
+              : item
+          );
+          onMediaChange(latestMediaState);
+        } finally {
+          isUploading.current = false;
         }
-        
-        isUploading.current = false;
       };
 
       // 启动异步处理流，不阻塞当前主线程（UI 立刻关闭选择器并显示 loading）

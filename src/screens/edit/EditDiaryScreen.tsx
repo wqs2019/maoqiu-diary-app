@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
+import { useToast } from '../../components/common/Toast';
 import { DatePicker } from '../../components/handDrawn/DatePicker';
 import { HandDrawnButton } from '../../components/handDrawn/HandDrawnButton';
 import { MediaSelector } from '../../components/handDrawn/MediaSelector';
@@ -39,6 +40,7 @@ const EditDiaryScreen: React.FC = () => {
   const route = useRoute<EditDiaryRouteProp>();
   const queryClient = useQueryClient();
   const { isDark } = useAppTheme();
+  const toast = useToast();
   const initialScenario = route.params?.scenario || 'daily';
   const diaryId = route.params?.diaryId;
   const isEditMode = !!diaryId;
@@ -174,14 +176,10 @@ const EditDiaryScreen: React.FC = () => {
           },
           {
             onSuccess: () => {
-              Alert.alert('✨ 太棒了！', '日记更新成功～', [
-                {
-                  text: '好的',
-                  onPress: () => {
-                    navigation.goBack();
-                  },
-                },
-              ]);
+              toast.success('日记更新成功～');
+              setTimeout(() => {
+                navigation.goBack();
+              }, 500);
             },
             onError: (error) => {
               console.error('Update diary error:', error);
@@ -196,14 +194,10 @@ const EditDiaryScreen: React.FC = () => {
         // 调用 mutation 保存日记
         createDiaryMutation.mutate(payload, {
           onSuccess: () => {
-            Alert.alert('✨ 太棒了！', '日记已保存到云端，继续记录美好时光吧～', [
-              {
-                text: '好的',
-                onPress: () => {
-                  navigation.goBack();
-                },
-              },
-            ]);
+            toast.success('日记已保存到云端，继续记录美好时光吧～');
+            setTimeout(() => {
+              navigation.goBack();
+            }, 500);
           },
           onError: (error) => {
             console.error('Save diary error:', error);
