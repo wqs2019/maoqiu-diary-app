@@ -18,6 +18,7 @@ export interface NotificationListResponse {
 export interface NotificationQueryOptions {
   types?: Notification['type'][];
   excludeTypes?: Notification['type'][];
+  unreadOnly?: boolean;
 }
 
 export const getNotifications = async (
@@ -41,11 +42,12 @@ export const getNotifications = async (
 export const markNotificationRead = async (
   userId: string,
   notificationIds?: string[],
-  markAll: boolean = false
+  markAll: boolean = false,
+  options: NotificationQueryOptions = {}
 ): Promise<void> => {
   const result = await CloudService.callFunction<CloudFunctionResponse<any>>('notification', {
     action: 'markRead',
-    data: { userId, notificationIds, markAll },
+    data: { userId, notificationIds, markAll, ...options },
   });
 
   if (!result.data?.success) {

@@ -139,6 +139,10 @@ export class UserService {
         },
       });
 
+      // #region debug-point A:user-service-follow-response
+      fetch('http://127.0.0.1:7777/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'follow-red-dot',runId:'pre',hypothesisId:'A',location:'userService.follow:response',msg:'[DEBUG] user follow response',data:{followerId,followingId,action,responseCode:response?.code,cloudResult:response?.data},ts:Date.now()})}).catch(()=>{});
+      // #endregion
+
       if (response.code === 0 && response.data) {
         const cloudResult = response.data;
         if (cloudResult.success) {

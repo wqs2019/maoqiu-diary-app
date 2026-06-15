@@ -164,3 +164,17 @@ export const commentDiary = async (_id: string, comment: any): Promise<void> => 
     data: { _id, comment },
   });
 };
+
+/**
+ * 删除日记评论
+ */
+export const deleteDiaryComment = async (_id: string, commentId: string, userId: string): Promise<void> => {
+  const result = await CloudService.callFunction('diary', {
+    action: 'deleteComment',
+    data: { _id, commentId, userId },
+  });
+
+  if (result.code !== 0 || (result.data as any)?.success === false) {
+    throw new Error(result.message || (result.data as any)?.message || '删除评论失败');
+  }
+};

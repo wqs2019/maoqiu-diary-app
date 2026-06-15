@@ -20,7 +20,7 @@ const SYSTEM_AVATAR_NOTIFICATION_SOURCES = new Set([
   'report_review_result',
   'diary_moderation_result',
 ]);
-const CIRCLE_INTERACTION_TYPES: Notification['type'][] = ['like', 'comment'];
+const CIRCLE_INTERACTION_TYPES: Notification['type'][] = ['like', 'comment', 'follow'];
 
 export default function NotificationCenterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

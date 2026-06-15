@@ -27,6 +27,7 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import { useDiaryList, useLikeDiary } from '@/hooks/useDiaryQuery';
 import { useQueryClient } from '@/hooks/useQuery';
 import feedbackService, { ReportReason } from '@/services/feedbackService';
+import { getNotifications, getUnreadNotificationCount } from '@/services/notificationService';
 import userService from '@/services/userService';
 import { useAuthStore } from '@/store/authStore';
 import { Diary } from '@/types';
@@ -157,13 +158,25 @@ const UserProfileScreen: React.FC = () => {
     const action = profile?.isFollowing ? 'unfollow' : 'follow';
     try {
       setFollowLoading(true);
+      // #region debug-point D:follow-action-start
+      fetch('http://127.0.0.1:7777/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'follow-red-dot',runId:'pre',hypothesisId:'D',location:'UserProfileScreen.handleFollow:start',msg:'[DEBUG] follow action start',data:{currentUserId:currentUser._id,targetUserId,action,isFollowing:profile?.isFollowing},ts:Date.now()})}).catch(()=>{});
+      // #endregion
       await userService.follow(currentUser._id, targetUserId, action);
+      // #region debug-point A:follow-after-success
+      Promise.all([
+        getUnreadNotificationCount(targetUserId, { types: ['follow'] }),
+        getNotifications(targetUserId, 1, 3, { types: ['follow'] }),
+      ]).then(([followUnreadCount, followListRes])=>fetch('http://127.0.0.1:7777/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'follow-red-dot',runId:'pre',hypothesisId:'A',location:'UserProfileScreen.handleFollow:afterSuccess',msg:'[DEBUG] follow query after success',data:{currentUserId:currentUser._id,targetUserId,action,followUnreadCount,followList:followListRes.list.map(item=>({_id:item._id,type:item.type,receiverId:item.receiverId,senderId:item.senderId,isRead:item.isRead,content:item.content,relatedId:item.relatedId}))},ts:Date.now()})})).catch(()=>{});
+      // #endregion
       setProfile((prev: any) => ({
         ...prev,
         isFollowing: !prev.isFollowing,
         followersCount: prev.isFollowing ? prev.followersCount - 1 : prev.followersCount + 1,
       }));
     } catch (error) {
+      // #region debug-point D:follow-action-error
+      fetch('http://127.0.0.1:7777/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'follow-red-dot',runId:'pre',hypothesisId:'D',location:'UserProfileScreen.handleFollow:error',msg:'[DEBUG] follow action error',data:{currentUserId:currentUser._id,targetUserId,action,error:error instanceof Error ? error.message : String(error)},ts:Date.now()})}).catch(()=>{});
+      // #endregion
       Alert.alert('提示', '操作失败');
     } finally {
       setFollowLoading(false);

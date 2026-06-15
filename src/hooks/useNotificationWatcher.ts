@@ -12,6 +12,7 @@ const REMOTE_PUSH_ONLY_SOURCES = new Set([
   'user_report',
   'diary_recheck',
 ]);
+const INTERACTION_NOTIFICATION_TYPES = new Set(['like', 'comment', 'follow']);
 
 export const useNotificationWatcher = () => {
   const user = useAuthStore((state) => state.user);
@@ -53,11 +54,15 @@ export const useNotificationWatcher = () => {
           .watch({
             onChange: (snapshot: any) => {
               if (snapshot.type === 'init') {
-                refreshUnreadCount(user._id);
+                // #region debug-point C:watcher-init
+                void refreshUnreadCount(user._id).then((counts)=>fetch('http://127.0.0.1:7777/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'follow-red-dot',runId:'pre',hypothesisId:'C',location:'useNotificationWatcher:onChange:init',msg:'[DEBUG] watcher init refresh complete',data:{userId:user._id,counts},ts:Date.now()})})).catch(()=>{});
+                // #endregion
                 return; // 初始加载不触发本地通知
               }
 
-              refreshUnreadCount(user._id);
+              // #region debug-point C:watcher-change
+              void refreshUnreadCount(user._id).then((counts)=>fetch('http://127.0.0.1:7777/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'follow-red-dot',runId:'pre',hypothesisId:'C',location:'useNotificationWatcher:onChange:change',msg:'[DEBUG] watcher change refresh complete',data:{userId:user._id,snapshotType:snapshot.type,counts,docChanges:(snapshot.docChanges||[]).map((change:any)=>({dataType:change.dataType,type:change.doc?.type,receiverId:change.doc?.receiverId,senderId:change.doc?.senderId,_id:change.doc?._id}))},ts:Date.now()})})).catch(()=>{});
+              // #endregion
 
               // 只处理新增的文档
               const newDocs = snapshot.docChanges.filter((change: any) => change.dataType === 'add');
@@ -68,6 +73,7 @@ export const useNotificationWatcher = () => {
                   notif.type === 'system' &&
                   notif.extraData?.feedbackId &&
                   REMOTE_PUSH_ONLY_SOURCES.has(notif.extraData?.source);
+                const isInteractionNotification = INTERACTION_NOTIFICATION_TYPES.has(notif.type);
                 
                 // 根据不同类型设置不同的通知文案
                 let title = notif.title || '✨ 收到新通知';
@@ -82,7 +88,7 @@ export const useNotificationWatcher = () => {
                 // 那么本地 watcher 就不需要再弹窗了，仅负责静默刷新 UI 即可
                 // 不再特判模拟器，因为如果模拟器共享了带有 pushToken 的账号，云端仍会发送远程推送，
                 // 特判会导致模拟器上出现本地+远程的重复弹窗。
-                if (!latestPushTokenRef.current && !isAdminReviewNotification) {
+                if (!latestPushTokenRef.current && !isAdminReviewNotification && !isInteractionNotification) {
                   // 触发本地系统通知
                   Notifications.scheduleNotificationAsync({
                     content: {

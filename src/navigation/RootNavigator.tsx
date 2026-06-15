@@ -34,6 +34,7 @@ import SystemConfigScreen from '@/screens/mine/SystemConfigScreen';
 import ThemeSettingScreen from '@/screens/mine/ThemeSettingScreen';
 import WebScreen from '@/screens/mine/WebScreen';
 import AdminModerationScreen from '../screens/mine/AdminModerationScreen';
+import CircleInteractionListScreen from '../screens/circle/CircleInteractionListScreen';
 import ReportDiaryPickerScreen from '../screens/circle/ReportDiaryPickerScreen';
 import FollowersScreen from '@/screens/circle/FollowersScreen';
 import NotificationCenterScreen from '@/screens/mine/NotificationCenterScreen';
@@ -51,6 +52,7 @@ export type RootStackParamList = {
   EditDiary: { scenario?: string; diaryId?: string };
   DiaryDetail: { _id: string };
   CircleDetail: { _id: string };
+  CircleInteractionList: undefined;
   UserProfile: {
     userId: string;
     selectedReportDiary?: {
@@ -124,6 +126,7 @@ const MainNavigator = () => {
   // 引入全局主题配色
   const { HEALING_COLORS, DARK_HEALING_COLORS } = require('@/config/handDrawnTheme');
   const currentHealingColors = themeName === 'dark' ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
+  const circleInteractionTypes = ['like', 'comment', 'follow'] as const;
 
   React.useEffect(() => {
     if (!user?._id) {
@@ -133,8 +136,8 @@ const MainNavigator = () => {
     }
 
     Promise.all([
-      getUnreadNotificationCount(user._id, { excludeTypes: ['like', 'comment'] }),
-      getUnreadNotificationCount(user._id, { types: ['like', 'comment'] }),
+      getUnreadNotificationCount(user._id, { excludeTypes: [...circleInteractionTypes] }),
+      getUnreadNotificationCount(user._id, { types: [...circleInteractionTypes] }),
     ])
       .then(([centerCount, tabCount]) => {
         setCenterUnreadCount(centerCount);
@@ -257,6 +260,19 @@ export const RootNavigator = () => {
             component={CircleDetailScreen}
             options={{
               title: '圈子详情',
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: colors.surface,
+              },
+              headerTintColor: colors.text,
+              headerBackTitle: '返回',
+            }}
+          />
+          <RootStack.Screen
+            name="CircleInteractionList"
+            component={CircleInteractionListScreen}
+            options={{
+              title: '互动消息',
               headerShown: true,
               headerStyle: {
                 backgroundColor: colors.surface,

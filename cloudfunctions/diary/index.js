@@ -136,10 +136,7 @@ const createDiaryInteractionNotification = async ({
     return;
   }
 
-  const [senderUser, ...receiverUsers] = await Promise.all([
-    getUserDoc(senderId),
-    ...normalizedReceiverIds.map((receiverId) => getUserDoc(receiverId)),
-  ]);
+  const senderUser = await getUserDoc(senderId);
   const senderName = getUserDisplayName(senderUser);
   const diaryText = getDiaryDisplayText(diary);
   const title =
@@ -181,19 +178,6 @@ const createDiaryInteractionNotification = async ({
     )
   );
 
-  await Promise.allSettled(
-    receiverUsers
-      .filter((receiverUser) => receiverUser && receiverUser.pushToken)
-      .map((receiverUser) =>
-        sendPushNotification(receiverUser.pushToken, title, content, {
-          type,
-          relatedId: diary._id,
-          diaryId: diary._id,
-          screen: 'CircleDetail',
-          isReply,
-        })
-      )
-  );
 };
 
 const removeUnreadLikeNotification = async ({ diaryId, receiverId, senderId }) => {
@@ -1116,6 +1100,60 @@ const commentDiary = async (data) => {
   }
 };
 
+// 删除评论
+const deleteCommentDiary = async (data) => {
+  try {
+    const { _id, commentId, userId } = data;
+    if (!_id || !commentId || !userId) {
+      return { success: false, message: '参数不完整' };
+    }
+
+    const diaryRes = await diariesCollection.doc(_id).get();
+    if (!diaryRes.data) {
+      return { success: false, message: '日记不存在' };
+    }
+
+    const diaryDataRaw = Array.isArray(diaryRes.data) ? diaryRes.data[0] : diaryRes.data;
+    const comments = Array.isArray(diaryDataRaw.comments) ? diaryDataRaw.comments : [];
+    const targetComment = comments.find((item) => item && item.id === commentId);
+
+    if (!targetComment) {
+      return { success: false, message: '评论不存在或已被删除' };
+    }
+
+    if (targetComment.userId !== userId) {
+      return { success: false, message: '无权删除他人的评论' };
+    }
+
+    const shouldDeleteReplies = !targetComment.parentId;
+    const nextComments = comments.filter((item) => {
+      if (!item) {
+        return false;
+      }
+
+      if (item.id === commentId) {
+        return false;
+      }
+
+      if (shouldDeleteReplies && item.parentId === commentId) {
+        return false;
+      }
+
+      return true;
+    });
+
+    await diariesCollection.doc(_id).update({
+      comments: nextComments,
+      updatedAt: db.serverDate(),
+    });
+
+    return { success: true, message: '删除评论成功' };
+  } catch (error) {
+    console.error('Delete comment error:', error);
+    return { success: false, message: '删除评论失败', error: error.message };
+  }
+};
+
 // 导出主函数
 exports.main = async (event, context) => {
   const { action, data } = event;
@@ -1135,6 +1173,8 @@ exports.main = async (event, context) => {
       return await likeDiary(data);
     case 'comment':
       return await commentDiary(data);
+    case 'deleteComment':
+      return await deleteCommentDiary(data);
     default:
       return {
         success: false,

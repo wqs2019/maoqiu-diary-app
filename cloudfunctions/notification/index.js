@@ -24,14 +24,14 @@ const buildNotificationQuery = ({ userId, types, excludeTypes, unreadOnly = fals
 // 获取通知列表
 const getNotifications = async (data) => {
   try {
-    const { userId, page = 1, pageSize = 20, types, excludeTypes } = data;
+    const { userId, page = 1, pageSize = 20, types, excludeTypes, unreadOnly = false } = data;
 
     if (!userId) {
       return { success: false, message: '用户ID不能为空' };
     }
 
     const skip = (page - 1) * pageSize;
-    const condition = buildNotificationQuery({ userId, types, excludeTypes });
+    const condition = buildNotificationQuery({ userId, types, excludeTypes, unreadOnly });
 
     // 先查出当前用户的通知
     const result = await db.collection('notifications')
@@ -77,13 +77,13 @@ const getNotifications = async (data) => {
 // 标记通知为已读
 const markNotificationRead = async (data) => {
   try {
-    const { userId, notificationIds, markAll = false } = data;
+    const { userId, notificationIds, markAll = false, types, excludeTypes } = data;
 
     if (!userId) {
       return { success: false, message: '用户ID不能为空' };
     }
 
-    let condition = { receiverId: userId, isRead: false };
+    let condition = buildNotificationQuery({ userId, types, excludeTypes, unreadOnly: true });
 
     if (!markAll) {
       if (!notificationIds || !notificationIds.length) {

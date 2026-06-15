@@ -15,6 +15,7 @@ const app = cloud.init({
 });
 const db = app.database();
 const _ = db.command;
+const notificationsCollection = db.collection('notifications');
 const AUTO_BLOCK_GOVERNANCE_SOURCE = 'block_auto';
 const AUTO_BLOCK_GOVERNANCE_TRIGGER = 'user_block';
 const AUTO_BLOCK_OPEN_STATUSES = ['pending', 'processing'];
@@ -114,6 +115,39 @@ const getUserDoc = async (userId) => {
   if (!userId) return null;
   const result = await db.collection('users').doc(userId).get();
   return getDocData(result);
+};
+
+const getUserDisplayName = (user, fallback = '有人') =>
+  (user && (user.nickname || user.username || user.name)) || fallback;
+
+const createFollowNotification = async ({ followerId, followingId, followerUser }) => {
+  if (!followerId || !followingId || followerId === followingId) {
+    return { skipped: true, reason: 'invalid-params' };
+  }
+
+  const sender = followerUser || (await getUserDoc(followerId));
+  const senderName = getUserDisplayName(sender);
+
+  const result = await notificationsCollection.add({
+    receiverId: followingId,
+    senderId: followerId,
+    type: 'follow',
+    title: '有人关注了你',
+    content: `「${senderName}」关注了你`,
+    relatedId: followerId,
+    extraData: {
+      screen: 'UserProfile',
+      userId: followerId,
+    },
+    isRead: false,
+    createdAt: db.serverDate(),
+  });
+  return {
+    skipped: false,
+    notificationId: result.id || result._id || null,
+    receiverId: followingId,
+    senderId: followerId,
+  };
 };
 
 // Add new user
@@ -631,10 +665,12 @@ const follow = async (data) => {
 
     let followers = Array.isArray(followingUser.followers) ? followingUser.followers : [];
     let following = Array.isArray(followerUser.following) ? followerUser.following : [];
+    let followDebug = { action, followerExists: null, followingExists: null, notification: null };
 
     if (action === 'follow') {
       const followerExists = followers.some(item => (typeof item === 'string' ? item : item.userId) === followerId);
       const followingExists = following.some(item => (typeof item === 'string' ? item : item.userId) === followingId);
+      followDebug = { action, followerExists, followingExists, notification: null };
 
       const timestamp = Date.now();
       
@@ -644,15 +680,30 @@ const follow = async (data) => {
       if (!followingExists) {
         following.push({ userId: followingId, followedAt: timestamp });
       }
+
+      if (!followerExists) {
+        followDebug.notification = await createFollowNotification({
+          followerId,
+          followingId,
+          followerUser,
+        });
+      }
     } else {
       followers = followers.filter(item => (typeof item === 'string' ? item : item.userId) !== followerId);
       following = following.filter(item => (typeof item === 'string' ? item : item.userId) !== followingId);
+
+      await notificationsCollection.where({
+        receiverId: followingId,
+        senderId: followerId,
+        type: 'follow',
+        isRead: false,
+      }).remove();
     }
 
     await usersColl.doc(followingId).update({ followers, updatedAt: db.serverDate() });
     await usersColl.doc(followerId).update({ following, updatedAt: db.serverDate() });
 
-    return { success: true };
+    return { success: true, debug: followDebug };
   } catch (error) {
     console.error('Follow error:', error);
     return { success: false, message: error.message };

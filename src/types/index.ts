@@ -37,7 +37,7 @@ export interface Notification {
   _id: string;
   receiverId: string;
   senderId?: string;
-  type: 'invite_shared_notebook' | 'unbind_shared_notebook' | 'like' | 'comment' | 'system';
+  type: 'invite_shared_notebook' | 'unbind_shared_notebook' | 'like' | 'comment' | 'follow' | 'system';
   title: string;
   content: string;
   relatedId?: string;

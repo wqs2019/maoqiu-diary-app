@@ -14,17 +14,19 @@ import {
   Dimensions,
   TextInput,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   RefreshControl,
 } from 'react-native';
 
-import { CommentList } from '@/components/handDrawn/CommentList';
+import { CommentList, type Comment } from '@/components/handDrawn/CommentList';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
 import { Modal as CommonModal } from '@/components/common/Modal';
 import { useToast } from '@/components/common/Toast';
 import { HEALING_COLORS, DARK_HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useDiaryDetail, useLikeDiary, useCommentDiary } from '@/hooks/useDiaryQuery';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { deleteDiaryComment } from '@/services/diaryService';
 import feedbackService, { ReportReason } from '@/services/feedbackService';
 import { useAuthStore } from '@/store/authStore';
 import { FormatUtil } from '@/utils/format';
@@ -58,15 +60,18 @@ const CircleDetailScreen: React.FC = () => {
   const commentMutation = useCommentDiary();
 
   const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [moreActionsVisible, setMoreActionsVisible] = useState(false);
+  const [commentActionsVisible, setCommentActionsVisible] = useState(false);
+  const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
+  const [commentDeleting, setCommentDeleting] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedReportReason, setSelectedReportReason] = useState<ReportReason>('spam');
   const [reportDescription, setReportDescription] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
-  const [replyToComment, setReplyToComment] = useState<any>(null);
+  const [replyToComment, setReplyToComment] = useState<Comment | null>(null);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -93,9 +98,9 @@ const CircleDetailScreen: React.FC = () => {
   const handleSendComment = () => {
     if (!commentText.trim() || !user) return;
 
-    const newComment: any = {
+    const newComment: Comment = {
       id: Date.now().toString(),
-      user: user.nickname,
+      user: user.nickname || '我',
       userId: user._id,
       avatar: user.avatar,
       content: commentText.trim(),
@@ -112,14 +117,88 @@ const CircleDetailScreen: React.FC = () => {
     setComments((prevComments) => [...prevComments, newComment]);
     setCommentText('');
     setReplyToComment(null);
+    Keyboard.dismiss();
 
     // 调用接口
     commentMutation.mutate({ id: _id, comment: newComment });
   };
 
-  const handleReplyPress = (comment: any) => {
+  const closeCommentActions = () => {
+    if (commentDeleting) {
+      return;
+    }
+
+    setCommentActionsVisible(false);
+    setSelectedComment(null);
+  };
+
+  const handleReplyPress = (comment: Comment) => {
     setReplyToComment(comment);
     inputRef.current?.focus();
+  };
+
+  const handleCommentLongPress = (comment: Comment) => {
+    setSelectedComment(comment);
+    setCommentActionsVisible(true);
+  };
+
+  const handleCopyComment = async () => {
+    if (!selectedComment?.content) {
+      return;
+    }
+
+    await Clipboard.setStringAsync(selectedComment.content);
+    closeCommentActions();
+    toast.success('评论内容已复制');
+  };
+
+  const handleDeleteComment = async () => {
+    if (!user?._id || !selectedComment?.id) {
+      return;
+    }
+
+    try {
+      setCommentDeleting(true);
+      await deleteDiaryComment(_id, selectedComment.id, user._id);
+
+      setComments((prevComments) =>
+        prevComments.filter((item) => {
+          if (item.id === selectedComment.id) {
+            return false;
+          }
+
+          if (!selectedComment.parentId && item.parentId === selectedComment.id) {
+            return false;
+          }
+
+          return true;
+        })
+      );
+
+      setReplyToComment((prevComment) => {
+        if (!prevComment) {
+          return null;
+        }
+
+        if (prevComment.id === selectedComment.id) {
+          return null;
+        }
+
+        if (!selectedComment.parentId && prevComment.parentId === selectedComment.id) {
+          return null;
+        }
+
+        return prevComment;
+      });
+
+      closeCommentActions();
+      toast.success('评论已删除');
+      refetch();
+    } catch (error: any) {
+      Alert.alert('删除失败', error?.message || '删除评论失败，请稍后重试');
+    } finally {
+      setCommentDeleting(false);
+    }
   };
 
   const handleLike = () => {
@@ -233,6 +312,7 @@ const CircleDetailScreen: React.FC = () => {
   }
 
   const formattedDate = FormatUtil.formatRelativeTime(diary.createdAt || diary.date);
+  const canDeleteSelectedComment = !!(user?._id && selectedComment?.userId && selectedComment.userId === user._id);
   const moderationBadgeText =
     diary.moderationStatus === 'pending_recheck'
       ? '整改复审中'
@@ -341,7 +421,12 @@ const CircleDetailScreen: React.FC = () => {
         )}
 
         {/* 评论区 */}
-        <CommentList comments={comments} authorId={diary.userId} onReplyPress={handleReplyPress} />
+        <CommentList
+          comments={comments}
+          authorId={diary.userId}
+          onReplyPress={handleReplyPress}
+          onCommentLongPress={handleCommentLongPress}
+        />
       </ScrollView>
 
       {/* 底部互动与输入栏 */}
@@ -415,6 +500,44 @@ const CircleDetailScreen: React.FC = () => {
               style={styles.popupCancel}
               onPress={() => setMoreActionsVisible(false)}
             >
+              <Text style={[styles.popupCancelText, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                取消
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </CommonModal>
+
+      <CommonModal visible={commentActionsVisible} onClose={closeCommentActions}>
+        <View style={styles.popupContainer}>
+          <TouchableOpacity style={styles.popupBackdrop} activeOpacity={1} onPress={closeCommentActions} />
+          <View
+            style={[
+              styles.popupCard,
+              {
+                backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                borderColor: isDark ? '#333' : '#E5E7EB',
+              },
+            ]}
+          >
+            <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>评论操作</Text>
+            <TouchableOpacity style={styles.popupAction} onPress={handleCopyComment}>
+              <Ionicons name="copy-outline" size={18} color={currentHealingColors.pink[500]} />
+              <Text style={[styles.popupActionText, { color: isDark ? '#FFF' : '#111827' }]}>
+                复制
+              </Text>
+            </TouchableOpacity>
+            {canDeleteSelectedComment && (
+              <TouchableOpacity
+                style={[styles.commentDeleteAction, commentDeleting && styles.commentDeleteActionDisabled]}
+                onPress={handleDeleteComment}
+                disabled={commentDeleting}
+              >
+                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.commentDeleteActionText}>{commentDeleting ? '删除中...' : '删除'}</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.popupCancel} onPress={closeCommentActions} disabled={commentDeleting}>
               <Text style={[styles.popupCancelText, { color: isDark ? '#AAA' : '#6B7280' }]}>
                 取消
               </Text>
@@ -700,6 +823,25 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     marginLeft: 10,
+  },
+  commentDeleteAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 18,
+    marginTop: 4,
+    borderRadius: 12,
+    paddingVertical: 14,
+    backgroundColor: '#EF4444',
+  },
+  commentDeleteActionDisabled: {
+    opacity: 0.7,
+  },
+  commentDeleteActionText: {
+    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   popupCancel: {
     alignItems: 'center',

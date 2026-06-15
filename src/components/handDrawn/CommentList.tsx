@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, Image, Pressable, StyleProp, ViewStyle } from 'react-native';
 
 import { FormatUtil } from '@/utils/format';
 
@@ -22,13 +22,56 @@ interface CommentListProps {
   emptyText?: string;
   authorId?: string;
   onReplyPress?: (comment: Comment) => void; // 新增：点击回复事件回调
+  onCommentLongPress?: (comment: Comment) => void;
 }
+
+interface CommentPressableProps {
+  style?: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+  onPress?: () => void;
+  onLongPress?: () => void;
+}
+
+const CommentPressable: React.FC<CommentPressableProps> = ({
+  style,
+  children,
+  onPress,
+  onLongPress,
+}) => {
+  const longPressTriggeredRef = useRef(false);
+
+  return (
+    <Pressable
+      style={({ pressed }) => [style, pressed && styles.pressedItem]}
+      onLongPress={() => {
+        longPressTriggeredRef.current = true;
+        onLongPress?.();
+      }}
+      onPress={() => {
+        if (longPressTriggeredRef.current) {
+          longPressTriggeredRef.current = false;
+          return;
+        }
+
+        onPress?.();
+      }}
+      onPressOut={() => {
+        requestAnimationFrame(() => {
+          longPressTriggeredRef.current = false;
+        });
+      }}
+    >
+      {children}
+    </Pressable>
+  );
+};
 
 export const CommentList: React.FC<CommentListProps> = ({
   comments = [],
   emptyText = '还没有评论哦，快来抢沙发~',
   authorId,
   onReplyPress,
+  onCommentLongPress,
 }) => {
   // 在组件内部将扁平的评论数组转换为树形结构
   const commentTree = useMemo(() => {
@@ -66,36 +109,40 @@ export const CommentList: React.FC<CommentListProps> = ({
             )}
           </View>
           <View style={styles.commentContent}>
-            <View style={styles.commentHeader}>
-              <View style={styles.userRow}>
-                <Text style={styles.commentUser}>{comment.user}</Text>
-                {authorId && comment.userId === authorId && (
-                  <View style={styles.authorTag}>
-                    <Text style={styles.authorTagText}>作者</Text>
-                  </View>
-                )}
+            <CommentPressable
+              style={styles.commentMainPressable}
+              onPress={() => onReplyPress?.(comment)}
+              onLongPress={() => onCommentLongPress?.(comment)}
+            >
+              <View style={styles.commentHeader}>
+                <View style={styles.userRow}>
+                  <Text style={styles.commentUser}>{comment.user}</Text>
+                  {authorId && comment.userId === authorId && (
+                    <View style={styles.authorTag}>
+                      <Text style={styles.authorTagText}>作者</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.commentTime}>
+                  {comment.createTime || comment.time
+                    ? FormatUtil.formatRelativeTime(comment.createTime || comment.time || '')
+                    : ''}
+                </Text>
               </View>
-              <Text style={styles.commentTime}>
-                {comment.createTime || comment.time
-                  ? FormatUtil.formatRelativeTime(comment.createTime || comment.time || '')
-                  : ''}
-              </Text>
-            </View>
 
-            {/* 主评论内容，点击触发回复 */}
-            <TouchableOpacity activeOpacity={0.7} onPress={() => onReplyPress?.(comment)}>
+              {/* 主评论内容，点击触发回复 */}
               <Text style={styles.commentText}>{comment.content}</Text>
-            </TouchableOpacity>
+            </CommentPressable>
 
             {/* 嵌套回复区域 */}
             {comment.replies && comment.replies.length > 0 && (
               <View style={styles.repliesContainer}>
                 {comment.replies.map((reply) => (
-                  <TouchableOpacity
+                  <CommentPressable
                     key={reply.id}
-                    activeOpacity={0.7}
                     onPress={() => onReplyPress?.(reply)}
-                    style={styles.replyItem}
+                    onLongPress={() => onCommentLongPress?.(reply)}
+                    style={styles.replyPressable}
                   >
                     <Text style={styles.replyText}>
                       <Text style={styles.replyUser}>{reply.user}</Text>
@@ -108,7 +155,7 @@ export const CommentList: React.FC<CommentListProps> = ({
                       <Text style={styles.replyColon}>: </Text>
                       {reply.content}
                     </Text>
-                  </TouchableOpacity>
+                  </CommentPressable>
                 ))}
               </View>
             )}
@@ -156,6 +203,10 @@ const styles = StyleSheet.create({
   commentContent: {
     flex: 1,
   },
+  commentMainPressable: {
+    alignSelf: 'stretch',
+    borderRadius: 8,
+  },
   commentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -192,6 +243,9 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     lineHeight: 20,
   },
+  pressedItem: {
+    opacity: 0.72,
+  },
   emptyCommentText: {
     textAlign: 'center',
     color: '#9CA3AF',
@@ -204,7 +258,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
   },
-  replyItem: {
+  replyPressable: {
+    alignSelf: 'stretch',
+    borderRadius: 6,
     marginBottom: 6,
   },
   replyText: {

@@ -19,21 +19,33 @@ import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
 import { HEALING_COLORS, DARK_HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useDiaryList, useLikeDiary } from '@/hooks/useDiaryQuery';
+import { getNotifications } from '@/services/notificationService';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
 import { Diary } from '@/types';
+import { Notification } from '@/types';
 import FormatUtil from '@/utils/format';
 
 const { width } = Dimensions.get('window');
 const CONTENT_WIDTH = width; // full width
+const CIRCLE_INTERACTION_TYPES: Notification['type'][] = ['like', 'comment', 'follow'];
+type CircleInteractionNotification = Notification & {
+  senderInfo?: {
+    nickname?: string;
+    avatar?: string;
+  };
+};
 
 const CircleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const user = useAuthStore((state) => state.user);
+  const circleUnreadCount = useNotificationStore((state) => state.circleUnreadCount);
   const { isDark } = useAppTheme();
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [latestInteraction, setLatestInteraction] = useState<CircleInteractionNotification | null>(null);
 
   const { data, isLoading, refetch } = useDiaryList({
     page: 1,
@@ -42,18 +54,41 @@ const CircleScreen: React.FC = () => {
     viewerId: user?._id,
   });
 
+  const fetchLatestInteraction = useCallback(async () => {
+    if (!user?._id || circleUnreadCount <= 0) {
+      setLatestInteraction(null);
+      return;
+    }
+
+    try {
+      const response = await getNotifications(user._id, 1, 1, {
+        types: CIRCLE_INTERACTION_TYPES,
+        unreadOnly: true,
+      });
+      setLatestInteraction(response.list[0] || null);
+    } catch (error) {
+      console.error('Failed to fetch latest circle interaction:', error);
+      setLatestInteraction(null);
+    }
+  }, [circleUnreadCount, user?._id]);
+
   const onRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
-    await refetch();
+    await Promise.all([refetch(), fetchLatestInteraction()]);
     setIsManualRefreshing(false);
-  }, [refetch]);
+  }, [fetchLatestInteraction, refetch]);
 
   // 当进入圈子页面时自动刷新数据，确保获取最新的公开日记
   useFocusEffect(
     useCallback(() => {
       refetch();
-    }, [refetch])
+      fetchLatestInteraction();
+    }, [fetchLatestInteraction, refetch])
   );
+
+  React.useEffect(() => {
+    fetchLatestInteraction();
+  }, [fetchLatestInteraction]);
 
   const likeMutation = useLikeDiary();
 
@@ -76,6 +111,13 @@ const CircleScreen: React.FC = () => {
       action: hasLiked ? 'unlike' : 'like',
     });
   };
+
+  const handleInteractionBannerPress = useCallback(async () => {
+    if (!user?._id || !latestInteraction) {
+      return;
+    }
+    navigation.navigate('CircleInteractionList');
+  }, [latestInteraction, navigation, user?._id]);
 
   const renderItem = ({ item }: { item: Diary }) => {
     const hasMedia = item.media && item.media.length > 0;
@@ -236,6 +278,41 @@ const CircleScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
+      {circleUnreadCount > 0 && latestInteraction && (
+        <TouchableOpacity
+          style={[
+            styles.interactionBanner,
+            {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              borderColor: isDark ? '#333' : '#FFE1E8',
+            },
+          ]}
+          activeOpacity={0.9}
+          onPress={handleInteractionBannerPress}
+        >
+          <Image
+            source={
+              latestInteraction.senderInfo?.avatar
+                ? { uri: latestInteraction.senderInfo.avatar }
+                : require('../../../assets/logo_bg.png')
+            }
+            style={styles.interactionAvatar}
+          />
+          <View style={styles.interactionTextContainer}>
+            <Text style={[styles.interactionTitle, { color: isDark ? '#FFF' : '#111827' }]}>
+              {circleUnreadCount}条新信息
+            </Text>
+            <Text
+              style={[styles.interactionSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}
+              numberOfLines={1}
+            >
+              {latestInteraction.content || '点击查看最新互动'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={isDark ? '#AAA' : '#9CA3AF'} />
+        </TouchableOpacity>
+      )}
+
       {isLoading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={currentHealingColors.pink[400]} />
@@ -307,6 +384,33 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 40,
+  },
+  interactionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  interactionAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+  interactionTextContainer: {
+    flex: 1,
+  },
+  interactionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  interactionSubtitle: {
+    fontSize: 12,
   },
   diaryWrapper: {
     marginBottom: 8,
