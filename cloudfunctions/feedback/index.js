@@ -525,7 +525,9 @@ const addFeedback = async (data) => {
       updatedAt: db.serverDate(),
     });
 
-    if (type === 'report_user') {
+    const feedbackSource = source || (targetDiaryId ? 'diary_report' : 'user_report');
+
+    if (type === 'report_user' && feedbackSource !== 'block_auto') {
       try {
         const reporterUser = await getUserById(userId);
         await sendAdminReportNotifications({
@@ -536,7 +538,7 @@ const addFeedback = async (data) => {
           reportReason,
           targetSnapshot,
           targetDiarySnapshot: targetDiarySnapshot || (diary ? buildDiarySnapshot(diary) : null),
-          source: source || (targetDiaryId ? 'diary_report' : 'user_report'),
+          source: feedbackSource,
         });
       } catch (notifyError) {
         console.error('Send admin report notifications error:', notifyError);

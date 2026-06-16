@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Video, ResizeMode, Audio } from 'expo-av';
 import React, { useState, useRef, useEffect } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   View,
   StyleSheet,
-  TouchableOpacity,
   Text,
   FlatList,
   Dimensions,
@@ -43,7 +43,7 @@ const getMaxOffset = (scale: number, size: number) => {
   return Math.max(0, ((scale - 1) * size) / 2);
 };
 
-const LivePhotoItem = ({
+const MediaItem = ({
   item,
   isFocused,
   onZoomStateChange,
@@ -53,6 +53,9 @@ const LivePhotoItem = ({
   onZoomStateChange?: (isZoomed: boolean) => void;
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMediaLoading, setIsMediaLoading] = useState(
+    item.type === 'image' || item.type === 'livePhoto' || item.type === 'video'
+  );
   const videoRef = useRef<Video>(null);
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -61,12 +64,15 @@ const LivePhotoItem = ({
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
 
-  // When not focused, ensure it stops
+  useEffect(() => {
+    setIsMediaLoading(item.type === 'image' || item.type === 'livePhoto' || item.type === 'video');
+  }, [item.type, item.uri]);
+
   useEffect(() => {
     if (!isFocused && isPlaying) {
       setIsPlaying(false);
     }
-  }, [isFocused]);
+  }, [isFocused, isPlaying]);
 
   useEffect(() => {
     if (!isFocused) {
@@ -100,12 +106,6 @@ const LivePhotoItem = ({
 
   const handlePressOut = () => {
     if (item.type === 'livePhoto') {
-      setIsPlaying(false);
-    }
-  };
-
-  const handlePlaybackStatusUpdate = (status: any) => {
-    if (status.didJustFinish) {
       setIsPlaying(false);
     }
   };
@@ -224,38 +224,55 @@ const LivePhotoItem = ({
         delayLongPress={200}
       >
         <View style={styles.fullScreen}>
-          <Reanimated.View style={[styles.zoomableContent, animatedImageStyle]}>
-            <Image
-              source={{ uri: item.thumbnail || item.uri }}
-              style={[styles.fullScreen, { opacity: isPlaying ? 0 : 1 }]}
-              resizeMode="contain"
+          {item.type === 'video' ? (
+            <Video
+              source={{ uri: item.uri }}
+              style={styles.fullScreen}
+              resizeMode={ResizeMode.CONTAIN}
+              useNativeControls
+              shouldPlay={isFocused}
+              isLooping
+              onLoadStart={() => setIsMediaLoading(true)}
+              onReadyForDisplay={() => setIsMediaLoading(false)}
+              onError={() => setIsMediaLoading(false)}
             />
-
-            {item.type === 'livePhoto' && item.livePhotoVideoUri && (
-              <Video
-                ref={videoRef}
-                source={{ uri: item.livePhotoVideoUri }}
-                style={[styles.fullScreen, styles.videoOverlay, { opacity: isPlaying ? 1 : 0 }]}
-                resizeMode={ResizeMode.CONTAIN}
-                shouldPlay={isPlaying}
-                isLooping={false}
-                isMuted={false}
-                onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
+          ) : (
+            <Reanimated.View style={[styles.zoomableContent, animatedImageStyle]}>
+              <Image
+                source={{ uri: item.thumbnail || item.uri }}
+                style={[styles.fullScreen, { opacity: isPlaying ? 0 : 1 }]}
+                resizeMode="contain"
+                onLoadStart={() => setIsMediaLoading(true)}
+                onLoadEnd={() => setIsMediaLoading(false)}
+                onError={() => setIsMediaLoading(false)}
               />
-            )}
-          </Reanimated.View>
 
-          {item.type === 'livePhoto' && (
+              {item.type === 'livePhoto' && item.livePhotoVideoUri ? (
+                <Video
+                  ref={videoRef}
+                  source={{ uri: item.livePhotoVideoUri }}
+                  style={[styles.fullScreen, styles.videoOverlay, { opacity: isPlaying ? 1 : 0 }]}
+                  resizeMode={ResizeMode.CONTAIN}
+                  shouldPlay={isPlaying}
+                  isLooping={false}
+                  isMuted={false}
+                />
+              ) : null}
+            </Reanimated.View>
+          )}
+
+          {isMediaLoading ? (
+            <View style={styles.loadingOverlay} pointerEvents="none">
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            </View>
+          ) : null}
+
+          {item.type === 'livePhoto' ? (
             <View style={styles.liveIndicator}>
               <Ionicons name="aperture" size={16} color="#FFF" />
               <Text style={styles.liveText}>实况</Text>
             </View>
-          )}
-          {(item.type === 'image' || item.type === 'livePhoto') && (
-            <View style={styles.zoomHint}>
-              <Text style={styles.zoomHintText}>双指缩放，双击还原</Text>
-            </View>
-          )}
+          ) : null}
         </View>
       </Pressable>
     </GestureDetector>
@@ -270,14 +287,12 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
   const isZoomedRef = useRef(false);
 
   useEffect(() => {
     isZoomedRef.current = isZoomed;
   }, [isZoomed]);
 
-  // 手势相关动画值
   const panY = useRef(new Animated.Value(0)).current;
   const scale = panY.interpolate({
     inputRange: [0, height],
@@ -294,7 +309,6 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        // 只有向下滑动且滑动距离超过一定阈值时才触发下拉关闭
         return (
           gestureState.numberActiveTouches === 1 &&
           !isZoomedRef.current &&
@@ -302,6 +316,11 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
           Math.abs(gestureState.dy) > Math.abs(gestureState.dx)
         );
       },
+      onMoveShouldSetPanResponderCapture: (_, gestureState) =>
+        gestureState.numberActiveTouches === 1 &&
+        !isZoomedRef.current &&
+        gestureState.dy > 5 &&
+        Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dy > 0) {
           panY.setValue(gestureState.dy);
@@ -309,7 +328,6 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 150 || gestureState.vy > 1.5) {
-          // 滑动距离超过 150 或者速度很快，执行关闭动画
           Animated.timing(panY, {
             toValue: height,
             duration: 200,
@@ -318,7 +336,6 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
             onClose();
           });
         } else {
-          // 否则回弹
           Animated.spring(panY, {
             toValue: 0,
             friction: 7,
@@ -330,14 +347,12 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     })
   ).current;
 
-  // 每次 Modal 显示时重置动画值
   useEffect(() => {
     if (visible) {
       panY.setValue(0);
     }
-  }, [visible, panY]);
+  }, [panY, visible]);
 
-  // Configure audio to play even if the device is in silent mode
   useEffect(() => {
     const configureAudio = async () => {
       try {
@@ -346,12 +361,12 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
           allowsRecordingIOS: false,
           staysActiveInBackground: false,
         });
-      } catch (e) {
-        console.warn('Failed to configure audio mode:', e);
+      } catch (error) {
+        console.warn('Failed to configure audio mode:', error);
       }
     };
 
-    configureAudio();
+    void configureAudio();
   }, []);
 
   useEffect(() => {
@@ -361,8 +376,8 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     }
   }, [visible, initialIndex]);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ index?: number | null }> }) => {
+    if (viewableItems.length > 0 && typeof viewableItems[0]?.index === 'number') {
       setCurrentIndex(viewableItems[0].index);
       setIsZoomed(false);
     }
@@ -372,62 +387,36 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     itemVisiblePercentThreshold: 50,
   }).current;
 
-  const renderItem = ({ item, index }: { item: MediaResource; index: number }) => {
-    const isFocused = currentIndex === index;
-
-    if (item.type === 'video') {
-      return (
-        <View style={styles.itemContainer}>
-          <Video
-            source={{ uri: item.uri }}
-            style={styles.fullScreen}
-            resizeMode={ResizeMode.CONTAIN}
-            useNativeControls
-            shouldPlay={isFocused}
-            isLooping
-          />
-        </View>
-      );
-    }
-
-    if (item.type === 'livePhoto' || item.type === 'image') {
-      return (
-        <LivePhotoItem
-          item={item}
-          isFocused={isFocused}
-          onZoomStateChange={(zoomed) => {
-            if (isFocused) {
-              setIsZoomed(zoomed);
-            }
-          }}
-        />
-      );
-    }
-
-    return null;
-  };
+  const currentItem = media[currentIndex];
+  const showZoomHint = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Animated.View style={[styles.container, { backgroundColor: 'black', opacity: bgOpacity }]}>
+      <Animated.View style={[styles.container, { opacity: bgOpacity }]}>
         <View style={styles.header}>
           <Text style={styles.counterText}>
-            {currentIndex + 1} / {media.length}
+            {media.length ? `${currentIndex + 1} / ${media.length}` : '0 / 0'}
           </Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Pressable onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={28} color="#FFF" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
-        <Animated.View
-          style={{ flex: 1, transform: [{ translateY: panY }, { scale }] }}
-          {...panResponder.panHandlers}
-        >
+        <Animated.View style={{ flex: 1, transform: [{ translateY: panY }, { scale }] }} {...panResponder.panHandlers}>
           <FlatList
-            ref={flatListRef}
             data={media}
             keyExtractor={(item, index) => `${item.uri}-${index}`}
-            renderItem={renderItem}
+            renderItem={({ item, index }) => (
+              <MediaItem
+                item={item}
+                isFocused={currentIndex === index}
+                onZoomStateChange={(zoomed) => {
+                  if (currentIndex === index) {
+                    setIsZoomed(zoomed);
+                  }
+                }}
+              />
+            )}
             horizontal
             pagingEnabled
             scrollEnabled={!isZoomed}
@@ -442,6 +431,12 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
             initialScrollIndex={initialIndex >= 0 && initialIndex < media.length ? initialIndex : 0}
           />
         </Animated.View>
+
+        {showZoomHint ? (
+          <View style={styles.zoomHint} pointerEvents="none">
+            <Text style={styles.zoomHintText}>双指缩放，双击还原</Text>
+          </View>
+        ) : null}
       </Animated.View>
     </Modal>
   );
@@ -509,19 +504,26 @@ const styles = StyleSheet.create({
     color: '#FFF',
     marginLeft: 4,
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '700',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   zoomHint: {
     position: 'absolute',
     bottom: 36,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   zoomHintText: {
     color: '#FFF',
     fontSize: 12,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
 });

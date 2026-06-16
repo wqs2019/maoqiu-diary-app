@@ -283,8 +283,8 @@ const CircleScreen: React.FC = () => {
           style={[
             styles.interactionBanner,
             {
-              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : '#FFE1E8',
+              backgroundColor: isDark ? '#2A1620' : '#FFE4EE',
+              borderColor: isDark ? '#7A3657' : '#F7A8C4',
             },
           ]}
           activeOpacity={0.9}
@@ -296,20 +296,25 @@ const CircleScreen: React.FC = () => {
                 ? { uri: latestInteraction.senderInfo.avatar }
                 : require('../../../assets/logo_bg.png')
             }
-            style={styles.interactionAvatar}
+            style={[
+              styles.interactionAvatar,
+              {
+                borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#FFFFFF',
+              },
+            ]}
           />
           <View style={styles.interactionTextContainer}>
-            <Text style={[styles.interactionTitle, { color: isDark ? '#FFF' : '#111827' }]}>
+            <Text style={[styles.interactionTitle, { color: isDark ? '#FFF1F6' : '#8A1D4F' }]}>
               {circleUnreadCount}条新信息
             </Text>
             <Text
-              style={[styles.interactionSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}
+              style={[styles.interactionSubtitle, { color: isDark ? '#F6C7DA' : '#A63A68' }]}
               numberOfLines={1}
             >
               {latestInteraction.content || '点击查看最新互动'}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={isDark ? '#AAA' : '#9CA3AF'} />
+          <Ionicons name="chevron-forward" size={18} color={isDark ? '#FFD3E4' : '#C24B79'} />
         </TouchableOpacity>
       )}
 
@@ -390,27 +395,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderRadius: 16,
     borderWidth: 1,
+    shadowColor: '#E85D93',
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    elevation: 3,
   },
   interactionAvatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
     marginRight: 10,
+    borderWidth: 2,
   },
   interactionTextContainer: {
     flex: 1,
   },
   interactionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 2,
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 3,
   },
   interactionSubtitle: {
     fontSize: 12,
+    fontWeight: '500',
   },
   diaryWrapper: {
     marginBottom: 8,
