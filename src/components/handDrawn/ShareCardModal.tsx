@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,12 @@ import {
   Dimensions,
   ScrollView,
 } from 'react-native';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg';
 import ViewShot from 'react-native-view-shot';
 
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
-import { getRandomQuote, Quote } from '../../services/quote';
 import { Diary } from '../../types';
 
 interface ShareCardModalProps {
@@ -42,25 +42,97 @@ const withOpacity = (hexColor?: string, opacity: string = '1A') => {
   return hexColor;
 };
 
+type ShareCardTheme = {
+  gradient: [string, string, string];
+  heroEyebrow: string;
+  heroLead: string;
+  posterTitle: string;
+  posterSubtitle: string;
+};
+
+const DEFAULT_SHARE_CARD_THEME: ShareCardTheme = {
+  gradient: ['#FFF9FB', '#FFF2F7', '#FFFDFE'],
+  heroEyebrow: '今天的碎片值得被收藏',
+  heroLead: '今天值得被好好收藏，也值得被温柔分享。',
+  posterTitle: '把今天写成一张想分享的卡片',
+  posterSubtitle: '记录普通日子里的微光时刻',
+};
+
+const SHARE_CARD_THEMES: Record<string, ShareCardTheme> = {
+  daily: {
+    gradient: ['#FFF8FB', '#FFEAF2', '#FFFDFD'],
+    heroEyebrow: '把今天的柔软留住',
+    heroLead: '日常不是重复，而是值得反复回看的生活片段。',
+    posterTitle: '今日份生活切片',
+    posterSubtitle: '把平凡的一天也分享得闪闪发亮',
+  },
+  travel: {
+    gradient: ['#F6FCFF', '#EAF7FF', '#FFFDFB'],
+    heroEyebrow: '把风景装进回忆里',
+    heroLead: '出发的意义，是把路上的心动带回日常。',
+    posterTitle: '这一站的风景很值得分享',
+    posterSubtitle: '把旅途里最心动的一帧留给朋友看',
+  },
+  movie: {
+    gradient: ['#FFF7FB', '#F7F0FF', '#FFFDFE'],
+    heroEyebrow: '把情绪留在银幕之外',
+    heroLead: '好的电影会散场，好的感受会继续发光。',
+    posterTitle: '刚刚看完，想立刻分享给你',
+    posterSubtitle: '把一场观影后的情绪，做成一张海报卡',
+  },
+  outing: {
+    gradient: ['#F8FFF9', '#EEFBF1', '#FFFDFC'],
+    heroEyebrow: '把散步感装进春天里',
+    heroLead: '出门的快乐，往往藏在那些不经意的小瞬间里。',
+    posterTitle: '今天出门遇见了好心情',
+    posterSubtitle: '轻轻松松的一天，也适合被认真分享',
+  },
+  food: {
+    gradient: ['#FFF9F2', '#FFF1DE', '#FFFDFC'],
+    heroEyebrow: '让好吃的拥有海报感',
+    heroLead: '味道会过去，但此刻的满足感值得被留下。',
+    posterTitle: '这一口，值得发给朋友馋一下',
+    posterSubtitle: '把今天吃到的幸福感，打包成一张分享卡',
+  },
+  special: {
+    gradient: ['#FFF8FF', '#F5EDFF', '#FFFDFE'],
+    heroEyebrow: '特别的时刻要有仪式感',
+    heroLead: '重要的不只是今天发生了什么，而是它会被好好记住。',
+    posterTitle: '这一刻，值得郑重分享',
+    posterSubtitle: '把特别日子的光亮，留成一张有纪念感的海报',
+  },
+  learning: {
+    gradient: ['#F7F8FF', '#EEF1FF', '#FFFDFE'],
+    heroEyebrow: '让成长也有主角感',
+    heroLead: '每一次认真积累，都在悄悄把自己变得更厉害。',
+    posterTitle: '今天又比昨天多懂了一点',
+    posterSubtitle: '把成长中的收获，分享成一张有力量的卡片',
+  },
+  inspiration: {
+    gradient: ['#FFFDF2', '#FFF8D9', '#FFFDFB'],
+    heroEyebrow: '灵感来时要立刻发光',
+    heroLead: '突然冒出来的念头，往往最值得被及时记录。',
+    posterTitle: '刚刚闪过一个很想分享的灵感',
+    posterSubtitle: '把脑海里发亮的瞬间，变成一张会发光的卡',
+  },
+};
+
+const getShareCardTheme = (scenarioType?: string): ShareCardTheme =>
+  (scenarioType && SHARE_CARD_THEMES[scenarioType]) || DEFAULT_SHARE_CARD_THEME;
+
 export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, onClose }) => {
   const viewShotRef = useRef<ViewShot>(null);
   const [isSharing, setIsSharing] = useState(false);
-  const [quoteData, setQuoteData] = useState<Quote | null>(null);
-
-  useEffect(() => {
-    if (visible) {
-      getRandomQuote().then(setQuoteData).catch(console.error);
-    } else {
-      setQuoteData(null);
-    }
-  }, [visible]);
 
   const scenario = SCENARIO_TEMPLATES[diary.scenario];
   const mood = getMoodConfig(diary.mood);
   const weather = getWeatherConfig(diary.weather);
   const accentColor = scenario?.color || HEALING_COLORS.pink[500];
+  const shareTheme = getShareCardTheme(scenario?.type || diary.scenario);
   const heroTitle = diary.title?.trim() || scenario?.name || '今日记录';
   const contentText = diary.content?.trim() || '把今天的心情装进一张卡片里。';
+  const singleMedia = diary.media?.length === 1 ? diary.media[0] : null;
+  const posterMetaLine = [scenario?.name, mood?.label, weather?.label].filter(Boolean).join(' · ');
   const date = new Date(diary.date || diary.createdAt);
   const formattedDate = date.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -92,7 +164,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
   };
 
   const renderMediaGrid = () => {
-    if (!diary.media || diary.media.length === 0) return null;
+    if (!diary.media || diary.media.length === 0 || diary.media.length === 1) return null;
 
     const media = diary.media;
     const count = media.length;
@@ -138,6 +210,39 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
     );
   };
 
+  const renderHeroMedia = () => {
+    if (!singleMedia) return null;
+
+    return (
+      <View style={styles.heroMediaCard}>
+        <Image
+          source={{ uri: singleMedia.thumbnail || singleMedia.uri }}
+          style={styles.heroMediaImage}
+          resizeMode="cover"
+        />
+        <View style={styles.heroMediaOverlay} />
+        {singleMedia.type === 'video' && (
+          <View style={styles.heroVideoBadge}>
+            <Ionicons name="play-circle" size={16} color="#FFF" />
+            <Text style={styles.heroVideoBadgeText}>视频片段</Text>
+          </View>
+        )}
+        {singleMedia.type === 'livePhoto' && (
+          <View style={styles.heroVideoBadge}>
+            <Ionicons name="aperture" size={14} color="#FFF" />
+            <Text style={styles.heroVideoBadgeText}>实况瞬间</Text>
+          </View>
+        )}
+        <View style={styles.heroMediaCopy}>
+          <Text style={styles.heroMediaEyebrow}>{shareTheme.heroEyebrow}</Text>
+          <Text style={styles.heroMediaSubline} numberOfLines={1}>
+            {posterMetaLine || '来自毛球日记'}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <Modal visible={visible} animationType="fade" transparent>
       <View style={styles.overlay}>
@@ -165,11 +270,31 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
                 style={[styles.viewShotContainer, { width: PREVIEW_CARD_WIDTH }]}
               >
                 <View style={styles.card}>
+                  <View style={styles.gradientLayer}>
+                    <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <Defs>
+                        <SvgLinearGradient id="shareCardGradient" x1="0" y1="0" x2="1" y2="1">
+                          <Stop offset="0%" stopColor={shareTheme.gradient[0]} />
+                          <Stop offset="58%" stopColor={shareTheme.gradient[1]} />
+                          <Stop offset="100%" stopColor={shareTheme.gradient[2]} />
+                        </SvgLinearGradient>
+                      </Defs>
+                      <Rect x="0" y="0" width="100" height="100" fill="url(#shareCardGradient)" />
+                    </Svg>
+                  </View>
                   <View style={[styles.decorCircleTop, { backgroundColor: withOpacity(accentColor, '22') }]} />
                   <View style={[styles.decorCircleMiddle, { backgroundColor: withOpacity(mood?.primary, '18') }]} />
                   <View style={[styles.decorCircleBottom, { backgroundColor: withOpacity(weather?.primary, '16') }]} />
 
-                  <View style={[styles.heroSection, { backgroundColor: withOpacity(accentColor, '14') }]}>
+                  <View
+                    style={[
+                      styles.heroSection,
+                      {
+                        backgroundColor: withOpacity(accentColor, '14'),
+                        borderBottomColor: withOpacity(accentColor, '1E'),
+                      },
+                    ]}
+                  >
                     <View style={styles.heroTopRow}>
                       <View style={styles.brandBadge}>
                         <Text style={styles.brandBadgeText}>MAOQIU DIARY</Text>
@@ -192,42 +317,32 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
                     <Text style={styles.heroDate}>{formattedDate}</Text>
                     <Text style={styles.diaryTitle}>{heroTitle}</Text>
                     <Text style={styles.heroLead} numberOfLines={2}>
-                      今天值得被好好收藏，也值得被温柔分享。
+                      {shareTheme.heroLead}
                     </Text>
+
+                    {renderHeroMedia()}
                   </View>
 
                   <View style={styles.cardBody}>
                     <View style={styles.contentCard}>
                       <Text style={styles.contentLabel}>TODAY'S NOTE</Text>
-                      <Text style={styles.content} numberOfLines={9}>
+                      <Text style={styles.content} numberOfLines={3}>
                         {contentText}
                       </Text>
                     </View>
 
                     {renderMediaGrid()}
 
-                    {quoteData && (
-                      <View style={styles.quoteContainer}>
-                        <View style={styles.quoteHeader}>
-                          <Ionicons name="sparkles" size={14} color={HEALING_COLORS.pink[500]} />
-                          <Text style={styles.quoteLabel}>今日小句子</Text>
-                        </View>
-                        <Text style={styles.quoteTextZh}>{quoteData.content.zh}</Text>
-                        {quoteData.content.en ? (
-                          <Text style={styles.quoteTextEn}>{quoteData.content.en}</Text>
-                        ) : null}
-                        <Text style={styles.quoteAuthor}>
-                          —— {quoteData.author.zh || quoteData.author.en || '佚名'}
-                        </Text>
-                      </View>
-                    )}
-
                     <View style={styles.footerCard}>
-                      <View style={styles.footerBadge}>
-                        <View style={styles.footerDot} />
-                        <Text style={styles.footerBrand}>毛球日记</Text>
+                      <View style={styles.posterFooterTop}>
+                        <View style={styles.footerBadge}>
+                          <View style={styles.footerDot} />
+                          <Text style={styles.footerBrand}>毛球日记</Text>
+                        </View>
+                        <Text style={styles.posterFooterMeta}>{posterMetaLine || '认真记录每一天'}</Text>
                       </View>
-                      <Text style={styles.footerText}>把平凡的一天，也分享成闪闪发光的回忆</Text>
+                      <Text style={styles.posterFooterTitle}>{shareTheme.posterTitle}</Text>
+                      <Text style={styles.posterFooterSubtitle}>{shareTheme.posterSubtitle}</Text>
                     </View>
                   </View>
                 </View>
@@ -326,6 +441,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  gradientLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
   decorCircleTop: {
     position: 'absolute',
     width: 220,
@@ -352,8 +470,8 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     paddingHorizontal: 24,
-    paddingTop: 22,
-    paddingBottom: 24,
+    paddingTop: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.55)',
   },
@@ -361,7 +479,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   brandBadge: {
     paddingHorizontal: 10,
@@ -381,13 +499,13 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 14,
+    marginBottom: 8,
   },
   metaChip: {
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 8,
+    paddingVertical: 5,
+    marginBottom: 6,
   },
   metaChipSoft: {
     backgroundColor: 'rgba(255,255,255,0.72)',
@@ -408,13 +526,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#A63A68',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   diaryTitle: {
     fontSize: 28,
     fontWeight: '800',
     color: '#2D1B27',
-    marginBottom: 10,
+    marginBottom: 6,
     lineHeight: 36,
   },
   heroLead: {
@@ -422,16 +540,75 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#7D556B',
   },
+  heroMediaCard: {
+    marginTop: 12,
+    height: 220,
+    borderRadius: 22,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.75)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  heroMediaImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroMediaOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(42, 20, 32, 0.20)',
+  },
+  heroVideoBadge: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(17, 24, 39, 0.68)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  heroVideoBadgeText: {
+    marginLeft: 4,
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  heroMediaCopy: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 16,
+  },
+  heroMediaEyebrow: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '800',
+    marginBottom: 6,
+    textShadowColor: 'rgba(0,0,0,0.22)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  heroMediaSubline: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   cardBody: {
-    padding: 24,
+    padding: 16,
     paddingBottom: 24,
   },
   contentCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 18,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
     borderWidth: 1,
     borderColor: '#FCE7F3',
     shadowColor: '#E8A6C1',
@@ -446,12 +623,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.2,
     color: '#D07097',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   content: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#4B3A45',
-    lineHeight: 29,
+    lineHeight: 24,
     letterSpacing: 0.3,
   },
   gridContainer: {
@@ -478,51 +655,26 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  quoteContainer: {
-    marginTop: 24,
-    backgroundColor: '#FFF2F7',
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 16,
-    borderWidth: 1,
-    borderColor: '#F9D2E2',
-  },
-  quoteHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  quoteLabel: {
-    marginLeft: 6,
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#C85B87',
-  },
-  quoteTextZh: {
-    fontSize: 15,
-    color: '#5A4051',
-    lineHeight: 25,
-    marginBottom: 6,
-    fontStyle: 'italic',
-  },
-  quoteTextEn: {
-    fontSize: 12,
-    color: '#A47A8E',
-    lineHeight: 18,
-    marginBottom: 8,
-  },
-  quoteAuthor: {
-    fontSize: 12,
-    color: '#A47A8E',
-    textAlign: 'right',
-  },
   footerCard: {
     marginTop: 22,
     borderTopWidth: 1,
     borderTopColor: '#F7D7E4',
     paddingTop: 18,
+    alignItems: 'stretch',
+  },
+  posterFooterTop: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  posterFooterMeta: {
+    flex: 1,
+    marginLeft: 10,
+    textAlign: 'right',
+    fontSize: 11,
+    color: '#B08699',
+    fontWeight: '600',
   },
   footerBadge: {
     flexDirection: 'row',
@@ -547,12 +699,18 @@ const styles = StyleSheet.create({
     color: '#C85B87',
     fontWeight: '700',
   },
-  footerText: {
-    fontSize: 12,
-    color: '#8B6A7B',
-    letterSpacing: 0.3,
-    textAlign: 'center',
-    lineHeight: 18,
+  posterFooterTitle: {
+    fontSize: 20,
+    lineHeight: 28,
+    fontWeight: '800',
+    color: '#37242F',
+    marginBottom: 6,
+  },
+  posterFooterSubtitle: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#9D7287',
+    marginBottom: 10,
   },
   bottomActionContainer: {
     paddingTop: 10,
