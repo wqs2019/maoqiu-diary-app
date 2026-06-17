@@ -23,6 +23,7 @@ interface MediaSelectorProps {
   media: MediaResource[];
   onMediaChange: (media: MediaResource[]) => void;
   maxCount?: number;
+  isVip?: boolean;
   hideHeader?: boolean;
   draggable?: boolean;
   onDragStart?: () => void;
@@ -33,16 +34,19 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   media,
   onMediaChange,
   maxCount = 9,
+  isVip = false,
   hideHeader = false,
   draggable = false,
   onDragStart,
   onDragEnd,
 }) => {
   const MAX_CONCURRENT_UPLOADS = 3;
+  const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
   const isUploading = useRef(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const { isDark } = useAppTheme();
+  const currentVideoCount = media.filter((item) => item.type === 'video').length;
 
   // 重试上传单个媒体
   const retryUpload = async (index: number) => {
@@ -376,54 +380,106 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       return;
     }
 
+    if (!isVip && currentVideoCount >= 1) {
+      Alert.alert('提示', '非 VIP 用户最多只能上传 1 个视频');
+      return;
+    }
+
+    const remainingCount = maxCount - media.length;
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsMultipleSelection: false,
+      allowsMultipleSelection: isVip,
+      selectionLimit: isVip ? remainingCount : 1,
       quality: 0.8,
     });
 
-    if (!result.canceled && result.assets && result.assets[0]) {
-      const asset = result.assets[0];
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const oversizedAssets = result.assets.filter(
+        (asset) => typeof asset.fileSize === 'number' && asset.fileSize > MAX_VIDEO_SIZE_BYTES
+      );
+      const validAssets = result.assets.filter(
+        (asset) => !(typeof asset.fileSize === 'number' && asset.fileSize > MAX_VIDEO_SIZE_BYTES)
+      );
 
-      let thumbnailUri = undefined;
-      try {
-        const { uri } = await VideoThumbnails.getThumbnailAsync(asset.uri, {
-          time: 1000,
-        });
-        thumbnailUri = uri;
-      } catch (e) {
-        console.warn('Failed to generate video thumbnail:', e);
+      if (oversizedAssets.length > 0) {
+        Alert.alert(
+          '视频过大',
+          oversizedAssets.length === 1
+            ? '单个视频不能超过 100MB，请重新选择'
+            : `有 ${oversizedAssets.length} 个视频超过 100MB，已自动跳过`
+        );
       }
 
-      const localMedia: MediaResource = {
-        type: 'video',
-        uri: asset.uri,
-        thumbnail: thumbnailUri,
-        duration: asset.duration ?? undefined,
-        size: asset.fileSize ?? undefined,
-        mimeType: asset.mimeType ?? undefined,
-        uploadStatus: 'loading',
-      };
+      if (validAssets.length === 0) {
+        return;
+      }
 
-      // 先添加本地媒体
-      const allMedia = [...media, localMedia];
-      onMediaChange(allMedia);
+      const allowedAssets = isVip ? validAssets : validAssets.slice(0, 1);
 
-      // 上传到云端
+      const localMedia = await Promise.all(
+        allowedAssets.map(async (asset) => {
+          let thumbnailUri = undefined;
+          try {
+            const { uri } = await VideoThumbnails.getThumbnailAsync(asset.uri, {
+              time: 1000,
+            });
+            thumbnailUri = uri;
+          } catch (e) {
+            console.warn('Failed to generate video thumbnail:', e);
+          }
+
+          return {
+            type: 'video' as const,
+            uri: asset.uri,
+            thumbnail: thumbnailUri,
+            duration: asset.duration ?? undefined,
+            size: asset.fileSize ?? undefined,
+            mimeType: asset.mimeType ?? undefined,
+            uploadStatus: 'loading' as const,
+          };
+        })
+      );
+
+      let latestMediaState = [...media, ...localMedia];
+      onMediaChange(latestMediaState);
       isUploading.current = true;
 
-      const uploadedMedia = await uploadAllMedia([localMedia]);
+      try {
+        await uploadAllMedia(localMedia, {
+          concurrency: Math.min(MAX_CONCURRENT_UPLOADS, localMedia.length),
+          onItemComplete: (index, uploadedItem) => {
+            const targetUri = localMedia[index]?.uri;
+            if (!targetUri) return;
 
-      // 替换为已上传的媒体
-      const finalMedia = allMedia.map((m, idx) => {
-        if (idx === allMedia.length - 1) {
-          return uploadedMedia[0] || m;
-        }
-        return m;
-      });
-
-      onMediaChange(finalMedia);
-      isUploading.current = false;
+            const newMedia = [...latestMediaState];
+            const targetIndex = newMedia.findIndex((m) => m.uri === targetUri);
+            if (targetIndex >= 0) {
+              newMedia[targetIndex] = {
+                ...uploadedItem,
+                uploadStatus: uploadedItem.uploadError ? 'fail' : 'success',
+              };
+            }
+            latestMediaState = newMedia;
+            onMediaChange(latestMediaState);
+          },
+        });
+      } catch (err: any) {
+        console.error('[MediaUpload] Batch video upload failed:', err);
+        latestMediaState = latestMediaState.map((item) =>
+          item.uploadStatus === 'loading'
+            ? {
+                ...item,
+                uploadStatus: 'fail',
+                subUploadStatus: 'unknown',
+                uploadError: err?.message || '批量上传异常',
+              }
+            : item
+        );
+        onMediaChange(latestMediaState);
+      } finally {
+        isUploading.current = false;
+      }
     }
   };
 
@@ -433,7 +489,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     onMediaChange(newMedia);
   };
 
-  const renderMediaPreview = (item: MediaResource, originalIndex: number) => {
+  const renderMediaPreview = (item: MediaResource) => {
     const isUploading = item.uploadStatus === 'loading';
     const isFailed = item.uploadStatus === 'fail';
 
@@ -536,9 +592,8 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   };
 
   const gridData = React.useMemo(() => {
-    const data = media.map((item, index) => ({
+    const data = media.map((item) => ({
       ...item,
-      // 使用唯一的 uri 作为 key，而不是 index，防止重排时组件卸载重建
       key: item.uri,
       disabledDrag: !draggable,
       disabledReSorted: !draggable,
@@ -555,7 +610,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     return data;
   }, [media, maxCount]);
 
-  const renderGridItem = (item: any, index: number) => {
+  const renderGridItem = (item: any) => {
     if (item.isAddButton) {
       return (
         <View style={styles.gridItemContainer} key={item.key}>
@@ -583,7 +638,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     }
     return (
       <View style={styles.gridItemContainer} key={item.key}>
-        {renderMediaPreview(item, index)}
+        {renderMediaPreview(item)}
       </View>
     );
   };

@@ -321,6 +321,7 @@ const EditDiaryScreen: React.FC = () => {
             media={media}
             onMediaChange={setMedia}
             maxCount={user?.isVip?.value ? 9 : 3}
+            isVip={!!user?.isVip?.value}
             draggable
             onDragStart={() => {
               setScrollEnabled(false);
