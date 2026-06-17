@@ -35,10 +35,21 @@ type InteractionSection = {
   data: InteractionNotification[];
 };
 
-const formatInteractionTime = (value: number | string) => {
+const formatInteractionTime = (value: number | string, withDate = false) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return '';
+  }
+
+  if (withDate) {
+    const now = new Date();
+    const isCurrentYear = date.getFullYear() === now.getFullYear();
+    const yyyy = date.getFullYear();
+    const mm = `${date.getMonth() + 1}`.padStart(2, '0');
+    const dd = `${date.getDate()}`.padStart(2, '0');
+    const hh = `${date.getHours()}`.padStart(2, '0');
+    const minute = `${date.getMinutes()}`.padStart(2, '0');
+    return isCurrentYear ? `${mm}月${dd}日 ${hh}:${minute}` : `${yyyy}年${mm}月${dd}日 ${hh}:${minute}`;
   }
 
   const hh = `${date.getHours()}`.padStart(2, '0');
@@ -203,6 +214,7 @@ const CircleInteractionListScreen: React.FC = () => {
       ? { uri: item.senderInfo.avatar }
       : require('../../../assets/logo_bg.png');
     const meta = getInteractionMeta(item.type);
+    const isOlderInteraction = getSectionTitle(item.createdAt) === '更早';
 
     return (
       <TouchableOpacity
@@ -229,7 +241,7 @@ const CircleInteractionListScreen: React.FC = () => {
               </Text>
             </View>
             <Text style={[styles.time, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-              {formatInteractionTime(item.createdAt)}
+              {formatInteractionTime(item.createdAt, isOlderInteraction)}
             </Text>
           </View>
           <Text style={[styles.content, { color: isDark ? '#D1D5DB' : '#4B5563' }]} numberOfLines={2}>
