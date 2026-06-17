@@ -111,7 +111,7 @@ export const CommentList: React.FC<CommentListProps> = ({
           <View style={styles.commentContent}>
             <CommentPressable
               style={styles.commentMainPressable}
-              onPress={() => onReplyPress?.(comment)}
+              onPress={onReplyPress ? () => onReplyPress(comment) : undefined}
               onLongPress={() => onCommentLongPress?.(comment)}
             >
               <View style={styles.commentHeader}>
@@ -140,7 +140,7 @@ export const CommentList: React.FC<CommentListProps> = ({
                 {comment.replies.map((reply) => (
                   <CommentPressable
                     key={reply.id}
-                    onPress={() => onReplyPress?.(reply)}
+                    onPress={onReplyPress ? () => onReplyPress(reply) : undefined}
                     onLongPress={() => onCommentLongPress?.(reply)}
                     style={styles.replyPressable}
                   >

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,21 +14,23 @@ import {
   Dimensions,
   TextInput,
   KeyboardAvoidingView,
-  Keyboard,
   Platform,
   RefreshControl,
 } from 'react-native';
 
 import { CommentList, type Comment } from '@/components/handDrawn/CommentList';
 import { NineGridMedia } from '@/components/handDrawn/NineGridMedia';
+import { CommentActionSheet } from '@/components/common/CommentActionSheet';
 import { Modal as CommonModal } from '@/components/common/Modal';
 import { useToast } from '@/components/common/Toast';
 import { HEALING_COLORS, DARK_HEALING_COLORS } from '@/config/handDrawnTheme';
-import { useDiaryDetail, useLikeDiary, useCommentDiary } from '@/hooks/useDiaryQuery';
+import { useDiaryDetail, useLikeDiary } from '@/hooks/useDiaryQuery';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useCommentComposer } from '@/hooks/useCommentComposer';
 import { deleteDiaryComment } from '@/services/diaryService';
 import feedbackService, { ReportReason } from '@/services/feedbackService';
 import { useAuthStore } from '@/store/authStore';
+import { getReplyTargetAfterDelete, removeCommentFromList } from '@/utils/comment';
 import { FormatUtil } from '@/utils/format';
 
 const { width } = Dimensions.get('window');
@@ -57,10 +59,6 @@ const CircleDetailScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
 
   const likeMutation = useLikeDiary();
-  const commentMutation = useCommentDiary();
-
-  const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState<Comment[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [moreActionsVisible, setMoreActionsVisible] = useState(false);
   const [commentActionsVisible, setCommentActionsVisible] = useState(false);
@@ -70,15 +68,24 @@ const CircleDetailScreen: React.FC = () => {
   const [selectedReportReason, setSelectedReportReason] = useState<ReportReason>('spam');
   const [reportDescription, setReportDescription] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
-
-  const [replyToComment, setReplyToComment] = useState<Comment | null>(null);
-  const inputRef = useRef<TextInput>(null);
-
-  useEffect(() => {
-    if (diary) {
-      setComments(diary.comments || []);
-    }
-  }, [diary]);
+  const {
+    commentText,
+    setCommentText,
+    comments,
+    setComments,
+    replyToComment,
+    setReplyToComment,
+    inputRef,
+    handleReplyPress,
+    handleSendComment,
+  } = useCommentComposer({
+    diaryId: _id,
+    initialComments: diary?.comments || [],
+    user,
+    initialInputVisible: true,
+    hideInputOnKeyboardHide: false,
+    collapseAfterSend: false,
+  });
 
   useFocusEffect(
     React.useCallback(() => {
@@ -95,34 +102,6 @@ const CircleDetailScreen: React.FC = () => {
     }
   }, [refetch]);
 
-  const handleSendComment = () => {
-    if (!commentText.trim() || !user) return;
-
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      user: user.nickname || '我',
-      userId: user._id,
-      avatar: user.avatar,
-      content: commentText.trim(),
-      createTime: new Date().toISOString(),
-    };
-
-    if (replyToComment) {
-      newComment.parentId = replyToComment.parentId || replyToComment.id;
-      newComment.replyToUser = replyToComment.user;
-      newComment.replyToUserId = replyToComment.userId;
-    }
-
-    // 乐观更新（与服务端 push 行为保持一致，追加到末尾）
-    setComments((prevComments) => [...prevComments, newComment]);
-    setCommentText('');
-    setReplyToComment(null);
-    Keyboard.dismiss();
-
-    // 调用接口
-    commentMutation.mutate({ id: _id, comment: newComment });
-  };
-
   const closeCommentActions = () => {
     if (commentDeleting) {
       return;
@@ -130,11 +109,6 @@ const CircleDetailScreen: React.FC = () => {
 
     setCommentActionsVisible(false);
     setSelectedComment(null);
-  };
-
-  const handleReplyPress = (comment: Comment) => {
-    setReplyToComment(comment);
-    inputRef.current?.focus();
   };
 
   const handleCommentLongPress = (comment: Comment) => {
@@ -161,35 +135,8 @@ const CircleDetailScreen: React.FC = () => {
       setCommentDeleting(true);
       await deleteDiaryComment(_id, selectedComment.id, user._id);
 
-      setComments((prevComments) =>
-        prevComments.filter((item) => {
-          if (item.id === selectedComment.id) {
-            return false;
-          }
-
-          if (!selectedComment.parentId && item.parentId === selectedComment.id) {
-            return false;
-          }
-
-          return true;
-        })
-      );
-
-      setReplyToComment((prevComment) => {
-        if (!prevComment) {
-          return null;
-        }
-
-        if (prevComment.id === selectedComment.id) {
-          return null;
-        }
-
-        if (!selectedComment.parentId && prevComment.parentId === selectedComment.id) {
-          return null;
-        }
-
-        return prevComment;
-      });
+      setComments((prevComments) => removeCommentFromList(prevComments, selectedComment));
+      setReplyToComment((prevComment) => getReplyTargetAfterDelete(prevComment, selectedComment));
 
       closeCommentActions();
       toast.success('评论已删除');
@@ -508,43 +455,16 @@ const CircleDetailScreen: React.FC = () => {
         </View>
       </CommonModal>
 
-      <CommonModal visible={commentActionsVisible} onClose={closeCommentActions}>
-        <View style={styles.popupContainer}>
-          <TouchableOpacity style={styles.popupBackdrop} activeOpacity={1} onPress={closeCommentActions} />
-          <View
-            style={[
-              styles.popupCard,
-              {
-                backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                borderColor: isDark ? '#333' : '#E5E7EB',
-              },
-            ]}
-          >
-            <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>评论操作</Text>
-            <TouchableOpacity style={styles.popupAction} onPress={handleCopyComment}>
-              <Ionicons name="copy-outline" size={18} color={currentHealingColors.pink[500]} />
-              <Text style={[styles.popupActionText, { color: isDark ? '#FFF' : '#111827' }]}>
-                复制
-              </Text>
-            </TouchableOpacity>
-            {canDeleteSelectedComment && (
-              <TouchableOpacity
-                style={[styles.commentDeleteAction, commentDeleting && styles.commentDeleteActionDisabled]}
-                onPress={handleDeleteComment}
-                disabled={commentDeleting}
-              >
-                <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.commentDeleteActionText}>{commentDeleting ? '删除中...' : '删除'}</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={styles.popupCancel} onPress={closeCommentActions} disabled={commentDeleting}>
-              <Text style={[styles.popupCancelText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                取消
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </CommonModal>
+      <CommentActionSheet
+        visible={commentActionsVisible}
+        onClose={closeCommentActions}
+        onCopy={handleCopyComment}
+        onDelete={handleDeleteComment}
+        canDelete={canDeleteSelectedComment}
+        deleting={commentDeleting}
+        isDark={isDark}
+        accentColor={currentHealingColors.pink[500]}
+      />
 
       <CommonModal visible={reportModalVisible} onClose={() => setReportModalVisible(false)}>
         <View style={styles.popupContainer}>

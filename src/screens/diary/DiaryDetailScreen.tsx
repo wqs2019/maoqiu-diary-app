@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import React, { useState } from 'react';
 import {
   View,
@@ -10,18 +11,25 @@ import {
   Alert,
   RefreshControl,
   Dimensions,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useToast } from '../../components/common/Toast';
-import { CommentList } from '../../components/handDrawn/CommentList';
+import { CommentList, type Comment } from '../../components/handDrawn/CommentList';
 import { NineGridMedia } from '../../components/handDrawn/NineGridMedia';
 import { ShareCardModal } from '../../components/handDrawn/ShareCardModal';
+import { CommentActionSheet } from '../../components/common/CommentActionSheet';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useDiaryDetail, useDeleteDiary, useToggleFavorite } from '../../hooks/useDiaryQuery';
+import { useCommentComposer } from '../../hooks/useCommentComposer';
 import { useVipGuard } from '../../hooks/useVipGuard';
+import { deleteDiaryComment } from '../../services/diaryService';
+import { getReplyTargetAfterDelete, removeCommentFromList } from '../../utils/comment';
 import FormatUtil from '../../utils/format';
 
 import { useAuthStore } from '../../store/authStore';
@@ -45,6 +53,29 @@ const DiaryDetailScreen: React.FC = () => {
 
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [commentActionsVisible, setCommentActionsVisible] = useState(false);
+  const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
+  const [commentDeleting, setCommentDeleting] = useState(false);
+  const {
+    commentText,
+    setCommentText,
+    comments,
+    setComments,
+    replyToComment,
+    setReplyToComment,
+    commentInputVisible,
+    inputRef,
+    handleReplyPress,
+    handleSendComment,
+    handleCloseCommentInput,
+  } = useCommentComposer({
+    diaryId: _id,
+    initialComments: diary?.comments || [],
+    user,
+    initialInputVisible: false,
+    hideInputOnKeyboardHide: true,
+    collapseAfterSend: true,
+  });
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -83,6 +114,50 @@ const DiaryDetailScreen: React.FC = () => {
   const handleShare = () => {
     if (!diary) return;
     setShareModalVisible(true);
+  };
+
+  const closeCommentActions = () => {
+    if (commentDeleting) {
+      return;
+    }
+
+    setCommentActionsVisible(false);
+    setSelectedComment(null);
+  };
+
+  const handleCommentLongPress = (comment: Comment) => {
+    setSelectedComment(comment);
+    setCommentActionsVisible(true);
+  };
+
+  const handleCopyComment = async () => {
+    if (!selectedComment?.content) {
+      return;
+    }
+
+    await Clipboard.setStringAsync(selectedComment.content);
+    closeCommentActions();
+    toast.success('评论内容已复制');
+  };
+
+  const handleDeleteComment = async () => {
+    if (!user?._id || !selectedComment?.id) {
+      return;
+    }
+
+    try {
+      setCommentDeleting(true);
+      await deleteDiaryComment(_id, selectedComment.id, user._id);
+      setComments((prevComments) => removeCommentFromList(prevComments, selectedComment));
+      setReplyToComment((prevComment) => getReplyTargetAfterDelete(prevComment, selectedComment));
+      closeCommentActions();
+      toast.success('评论已删除');
+      refetch();
+    } catch (error: any) {
+      Alert.alert('删除失败', error?.message || '删除评论失败，请稍后重试');
+    } finally {
+      setCommentDeleting(false);
+    }
   };
 
   const handleDelete = () => {
@@ -146,12 +221,19 @@ const DiaryDetailScreen: React.FC = () => {
       : diary.moderationStatus === 'violation'
         ? '笔记违规'
         : '';
+  const canDeleteSelectedComment = !!(
+    user?._id &&
+    selectedComment?.userId &&
+    selectedComment.userId === user._id
+  );
 
   return (
     <View style={styles.container}>
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -264,39 +346,70 @@ const DiaryDetailScreen: React.FC = () => {
         {/* Comments */}
         <View style={styles.commentsSection}>
           <CommentList
-            comments={diary.comments || []}
+            comments={comments}
             emptyText="还没有评论哦，快去圈子里和大家互动吧~"
             authorId={diary.userId}
+            onReplyPress={handleReplyPress}
+            onCommentLongPress={handleCommentLongPress}
           />
         </View>
       </ScrollView>
 
-      {/* Floating Bottom Bar */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <TouchableOpacity style={styles.bottomBarAction} onPress={handleShare}>
-          <Ionicons name="share-social-outline" size={24} color="#4B5563" />
-          <Text style={styles.bottomBarActionText}>分享</Text>
-        </TouchableOpacity>
-        {diary.userId === user?._id && (
-          <>
-            <TouchableOpacity
-              style={styles.bottomBarAction}
-              onPress={() => {
-                if (checkVipPermission('writeDiary')) {
-                  navigation.navigate('EditDiary', { diaryId: _id });
-                }
-              }}
-            >
-              <Ionicons name="create-outline" size={24} color="#4B5563" />
-              <Text style={styles.bottomBarActionText}>编辑</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          {commentInputVisible ? (
+            <View style={styles.inputContainer}>
+              <TextInput
+                ref={inputRef}
+                style={styles.commentInput}
+                placeholder={replyToComment ? `回复 @${replyToComment.user}` : '说点什么吧...'}
+                placeholderTextColor="#9CA3AF"
+                value={commentText}
+                onChangeText={setCommentText}
+                returnKeyType="send"
+                onSubmitEditing={handleSendComment}
+              />
+              {commentText.length > 0 ? (
+                <TouchableOpacity style={styles.sendButton} onPress={handleSendComment}>
+                  <Ionicons name="send" size={20} color={HEALING_COLORS.pink[500]} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.sendButton} onPress={handleCloseCommentInput}>
+                  <Ionicons name="close" size={20} color="#9CA3AF" />
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : null}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={styles.bottomBarAction} onPress={handleShare}>
+              <Ionicons name="share-social-outline" size={24} color="#4B5563" />
+              <Text style={styles.bottomBarActionText}>分享</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.bottomBarAction} onPress={handleDelete}>
-              <Ionicons name="trash-outline" size={24} color="#EF4444" />
-              <Text style={[styles.bottomBarActionText, { color: '#EF4444' }]}>删除</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+            {diary.userId === user?._id && (
+              <>
+                <TouchableOpacity
+                  style={styles.bottomBarAction}
+                  onPress={() => {
+                    if (checkVipPermission('writeDiary')) {
+                      navigation.navigate('EditDiary', { diaryId: _id });
+                    }
+                  }}
+                >
+                  <Ionicons name="create-outline" size={24} color="#4B5563" />
+                  <Text style={styles.bottomBarActionText}>编辑</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.bottomBarAction} onPress={handleDelete}>
+                  <Ionicons name="trash-outline" size={24} color="#EF4444" />
+                  <Text style={[styles.bottomBarActionText, { color: '#EF4444' }]}>删除</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </KeyboardAvoidingView>
 
       {/* Share Modal */}
       <ShareCardModal
@@ -305,6 +418,15 @@ const DiaryDetailScreen: React.FC = () => {
         onClose={() => {
           setShareModalVisible(false);
         }}
+      />
+      <CommentActionSheet
+        visible={commentActionsVisible}
+        onClose={closeCommentActions}
+        onCopy={handleCopyComment}
+        onDelete={handleDeleteComment}
+        canDelete={canDeleteSelectedComment}
+        deleting={commentDeleting}
+        accentColor={HEALING_COLORS.pink[500]}
       />
     </View>
   );
@@ -330,7 +452,10 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 160,
+  },
+  scrollView: {
+    flex: 1,
   },
   mainContent: {
     paddingHorizontal: 20,
@@ -448,13 +573,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4, // CommentList component already has padding
   },
   bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     paddingTop: 12,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
     shadowColor: '#000',
@@ -462,6 +583,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    marginBottom: 10,
+  },
+  commentInput: {
+    flex: 1,
+    minHeight: 38,
+    maxHeight: 92,
+    fontSize: 14,
+    color: '#111827',
+    paddingVertical: 8,
+  },
+  sendButton: {
+    paddingLeft: 8,
+    paddingVertical: 4,
+  },
+  actionButtons: {
+    flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
   },
