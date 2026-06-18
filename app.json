@@ -19,6 +19,11 @@
       "appleTeamId": "592UG636F5",
       "buildNumber": "6",
       "infoPlist": {
+        "CFBundleDevelopmentRegion": "zh-Hans",
+        "CFBundleLocalizations": [
+          "zh-Hans",
+          "en"
+        ],
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "毛球日记需要访问您的相册以选择照片和视频，记录美好时光",
         "NSCameraUsageDescription": "毛球日记需要使用相机拍摄照片和视频",

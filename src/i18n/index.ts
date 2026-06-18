@@ -13,9 +13,19 @@ const resources = {
   },
 };
 
+const getDeviceLanguage = () => {
+  const locale = Intl.DateTimeFormat().resolvedOptions().locale || 'zh-CN';
+
+  if (locale.toLowerCase().startsWith('zh')) {
+    return 'zh-CN';
+  }
+
+  return 'en-US';
+};
+
 i18n.use(initReactI18next).init({
   resources,
-  lng: 'zh-CN',
+  lng: getDeviceLanguage(),
   fallbackLng: 'zh-CN',
   interpolation: {
     escapeValue: false,
