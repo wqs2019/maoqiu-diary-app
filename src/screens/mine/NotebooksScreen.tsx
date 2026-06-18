@@ -109,11 +109,20 @@ const NotebooksScreen: React.FC = () => {
       });
 
       if (!result.canceled && result.assets[0]) {
+        if (!user?._id) {
+          Alert.alert('提示', '请先登录后再上传封面');
+          return;
+        }
+
         const asset = result.assets[0];
         setIsUploadingCover(true);
 
         const extension = asset.mimeType?.split('/')[1] || 'jpg';
-        const { data: pathData } = await imageService.generateCloudPath(extension, 'notebook');
+        const { data: pathData } = await imageService.generateCloudPath(
+          extension,
+          'notebook',
+          user._id
+        );
 
         const uploadResult = await imageService.uploadImage(
           asset.uri,

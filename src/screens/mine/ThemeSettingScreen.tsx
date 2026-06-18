@@ -56,7 +56,11 @@ const ThemeSettingScreen: React.FC = () => {
         setIsUploading(true);
 
         const extension = asset.mimeType?.split('/')[1] || 'jpg';
-        const { data: pathData } = await imageService.generateCloudPath(extension, 'background');
+        const { data: pathData } = await imageService.generateCloudPath(
+          extension,
+          'background',
+          user._id
+        );
 
         const uploadResult = await imageService.uploadImage(
           asset.uri,

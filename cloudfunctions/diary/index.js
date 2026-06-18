@@ -10,6 +10,8 @@ const db = app.database();
 const _ = db.command;
 const REVIEWABLE_FEEDBACK_TYPE = 'report_user';
 const HIDDEN_MODERATION_STATUSES = ['violation', 'pending_recheck'];
+const CURRENT_ENV_ID = process.env.TCB_ENV || 'maoqiu-diary-app-2fpzvwp2e01dbaf';
+const DEFAULT_STORAGE_BUCKET = '6d61-maoqiu-diary-app-2fpzvwp2e01dbaf-1417164439';
 
 const usersCollection = db.collection('users');
 const adminCollection = db.collection('admin_list');
@@ -114,6 +116,97 @@ const getCommentPreview = (content) => {
     return '给你留了一条评论';
   }
   return normalized.slice(0, 26) + (normalized.length > 26 ? '...' : '');
+};
+
+const buildCloudFileId = (cloudPath, bucket = DEFAULT_STORAGE_BUCKET) => {
+  if (!cloudPath || typeof cloudPath !== 'string') {
+    return '';
+  }
+
+  const normalizedPath = cloudPath.replace(/^\/+/, '');
+  if (!normalizedPath) {
+    return '';
+  }
+
+  return `cloud://${CURRENT_ENV_ID}.${bucket}/${normalizedPath}`;
+};
+
+const getCloudStorageFileIdFromUrl = (value) => {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  if (value.startsWith('cloud://')) {
+    return value;
+  }
+
+  if (!/^https?:\/\//i.test(value)) {
+    return buildCloudFileId(value);
+  }
+
+  try {
+    const parsedUrl = new URL(value);
+    const cloudPath = decodeURIComponent(parsedUrl.pathname || '').replace(/^\/+/, '');
+    const bucket = parsedUrl.hostname.endsWith('.tcb.qcloud.la')
+      ? parsedUrl.hostname.replace(/\.tcb\.qcloud\.la$/i, '')
+      : DEFAULT_STORAGE_BUCKET;
+    return buildCloudFileId(cloudPath, bucket);
+  } catch (error) {
+    console.error('Parse cloud storage file id failed:', value, error);
+    return '';
+  }
+};
+
+const collectDiaryMediaFileList = (diary) => {
+  if (!diary || !Array.isArray(diary.media) || diary.media.length === 0) {
+    return [];
+  }
+
+  const fileSet = new Set();
+
+  diary.media.forEach((item) => {
+    [item && item.uri, item && item.thumbnail, item && item.livePhotoVideoUri].forEach((value) => {
+      const filePath = getCloudStorageFileIdFromUrl(value);
+
+      // 只清理当前 diary 目录下的媒体资源，避免误删外链或其他业务文件。
+      if (filePath && filePath.includes('/diary/')) {
+        fileSet.add(filePath);
+      }
+    });
+  });
+
+  return [...fileSet];
+};
+
+const deleteDiaryMediaFileList = async (fileList) => {
+  if (!Array.isArray(fileList) || fileList.length === 0) {
+    return;
+  }
+
+  try {
+    const result = await app.deleteFile({
+      fileList,
+    });
+
+    const failedItems = Array.isArray(result && result.fileList)
+      ? result.fileList.filter((item) => item && item.code && item.code !== 'SUCCESS')
+      : [];
+
+    if (failedItems.length > 0) {
+      console.error('Delete diary media partially failed:', failedItems);
+      throw new Error(failedItems.map((item) => `${item.fileID}: ${item.code}`).join('; '));
+    }
+
+    console.log('Diary media deleted:', fileList);
+  } catch (error) {
+    console.error('Delete diary media failed:', error, fileList);
+    throw error;
+  }
+};
+
+const deleteDiaryMediaFiles = async (diary) => {
+  const fileList = collectDiaryMediaFileList(diary);
+  await deleteDiaryMediaFileList(fileList);
 };
 
 const createDiaryInteractionNotification = async ({
@@ -645,6 +738,15 @@ const updateDiary = async (data) => {
       };
     }
 
+    const hasMediaField = Object.prototype.hasOwnProperty.call(updateData, 'media');
+    const removedMediaFiles = hasMediaField
+      ? (() => {
+          const previousFiles = collectDiaryMediaFileList(diaryData);
+          const nextFiles = new Set(collectDiaryMediaFileList({ media: updateData.media }));
+          return previousFiles.filter((filePath) => !nextFiles.has(filePath));
+        })()
+      : [];
+
     // 更新日记
     const shouldTriggerReReview =
       HIDDEN_MODERATION_STATUSES.includes(diaryData.moderationStatus) &&
@@ -656,6 +758,10 @@ const updateDiary = async (data) => {
       reReviewRequestedAt: shouldTriggerReReview ? db.serverDate() : diaryData.reReviewRequestedAt || null,
       updatedAt: db.serverDate(),
     });
+
+    if (removedMediaFiles.length > 0) {
+      await deleteDiaryMediaFileList(removedMediaFiles);
+    }
 
     if (shouldTriggerReReview) {
       await createDiaryRecheckTask({
@@ -965,6 +1071,7 @@ const deleteDiary = async (data) => {
       };
     }
 
+    await deleteDiaryMediaFiles(diaryData);
     await diariesCollection.doc(_id).remove();
 
     return {

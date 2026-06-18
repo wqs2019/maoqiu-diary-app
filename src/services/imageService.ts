@@ -56,10 +56,24 @@ class ImageService {
     return this.cos;
   }
 
-  public async generateCloudPath(extension: string, folder: string = 'diary') {
+  private normalizePathSegment(value: string) {
+    return String(value || '')
+      .trim()
+      .replace(/^\/+|\/+$/g, '');
+  }
+
+  public async generateCloudPath(
+    extension: string,
+    folder: string = 'diary',
+    userId?: string
+  ) {
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
-    const cloudPath = `${folder}/${timestamp}-${randomStr}.${extension}`;
+    const normalizedFolder = this.normalizePathSegment(folder) || 'diary';
+    const normalizedUserId = this.normalizePathSegment(userId || '');
+    const cloudPath = normalizedUserId
+      ? `${normalizedFolder}/${normalizedUserId}/${timestamp}-${randomStr}.${extension}`
+      : `${normalizedFolder}/${timestamp}-${randomStr}.${extension}`;
     return { data: { cloudPath } };
   }
 

@@ -17,6 +17,7 @@ import { MediaPreviewer } from './MediaPreviewer';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { imageService } from '../../services/imageService';
+import { useAuthStore } from '../../store/authStore';
 import { MediaResource } from '../../types';
 
 interface MediaSelectorProps {
@@ -46,6 +47,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const { isDark } = useAppTheme();
+  const userId = useAuthStore((state) => state.user?._id);
   const currentVideoCount = media.filter((item) => item.type === 'video').length;
 
   // 重试上传单个媒体
@@ -64,11 +66,15 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     onMediaChange(updatedMedia);
 
     try {
+      if (!userId) {
+        throw new Error('请先登录后再上传媒体');
+      }
+
       console.log(`[MediaUpload] Retrying upload for media at index ${index}`);
 
       // 生成唯一的云存储路径（上传到 diary 目录）
       const extension = item.mimeType?.split('/')[1] || 'jpg';
-      const pathResult = await imageService.generateCloudPath(extension, 'diary');
+      const pathResult = await imageService.generateCloudPath(extension, 'diary', userId);
       const cloudPath = pathResult.data.cloudPath;
 
       // 上传到云端（传递 mimeType 用于智能压缩）
@@ -80,7 +86,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       // 如果是视频且有本地封面图，也需要上传封面图
       if (item.type === 'video' && item.thumbnail?.startsWith('file://')) {
         try {
-          const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
+          const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary', userId);
           const thumbUploadResult = await imageService.uploadImage(
             item.thumbnail,
             thumbPathResult.data.cloudPath,
@@ -97,7 +103,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       // 如果是实况照片且包含本地视频路径，也需要上传对应的视频
       if (item.type === 'livePhoto' && item.livePhotoVideoUri?.startsWith('file://')) {
         try {
-          const videoPathResult = await imageService.generateCloudPath('mov', 'diary');
+          const videoPathResult = await imageService.generateCloudPath('mov', 'diary', userId);
           const videoUploadResult = await imageService.uploadImage(
             item.livePhotoVideoUri,
             videoPathResult.data.cloudPath,
@@ -165,10 +171,14 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     let currentTry = 0;
     while (currentTry < retryCount) {
       try {
+        if (!userId) {
+          throw new Error('请先登录后再上传媒体');
+        }
+
         console.log(`[MediaUpload] Uploading ${item.type} (Try ${currentTry + 1}/${retryCount})`);
 
         const extension = item.mimeType?.split('/')[1] || (item.type === 'video' ? 'mp4' : 'jpg');
-        const pathResult = await imageService.generateCloudPath(extension, 'diary');
+        const pathResult = await imageService.generateCloudPath(extension, 'diary', userId);
         const cloudPath = pathResult.data.cloudPath;
 
         const uploadResult = await imageService.uploadImage(item.uri, cloudPath, item.mimeType);
@@ -179,7 +189,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         // 如果是视频且有本地封面图，也需要上传封面图
         if (item.type === 'video' && item.thumbnail?.startsWith('file://')) {
           try {
-            const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary');
+            const thumbPathResult = await imageService.generateCloudPath('jpg', 'diary', userId);
             const thumbUploadResult = await imageService.uploadImage(
               item.thumbnail,
               thumbPathResult.data.cloudPath,
@@ -196,7 +206,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         // 如果是实况照片且包含本地视频路径，也需要上传对应的视频
         if (item.type === 'livePhoto' && item.livePhotoVideoUri?.startsWith('file://')) {
           try {
-            const videoPathResult = await imageService.generateCloudPath('mov', 'diary');
+            const videoPathResult = await imageService.generateCloudPath('mov', 'diary', userId);
             const videoUploadResult = await imageService.uploadImage(
               item.livePhotoVideoUri,
               videoPathResult.data.cloudPath,

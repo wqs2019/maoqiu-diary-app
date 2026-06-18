@@ -57,11 +57,20 @@ const EditProfileScreen: React.FC = () => {
       });
 
       if (!result.canceled && result.assets[0]) {
+        if (!user?._id) {
+          Alert.alert('提示', '请先登录后再上传头像');
+          return;
+        }
+
         const asset = result.assets[0];
         setIsUploading(true);
 
         const extension = asset.mimeType?.split('/')[1] || 'jpg';
-        const { data: pathData } = await imageService.generateCloudPath(extension, 'avatar');
+        const { data: pathData } = await imageService.generateCloudPath(
+          extension,
+          'avatar',
+          user._id
+        );
 
         const uploadResult = await imageService.uploadImage(
           asset.uri,
