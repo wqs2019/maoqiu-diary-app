@@ -365,6 +365,9 @@ const LoginScreen: React.FC = () => {
                   </Text>
                 </TouchableOpacity>
               </View>
+              <Text style={[styles.smsServiceHint, { color: colors.textSecondary }]}>
+                短信服务采用“速通互联平台”
+              </Text>
             </View>
 
             {/* 登录按钮 */}
@@ -572,6 +575,12 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: SPACING.large,
+  },
+  smsServiceHint: {
+    fontSize: FONT_SIZES.small - 1,
+    lineHeight: 18,
+    marginTop: SPACING.small,
+    paddingHorizontal: SPACING.small,
   },
   inputWrapper: {
     flexDirection: 'row',
