@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect } from 'react';
-import { Alert, View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Pressable } from 'react-native';
+import { Alert, View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -119,12 +119,7 @@ const MineScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
       {/* 顶部背景装饰 */}
       {user?.profileBackground ? (
-        <Pressable
-          style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}
-          onPress={() => {
-            navigation.navigate('ThemeSetting');
-          }}
-        >
+        <View style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}>
           <Image
             source={{ uri: user.profileBackground }}
             style={styles.headerBackgroundImage}
@@ -143,14 +138,9 @@ const MineScreen: React.FC = () => {
               <Rect width="100%" height="100%" fill="url(#grad)" />
             </Svg>
           </View>
-        </Pressable>
+        </View>
       ) : (
-        <Pressable
-          style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}
-          onPress={() => {
-            navigation.navigate('ThemeSetting');
-          }}
-        >
+        <View style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}>
           <View
             style={[
               StyleSheet.absoluteFillObject,
@@ -169,15 +159,8 @@ const MineScreen: React.FC = () => {
               <Rect width="100%" height="100%" fill="url(#grad-default)" />
             </Svg>
           </View>
-        </Pressable>
+        </View>
       )}
-
-      <Pressable
-        style={[styles.headerThemeHitArea, { height: 140 + insets.top }]}
-        onPress={() => {
-          navigation.navigate('ThemeSetting');
-        }}
-      />
 
       {/* 顶部操作区 */}
       <View style={[styles.topActions, { paddingTop: insets.top }]}>
@@ -212,7 +195,8 @@ const MineScreen: React.FC = () => {
         {/* 用户信息区（移除卡片样式） */}
         <View style={styles.userInfoContainer}>
           <TouchableOpacity
-            activeOpacity={0.8}
+            style={styles.userInfoMainTapArea}
+            activeOpacity={0.85}
             onPress={() => navigation.navigate('EditProfile' as never)}
           >
             <Image
@@ -230,62 +214,61 @@ const MineScreen: React.FC = () => {
                 },
               ]}
             />
-          </TouchableOpacity>
-          <View style={styles.userDetails}>
-            <View style={styles.userNameRow}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('EditProfile' as never)}
-              >
+            <View style={styles.userDetails}>
+              <View style={styles.userNameRow}>
                 <Text
                   style={[styles.userName, { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 }]}
                 >
                   {user?.nickname || '毛球日记'}
                 </Text>
-              </TouchableOpacity>
-              {user?.isVip?.value && (
-                <TouchableOpacity
-                  style={[styles.vipBadge, { backgroundColor: isDark ? 'rgba(55,65,81,0.8)' : 'rgba(255,255,255,0.2)' }]}
-                  onPress={() => {
-                    navigation.navigate('Subscription' as any);
-                  }}
-                  activeOpacity={0.8}
-                  hitSlop={{ top: 14, bottom: 14, left: 10, right: 10 }}
-                >
-                  <Feather name="award" size={14} color="#FFD700" style={styles.vipBadgeIcon} />
-                  <Text style={[styles.vipBadgeText, { color: '#FFD700', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]} >尊贵会员</Text>
-                  <Feather name="chevron-right" size={14} color="#FFD700" style={{ marginLeft: 2 }} />
-                </TouchableOpacity>
-              )}
-            </View>
-            <Text
-              style={[
-                styles.userPhone,
-                { color: 'rgba(255,255,255,0.9)', textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
-              ]}
-            >
-              {user?.phone
-                ? user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
-                : '点击登录 / 注册 ✨'}
-            </Text>
-            {user && (
-              <View
+              </View>
+              <Text
                 style={[
-                  styles.joinDaysTag,
-                  { backgroundColor: 'rgba(0,0,0,0.2)' },
+                  styles.userPhone,
+                  { color: 'rgba(255,255,255,0.9)', textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
                 ]}
               >
-                <Text
+                {user?.phone
+                  ? user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+                  : '点击登录 / 注册 ✨'}
+              </Text>
+              {user && (
+                <View
                   style={[
-                    styles.joinDaysText,
-                    { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+                    styles.joinDaysTag,
+                    { backgroundColor: 'rgba(0,0,0,0.2)' },
                   ]}
                 >
-                  来毛球日记的第 {joinDays} 天
-                </Text>
+                  <Text
+                    style={[
+                      styles.joinDaysText,
+                      { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+                    ]}
+                  >
+                    来毛球日记的第 {joinDays} 天
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+          {user?.isVip?.value && (
+            <TouchableOpacity
+              style={styles.vipBadgeTapArea}
+              onPress={() => {
+                navigation.navigate('Subscription' as any);
+              }}
+              activeOpacity={0.8}
+              hitSlop={{ top: 14, bottom: 14, left: 10, right: 10 }}
+            >
+              <View
+                style={[styles.vipBadge, { backgroundColor: isDark ? 'rgba(55,65,81,0.8)' : 'rgba(255,255,255,0.2)' }]}
+              >
+                <Feather name="award" size={14} color="#FFD700" style={styles.vipBadgeIcon} />
+                <Text style={[styles.vipBadgeText, { color: '#FFD700', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]} >尊贵会员</Text>
+                <Feather name="chevron-right" size={14} color="#FFD700" style={{ marginLeft: 2 }} />
               </View>
-            )}
-          </View>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* VIP 开通入口 */}
@@ -617,13 +600,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: '60%',
   },
-  headerThemeHitArea: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 4,
-  },
   topActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -683,6 +659,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 3,
   },
+  userInfoMainTapArea: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   userCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
@@ -722,6 +703,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 8,
     zIndex: 3,
+  },
+  vipBadgeTapArea: {
+    marginLeft: 8,
+    zIndex: 4,
   },
   vipBadgeIcon: {
     marginRight: 2,
