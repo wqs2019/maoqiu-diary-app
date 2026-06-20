@@ -629,6 +629,53 @@ const adminListFeedbacks = async (data) => {
   }
 };
 
+const USER_FEEDBACK_TYPES = ['bug', 'feature', 'other'];
+
+const adminListUserFeedbacks = async (data) => {
+  try {
+    const { adminUserId, page = 1, pageSize = 20, type = 'all' } = data;
+
+    if (!adminUserId) {
+      return { success: false, message: '缺少管理员信息' };
+    }
+
+    const isAdmin = await isAdminUser(adminUserId);
+    if (!isAdmin) {
+      return { success: false, message: '无权限查看用户反馈列表' };
+    }
+
+    const feedbackTypeFilter =
+      type && type !== 'all' && USER_FEEDBACK_TYPES.includes(type) ? type : db.command.in(USER_FEEDBACK_TYPES);
+
+    const query = feedbacksCollection.where({
+      type: feedbackTypeFilter,
+    });
+
+    const skip = (page - 1) * pageSize;
+    const result = await query
+      .orderBy('createdAt', 'desc')
+      .skip(skip)
+      .limit(pageSize)
+      .get();
+    const list = Array.isArray(result.data) ? result.data : [];
+    const usersMap = await fetchUsersMap(list.map((item) => item.userId));
+    const countResult = await query.count();
+
+    return {
+      success: true,
+      data: {
+        list: list.map((item) => enrichFeedbackItem(item, usersMap)),
+        total: countResult.total || 0,
+        page,
+        pageSize,
+      },
+    };
+  } catch (error) {
+    console.error('Admin list user feedbacks error:', error);
+    return { success: false, message: '获取用户反馈列表失败', error: error.message };
+  }
+};
+
 const adminGetPendingCount = async (data) => {
   try {
     const { adminUserId } = data;
@@ -873,6 +920,8 @@ exports.main = async (event, context) => {
       return await listFeedbacks(data);
     case 'adminList':
       return await adminListFeedbacks(data);
+    case 'adminUserFeedbackList':
+      return await adminListUserFeedbacks(data);
     case 'adminPendingCount':
       return await adminGetPendingCount(data);
     case 'adminDetail':

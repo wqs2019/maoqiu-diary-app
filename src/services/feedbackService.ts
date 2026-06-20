@@ -71,6 +71,13 @@ export interface AdminFeedbackListParams {
   status?: FeedbackStatus | 'all';
 }
 
+export interface AdminUserFeedbackListParams {
+  adminUserId: string;
+  page?: number;
+  pageSize?: number;
+  type?: FeedbackType | 'all';
+}
+
 export interface AdminFeedbackDetailParams {
   adminUserId: string;
   feedbackId: string;
@@ -178,6 +185,32 @@ export class FeedbackService {
       throw new Error(response.data?.message || response.message || '获取审核列表失败');
     } catch (error) {
       console.error('FeedbackService.getAdminReviewList error:', error);
+      throw error;
+    }
+  }
+
+  async getAdminUserFeedbackList(params: AdminUserFeedbackListParams): Promise<FeedbackListResponse> {
+    try {
+      const response: any = await CloudService.callFunction('feedback', {
+        action: 'adminUserFeedbackList',
+        data: {
+          page: 1,
+          pageSize: 20,
+          type: 'all',
+          ...params,
+        },
+      });
+
+      if (response.code === 0 && response.data) {
+        const cloudResult = response.data;
+        if (cloudResult.success && cloudResult.data) {
+          return cloudResult.data;
+        }
+      }
+
+      throw new Error(response.data?.message || response.message || '获取用户反馈列表失败');
+    } catch (error) {
+      console.error('FeedbackService.getAdminUserFeedbackList error:', error);
       throw error;
     }
   }

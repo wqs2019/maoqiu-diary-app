@@ -30,6 +30,7 @@ import SettingsScreen from '@/screens/mine/SettingsScreen';
 import SubscriptionScreen from '@/screens/mine/SubscriptionScreen';
 import AccountSecurityScreen from '@/screens/mine/AccountSecurityScreen';
 import AdminCenterScreen from '@/screens/mine/AdminCenterScreen';
+import AdminUserFeedbackScreen from '@/screens/mine/AdminUserFeedbackScreen';
 import AdminUserManagementScreen from '@/screens/mine/AdminUserManagementScreen';
 import SystemConfigScreen from '@/screens/mine/SystemConfigScreen';
 import ThemeSettingScreen from '@/screens/mine/ThemeSettingScreen';
@@ -84,6 +85,7 @@ export type RootStackParamList = {
   NotificationCenter: undefined;
   BlockedUsers: undefined;
   AdminCenter: undefined;
+  AdminUserFeedback: undefined;
   AdminUserManagement: undefined;
   MonitoringDashboard: undefined;
   SystemConfig: undefined;
@@ -451,6 +453,13 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="AdminCenter"
             component={AdminCenterScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <RootStack.Screen
+            name="AdminUserFeedback"
+            component={AdminUserFeedbackScreen}
             options={{
               headerShown: false,
             }}

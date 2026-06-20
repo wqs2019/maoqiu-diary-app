@@ -108,6 +108,15 @@ const AdminCenterScreen: React.FC = () => {
       onPress: () => navigation.navigate('AdminModeration'),
     },
     {
+      key: 'user-feedback',
+      title: '用户反馈',
+      description: '查看用户提交的 Bug、功能建议和其他使用反馈',
+      icon: 'message-circle',
+      iconBg: isDark ? '#1F2937' : '#FEF3C7',
+      iconColor: isDark ? '#FCD34D' : '#D97706',
+      onPress: () => navigation.navigate('AdminUserFeedback'),
+    },
+    {
       key: 'governance-records',
       title: '治理记录',
       description: '汇总平台治理动作、回执结果和后续复核线索',
