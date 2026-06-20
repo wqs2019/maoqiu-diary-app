@@ -59,6 +59,10 @@ const EditDiaryScreen: React.FC = () => {
   const [isPublic, setIsPublic] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [ipLocation, setIpLocation] = React.useState<string>('');
+  const scenarioScrollRef = React.useRef<ScrollView>(null);
+  const scenarioLayoutsRef = React.useRef<Record<string, { x: number; width: number }>>({});
+  const [scenarioViewportWidth, setScenarioViewportWidth] = React.useState(0);
+  const [scenarioContentWidth, setScenarioContentWidth] = React.useState(0);
 
   // 获取IP属地
   React.useEffect(() => {
@@ -220,6 +224,29 @@ const EditDiaryScreen: React.FC = () => {
   // 处理拖动时的滚动禁用
   const [scrollEnabled, setScrollEnabled] = React.useState(true);
 
+  const centerScenarioChip = React.useCallback((targetScenario: ScenarioType) => {
+    const layout = scenarioLayoutsRef.current[targetScenario];
+    if (!layout || scenarioViewportWidth <= 0) {
+      return;
+    }
+
+    const targetX = layout.x + layout.width / 2 - scenarioViewportWidth / 2;
+    const maxScrollX = Math.max(0, scenarioContentWidth - scenarioViewportWidth);
+    const clampedX = Math.max(0, Math.min(targetX, maxScrollX));
+
+    scenarioScrollRef.current?.scrollTo({ x: clampedX, animated: true });
+  }, [scenarioContentWidth, scenarioViewportWidth]);
+
+  React.useEffect(() => {
+    const frameId = requestAnimationFrame(() => {
+      centerScenarioChip(scenario);
+    });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
+  }, [centerScenarioChip, scenario]);
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F7F8FA' }]}
@@ -232,11 +259,20 @@ const EditDiaryScreen: React.FC = () => {
         scrollEnabled={scrollEnabled}
       >
         {/* 场景选择 */}
-        <View style={styles.scenarioWrapper}>
+        <View
+          style={styles.scenarioWrapper}
+          onLayout={(event) => {
+            setScenarioViewportWidth(event.nativeEvent.layout.width);
+          }}
+        >
           <ScrollView
+            ref={scenarioScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.scenarioScrollContainer}
+            onContentSizeChange={(width) => {
+              setScenarioContentWidth(width);
+            }}
           >
             {(Object.keys(SCENARIO_TEMPLATES) as ScenarioType[]).map((type, index, array) => {
               const template = SCENARIO_TEMPLATES[type];
@@ -248,6 +284,10 @@ const EditDiaryScreen: React.FC = () => {
                 <TouchableOpacity
                   key={type}
                   style={[styles.compactChip, index !== array.length - 1 && styles.compactChipSpacing]}
+                  onLayout={(event) => {
+                    const { x, width } = event.nativeEvent.layout;
+                    scenarioLayoutsRef.current[type] = { x, width };
+                  }}
                   onPress={() => {
                     setScenario(type);
                   }}

@@ -30,7 +30,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     return `${y}-${m}-${d}`;
   };
 
-  const handleChange = (event: any, selectedDate?: Date) => {
+  const formatMonth = (date: Date): string => {
+    return `${date.getMonth() + 1}月`;
+  };
+
+  const handleChange = (_event: any, selectedDate?: Date) => {
     if (selectedDate) {
       setTempDate(selectedDate);
     }
@@ -75,7 +79,22 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         }}
         activeOpacity={0.7}
       >
-        <Text style={styles.calendarIcon}>📅</Text>
+        <View
+          style={[
+            styles.calendarIcon,
+            {
+              backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
+              borderColor: isDark ? '#444' : '#E5E5E5',
+            },
+          ]}
+        >
+          <View style={[styles.calendarIconHeader, { backgroundColor: HEALING_COLORS.pink[500] }]}>
+            <Text style={styles.calendarIconMonth}>{formatMonth(date)}</Text>
+          </View>
+          <Text style={[styles.calendarIconDay, { color: isDark ? '#FFF' : '#333' }]}>
+            {date.getDate()}
+          </Text>
+        </View>
         <Text style={[styles.dateButtonText, { color: isDark ? '#FFF' : '#333' }]}>
           {formatDate(date)}
         </Text>
@@ -147,8 +166,34 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
   },
   calendarIcon: {
-    fontSize: 20,
+    width: 34,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
     marginRight: 8,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  calendarIconHeader: {
+    width: '100%',
+    paddingTop: 3,
+    paddingBottom: 2,
+    alignItems: 'center',
+  },
+  calendarIconMonth: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    lineHeight: 12,
+  },
+  calendarIconDay: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 18,
+    textAlign: 'center',
+    paddingTop: 5,
   },
   dateButtonText: {
     fontSize: 16,
