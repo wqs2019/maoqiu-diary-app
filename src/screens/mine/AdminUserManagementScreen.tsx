@@ -273,6 +273,10 @@ const AdminUserManagementScreen: React.FC = () => {
           <Text style={[styles.metricChipLabel, { color: subTextColor }]}>拉黑</Text>
           <Text style={[styles.metricChipValue, { color: textColor }]}>{item.blockedCount || 0}</Text>
         </View>
+        <View style={[styles.metricChip, { backgroundColor: chipBg, borderColor: chipBorder }]}>
+          <Text style={[styles.metricChipLabel, { color: subTextColor }]}>公开笔记</Text>
+          <Text style={[styles.metricChipValue, { color: textColor }]}>{item.publicDiariesCount || 0}</Text>
+        </View>
       </View>
 
       <View style={styles.actionRow}>
@@ -641,16 +645,17 @@ const styles = StyleSheet.create({
   },
   metricsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginTop: 12,
     justifyContent: 'space-between',
   },
   metricChip: {
-    flex: 1,
+    width: '48.5%',
     borderRadius: 14,
     borderWidth: 1,
     paddingVertical: 10,
     paddingHorizontal: 8,
-    marginRight: 8,
+    marginBottom: 8,
   },
   metricChipLabel: {
     fontSize: 11,

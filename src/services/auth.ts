@@ -174,27 +174,14 @@ export class AuthService {
       const token = await this.getToken();
       if (!token) return false;
 
-      // 测试阶段：直接返回true，不需要调用云函数
-      console.log('Testing mode: Validate token');
-      return true;
-
-      // 实际代码（后面使用时取消注释）
-      /*
-      const functions = tcbService.getFunctions();
-      if (!functions) {
-        return false;
-      }
-
-      // 调用验证Token云函数
-      const result = await functions.callFunction({
-        name: 'validateToken',
+      const result = await CloudService.callFunction('login', {
+        action: 'validateToken',
         data: {
           token,
         },
       });
 
       return result.code === 0;
-      */
     } catch (error) {
       console.error('Validate token error:', error);
       return false;

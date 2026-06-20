@@ -19,7 +19,7 @@ export interface AuthState {
   updateProfile: (userId: string, data: Partial<UserInfo>) => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   isLoggedIn: false,
   user: null,
   loading: false,
@@ -93,7 +93,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           authService
             .fetchUserInfoFromServer()
             .then((user) => {
-              if (user) set({ user });
+              if (user) {
+                set({ user, isLoggedIn: true });
+                return;
+              }
+
+              set({ isLoggedIn: false, user: null });
             })
             .catch((e) => {
               console.error('Background fetch user info failed:', e);
@@ -131,6 +136,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (user.biometricEnabled !== undefined) {
           await useAppStore.getState().syncAppLockFromUser(user.biometricEnabled);
         }
+      } else {
+        set({ isLoggedIn: false, user: null });
       }
     } catch (error) {
       console.error('Failed to fetch user info', error);

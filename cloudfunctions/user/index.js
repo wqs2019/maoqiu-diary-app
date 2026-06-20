@@ -164,7 +164,7 @@ const maskPhone = (phone) => {
   return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
 };
 
-const buildAdminUserListItem = (user, adminPhoneSet) => {
+const buildAdminUserListItem = (user, adminPhoneSet, publicDiariesCountMap = {}) => {
   const vipState =
     user && user.isVip && typeof user.isVip === 'object'
       ? user.isVip
@@ -188,6 +188,10 @@ const buildAdminUserListItem = (user, adminPhoneSet) => {
     followersCount: Array.isArray(user && user.followers) ? user.followers.length : 0,
     followingCount: Array.isArray(user && user.following) ? user.following.length : 0,
     blockedCount: Array.isArray(user && user.blockedUsers) ? user.blockedUsers.length : 0,
+    publicDiariesCount:
+      user && user._id && typeof publicDiariesCountMap[user._id] === 'number'
+        ? publicDiariesCountMap[user._id]
+        : 0,
     createdAt: user && user.createdAt ? user.createdAt : null,
     updatedAt: user && user.updatedAt ? user.updatedAt : null,
   };
@@ -840,6 +844,9 @@ const adminListUsers = async (data) => {
           profileBackground: true,
           isDelete: true,
           isVip: true,
+          accountStatus: true,
+          freezeReason: true,
+          frozenAt: true,
           followers: true,
           following: true,
           blockedUsers: true,
@@ -862,9 +869,23 @@ const adminListUsers = async (data) => {
         .filter(Boolean)
     );
 
-    const list = (Array.isArray(result.data) ? result.data : []).map((item) =>
-      buildAdminUserListItem(item, adminPhoneSet)
+    const pageUsers = Array.isArray(result.data) ? result.data : [];
+    const publicDiariesCountMap = {};
+    await Promise.all(
+      pageUsers.map(async (item) => {
+        if (!item || !item._id) {
+          return;
+        }
+
+        const diaryCountResult = await db.collection('diaries').where({
+          userId: item._id,
+          isPublic: true,
+        }).count();
+        publicDiariesCountMap[item._id] = diaryCountResult.total || 0;
+      })
     );
+
+    const list = pageUsers.map((item) => buildAdminUserListItem(item, adminPhoneSet, publicDiariesCountMap));
 
     return {
       success: true,

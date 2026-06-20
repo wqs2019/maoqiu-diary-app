@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Image,
   ScrollView,
@@ -114,6 +115,7 @@ const LoginScreen: React.FC = () => {
   const [countdown, setCountdown] = useState(0);
   const [hasAcceptedAgreement, setHasAcceptedAgreement] = useState(false);
   const [agreementModalVisible, setAgreementModalVisible] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const { login, loginWithWechat, sendCode, loading, sendingCode } = useAuthStore();
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -143,6 +145,20 @@ const LoginScreen: React.FC = () => {
       clearTimeout(timer);
     };
   }, [countdown]);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const openPolicyLink = async (url: string) => {
     try {
@@ -234,15 +250,24 @@ const LoginScreen: React.FC = () => {
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: isDark ? colors.background : '#FFF5F8' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : insets.top}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} translucent={true} backgroundColor="transparent" />
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: insets.top,
+            paddingBottom: keyboardVisible ? insets.bottom + SPACING.large : insets.bottom + SPACING.xlarge,
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, keyboardVisible && styles.contentKeyboardVisible]}>
           {/* 装饰元素 - 动态模糊渐变光晕背景 */}
           <View style={styles.decoration}>
             <FloatingBlob
@@ -498,11 +523,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   content: {
-    flex: 1,
     paddingHorizontal: SPACING.large,
     justifyContent: 'flex-start',
     paddingTop: 80, // 将内容整体往上提
     position: 'relative',
+  },
+  contentKeyboardVisible: {
+    paddingTop: 56,
   },
   decoration: {
     position: 'absolute',

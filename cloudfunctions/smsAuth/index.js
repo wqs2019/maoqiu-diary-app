@@ -6,6 +6,25 @@ const app = cloud.init({
   env: cloud.SYMBOL_CURRENT_ENV,
 });
 const db = app.database();
+const usersCollection = db.collection('users');
+const USER_ERROR_CODES = {
+  USER_FROZEN: 'USER_FROZEN',
+};
+
+const buildUserFrozenError = (message = '该账号已被冻结，请联系管理员') => ({
+  code: -1,
+  message,
+  errorCode: USER_ERROR_CODES.USER_FROZEN,
+});
+
+const getUserByPhone = async (phone) => {
+  if (!phone) {
+    return null;
+  }
+
+  const result = await usersCollection.where({ phone }).limit(1).get();
+  return Array.isArray(result.data) && result.data.length > 0 ? result.data[0] : null;
+};
 
 // 建议在腾讯云开发控制台中配置这些为【云函数环境变量】，以确保安全
 const ALIYUN_CONFIG = {
@@ -32,6 +51,11 @@ exports.main = async (event, context) => {
 
   // ============== 1. 发送验证码逻辑 ==============
   if (action === 'send') {
+    const existingUser = await getUserByPhone(phone);
+    if (existingUser && existingUser.accountStatus === 'frozen') {
+      return buildUserFrozenError('该账号已被冻结，暂时无法发送验证码');
+    }
+
     // 即使阿里云号码认证服务可以帮你校验验证码，但大部分赠送的模板依然要求你生成并传入 code 和 min
     // 只有极少部分完全托管的方案才不传。这里根据报错提示补回我们自己生成的验证码
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -81,6 +105,11 @@ exports.main = async (event, context) => {
   if (action === 'verify') {
     if (!code) {
       return { code: -1, message: '验证码不能为空' };
+    }
+
+    const existingUser = await getUserByPhone(phone);
+    if (existingUser && existingUser.accountStatus === 'frozen') {
+      return buildUserFrozenError('该账号已被冻结，暂时无法登录');
     }
 
     // 开发测试使用：万能验证码

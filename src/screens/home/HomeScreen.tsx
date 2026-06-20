@@ -252,6 +252,7 @@ const HomeScreen: React.FC = () => {
 
   // 从云端获取的时间轴数据
   const timelineItems: TimelineItem[] = diaryList?.list?.map(convertDiaryToTimelineItem) || [];
+  const selectedScenarioTemplate = selectedScenario ? SCENARIO_TEMPLATES[selectedScenario] : undefined;
 
   // 获取所有唯一且降序排列的年份
   const availableYears = Array.from(
@@ -630,7 +631,25 @@ const HomeScreen: React.FC = () => {
         ) : timelineItems.length === 0 ? (
           <View style={styles.emptyStateContainer}>
             <Text style={styles.ticketIcon}>🎫</Text>
-            <Text style={styles.emptyStateText}>每个平凡的一天，都值得被好好保存</Text>
+            <Text style={styles.emptyStateText}>
+              {selectedScenarioTemplate
+                ? `当前【${selectedScenarioTemplate.name}】无数据`
+                : '每个平凡的一天，都值得被好好保存'}
+            </Text>
+            {selectedScenarioTemplate ? (
+              <TouchableOpacity
+                style={[
+                  styles.emptyStateActionButton,
+                  { backgroundColor: isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[400] },
+                ]}
+                onPress={() => {
+                  handleCreateDiary(selectedScenarioTemplate.type);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.emptyStateActionButtonText}>去录入</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : (
           <View style={styles.timelineWrapper}>
@@ -914,6 +933,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     fontWeight: '500',
+    textAlign: 'center',
+  },
+  emptyStateActionButton: {
+    marginTop: 20,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+  emptyStateActionButtonText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   timelineWrapper: {
     flex: 1,

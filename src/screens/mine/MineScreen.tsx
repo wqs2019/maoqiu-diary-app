@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { Alert, View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -60,7 +60,16 @@ const MineScreen: React.FC = () => {
   }, [user?._id, isFocused, refreshUnreadCount]);
 
   const handleLogout = async () => {
-    await logout();
+    Alert.alert('退出登录', '确认退出当前账号吗？', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '退出',
+        style: 'destructive',
+        onPress: () => {
+          void logout();
+        },
+      },
+    ]);
   };
 
   const renderMenuItem = (
@@ -110,7 +119,12 @@ const MineScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#FAFAFA' }]}>
       {/* 顶部背景装饰 */}
       {user?.profileBackground ? (
-        <View style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}>
+        <Pressable
+          style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}
+          onPress={() => {
+            navigation.navigate('ThemeSetting');
+          }}
+        >
           <Image
             source={{ uri: user.profileBackground }}
             style={styles.headerBackgroundImage}
@@ -129,9 +143,14 @@ const MineScreen: React.FC = () => {
               <Rect width="100%" height="100%" fill="url(#grad)" />
             </Svg>
           </View>
-        </View>
+        </Pressable>
       ) : (
-        <View style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}>
+        <Pressable
+          style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}
+          onPress={() => {
+            navigation.navigate('ThemeSetting');
+          }}
+        >
           <View
             style={[
               StyleSheet.absoluteFillObject,
@@ -150,8 +169,15 @@ const MineScreen: React.FC = () => {
               <Rect width="100%" height="100%" fill="url(#grad-default)" />
             </Svg>
           </View>
-        </View>
+        </Pressable>
       )}
+
+      <Pressable
+        style={[styles.headerThemeHitArea, { height: 140 + insets.top }]}
+        onPress={() => {
+          navigation.navigate('ThemeSetting');
+        }}
+      />
 
       {/* 顶部操作区 */}
       <View style={[styles.topActions, { paddingTop: insets.top }]}>
@@ -217,16 +243,6 @@ const MineScreen: React.FC = () => {
                   {user?.nickname || '毛球日记'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.inlineEditButton}
-                activeOpacity={0.8}
-                hitSlop={{ top: 15, bottom: 15, left: 10, right: 10 }}
-                onPress={() => {
-                  navigation.navigate('EditProfile' as never);
-                }}
-              >
-                <Feather name="edit-2" size={14} color="#FFFFFF" />
-              </TouchableOpacity>
               {user?.isVip?.value && (
                 <TouchableOpacity
                   style={[styles.vipBadge, { backgroundColor: isDark ? 'rgba(55,65,81,0.8)' : 'rgba(255,255,255,0.2)' }]}
@@ -234,6 +250,7 @@ const MineScreen: React.FC = () => {
                     navigation.navigate('Subscription' as any);
                   }}
                   activeOpacity={0.8}
+                  hitSlop={{ top: 14, bottom: 14, left: 10, right: 10 }}
                 >
                   <Feather name="award" size={14} color="#FFD700" style={styles.vipBadgeIcon} />
                   <Text style={[styles.vipBadgeText, { color: '#FFD700', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]} >尊贵会员</Text>
@@ -600,6 +617,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: '60%',
   },
+  headerThemeHitArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 4,
+  },
   topActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -647,6 +671,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     marginTop: -40,
+    zIndex: 2,
   },
   userInfoContainer: {
     flexDirection: 'row',
@@ -656,6 +681,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
     position: 'relative',
+    zIndex: 3,
   },
   userCard: {
     backgroundColor: '#FFFFFF',
@@ -675,19 +701,13 @@ const styles = StyleSheet.create({
   userDetails: {
     flex: 1,
     marginLeft: 16,
+    zIndex: 2,
   },
   userNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
-  },
-  inlineEditButton: {
-    marginLeft: 8,
-    padding: 6,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
+    zIndex: 2,
   },
   userName: {
     fontSize: 20,
@@ -701,6 +721,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 10,
     marginLeft: 8,
+    zIndex: 3,
   },
   vipBadgeIcon: {
     marginRight: 2,

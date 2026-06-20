@@ -41,6 +41,7 @@ export interface AdminUserListItem {
   followersCount?: number;
   followingCount?: number;
   blockedCount?: number;
+  publicDiariesCount?: number;
   createdAt?: string | number | null;
   updatedAt?: string | number | null;
 }

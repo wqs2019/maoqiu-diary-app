@@ -12,6 +12,7 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import * as RNIap from 'react-native-iap';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,6 +38,13 @@ const PRIVACY_POLICY_URL = 'https://wqs2019.github.io/maoqiu-diary-app/privacy.h
 const VIP_ERROR_CODES = {
   SUBSCRIPTION_OWNED_BY_OTHER_USER: 'SUBSCRIPTION_OWNED_BY_OTHER_USER',
 } as const;
+
+const resolveReceiptForVerification = async (purchaseLike: { purchaseToken?: string | null; transactionReceipt?: string | null; transactionId?: string | null; productId?: string | null }) => {
+  if (Platform.OS === 'ios') {
+    return (purchaseLike.transactionReceipt || await RNIap.getReceiptIOS() || '').trim();
+  }
+  return (purchaseLike.purchaseToken || purchaseLike.transactionReceipt || purchaseLike.transactionId || '').trim();
+};
 
 const verifyVipPurchaseForUser = async (userId: string, receiptData: string) => {
   const response: any = await CloudService.callFunction('user', {
@@ -218,7 +226,7 @@ const SubscriptionScreen: React.FC = () => {
 
     purchaseUpdateSubscription = RNIap.purchaseUpdatedListener(async (purchase) => {
       console.log('IAP: purchaseUpdatedListener 收到回调', purchase);
-      const receipt = purchase.purchaseToken || (purchase as any).transactionReceipt;
+      const receipt = await resolveReceiptForVerification(purchase as any);
       if (receipt) {
         try {
           if (purchase.purchaseState === 'pending') {
@@ -383,8 +391,7 @@ const SubscriptionScreen: React.FC = () => {
         console.log('IAP: 恢复成功，找到了历史订阅', purchases);
         const activePurchase = purchases[0] as any;
         const currentUser = useAuthStore.getState().user;
-        const receipt =
-          activePurchase.purchaseToken || activePurchase.transactionReceipt || activePurchase.transactionId;
+        const receipt = await resolveReceiptForVerification(activePurchase);
 
         if (!currentUser?._id) {
           throw new Error('请先登录原开通会员的账号');
