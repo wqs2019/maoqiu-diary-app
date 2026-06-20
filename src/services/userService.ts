@@ -21,6 +21,43 @@ export interface BlockedUserListItem {
   blockedAt?: number | null;
 }
 
+export interface AdminUserListItem {
+  _id: string;
+  nickname?: string;
+  avatar?: string;
+  phone?: string;
+  maskedPhone?: string;
+  profileBackground?: string;
+  isDelete?: boolean;
+  isAdmin?: boolean;
+  accountStatus?: 'active' | 'frozen';
+  freezeReason?: string;
+  frozenAt?: number | null;
+  isVip?: {
+    value: boolean;
+    type?: string;
+    expiresAt?: number;
+  };
+  followersCount?: number;
+  followingCount?: number;
+  blockedCount?: number;
+  createdAt?: string | number | null;
+  updatedAt?: string | number | null;
+}
+
+export interface AdminUserListResult {
+  list: AdminUserListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  summary?: {
+    totalUsers: number;
+    vipUsers: number;
+    deletedUsers: number;
+    adminUsers: number;
+  };
+}
+
 export class UserService {
   /**
    * 更新用户信息
@@ -268,6 +305,60 @@ export class UserService {
     } catch (error) {
       console.error('UserService.getFollowers error:', error);
       return { list: [], total: 0 };
+    }
+  }
+
+  async getAdminUserList(params: {
+    adminUserId: string;
+    page?: number;
+    pageSize?: number;
+    keyword?: string;
+    filter?: 'all' | 'vip' | 'deleted';
+  }): Promise<AdminUserListResult> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'adminList',
+        data: params,
+      });
+
+      if (response.code === 0 && response.data) {
+        const cloudResult = response.data;
+        if (cloudResult.success && cloudResult.data) {
+          return cloudResult.data;
+        }
+
+        if (cloudResult.success === false) {
+          throw new Error(cloudResult.message || '获取用户管理列表失败');
+        }
+      }
+
+      throw new Error(response.message || '获取用户管理列表失败');
+    } catch (error) {
+      console.error('UserService.getAdminUserList error:', error);
+      throw error;
+    }
+  }
+
+  async setAdminUserFrozenStatus(params: {
+    adminUserId: string;
+    targetUserId: string;
+    frozen: boolean;
+    reason?: string;
+  }): Promise<boolean> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'adminSetFreeze',
+        data: params,
+      });
+
+      if (response.code === 0 && response.data?.success) {
+        return true;
+      }
+
+      throw new Error(response.data?.message || response.message || '更新冻结状态失败');
+    } catch (error) {
+      console.error('UserService.setAdminUserFrozenStatus error:', error);
+      throw error;
     }
   }
 }

@@ -4,6 +4,48 @@ const app = cloud.init({
 });
 const db = app.database();
 const _ = db.command;
+const usersCollection = db.collection('users');
+const USER_ERROR_CODES = {
+  USER_FROZEN: 'USER_FROZEN',
+};
+
+const getDocData = (result) =>
+  result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
+
+const getUserDoc = async (userId) => {
+  if (!userId) return null;
+  const result = await usersCollection.doc(userId).get();
+  return getDocData(result);
+};
+
+const getOperatorUserId = (payload = {}) => {
+  const candidateKeys = ['__operatorUserId', 'userId', 'currentUserId', '_id'];
+  for (const key of candidateKeys) {
+    if (payload && typeof payload[key] === 'string' && payload[key]) {
+      return payload[key];
+    }
+  }
+
+  return '';
+};
+
+const ensureOperatorNotFrozen = async (payload = {}) => {
+  const operatorUserId = getOperatorUserId(payload);
+  if (!operatorUserId) {
+    return null;
+  }
+
+  const operatorUser = await getUserDoc(operatorUserId);
+  if (operatorUser && operatorUser.accountStatus === 'frozen') {
+    return {
+      code: -1,
+      message: '该账号已被冻结，请联系管理员',
+      errorCode: USER_ERROR_CODES.USER_FROZEN,
+    };
+  }
+
+  return null;
+};
 
 const buildNotificationQuery = ({ userId, types, excludeTypes, unreadOnly = false }) => {
   const condition = { receiverId: userId };
@@ -127,6 +169,11 @@ const getUnreadCount = async (data) => {
 
 exports.main = async (event, context) => {
   const { action, data } = event;
+
+  const frozenGuard = await ensureOperatorNotFrozen(data || {});
+  if (frozenGuard) {
+    return frozenGuard;
+  }
 
   switch (action) {
     case 'getNotifications':

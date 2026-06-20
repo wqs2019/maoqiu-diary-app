@@ -15,6 +15,7 @@ const app = cloud.init({
 });
 const db = app.database();
 const _ = db.command;
+const adminCollection = db.collection('admin_list');
 const notificationsCollection = db.collection('notifications');
 const AUTO_BLOCK_GOVERNANCE_SOURCE = 'block_auto';
 const AUTO_BLOCK_GOVERNANCE_TRIGGER = 'user_block';
@@ -28,9 +29,16 @@ const VIP_PROTECTED_FIELDS = [
   'vipOriginalTransactionId',
   'vipTransactionId',
   'vipProductId',
+  'accountStatus',
+  'freezeReason',
+  'frozenAt',
+  'frozenBy',
 ];
 const VIP_ERROR_CODES = {
   SUBSCRIPTION_OWNED_BY_OTHER_USER: 'SUBSCRIPTION_OWNED_BY_OTHER_USER',
+};
+const USER_ERROR_CODES = {
+  USER_FROZEN: 'USER_FROZEN',
 };
 
 const getDocData = (result) =>
@@ -128,6 +136,63 @@ const getUserDoc = async (userId) => {
   return getDocData(result);
 };
 
+const isAdminUser = async (userId) => {
+  if (!userId) {
+    return false;
+  }
+
+  const user = await getUserDoc(userId);
+  if (!user || !user.phone) {
+    return false;
+  }
+
+  const result = await adminCollection.where({ phone: user.phone }).limit(1).get();
+  return Array.isArray(result.data) && result.data.length > 0;
+};
+
+const escapeRegExp = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const maskPhone = (phone) => {
+  if (!phone || typeof phone !== 'string') {
+    return '';
+  }
+
+  if (phone.length < 7) {
+    return phone;
+  }
+
+  return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
+};
+
+const buildAdminUserListItem = (user, adminPhoneSet) => {
+  const vipState =
+    user && user.isVip && typeof user.isVip === 'object'
+      ? user.isVip
+      : {
+          value: !!(user && user.isVip),
+        };
+
+  return {
+    _id: user && user._id ? user._id : '',
+    nickname: user && user.nickname ? user.nickname : '',
+    avatar: user && user.avatar ? user.avatar : '',
+    phone: user && user.phone ? user.phone : '',
+    maskedPhone: maskPhone(user && user.phone),
+    profileBackground: user && user.profileBackground ? user.profileBackground : '',
+    isDelete: !!(user && user.isDelete),
+    accountStatus: user && user.accountStatus === 'frozen' ? 'frozen' : 'active',
+    freezeReason: user && user.freezeReason ? user.freezeReason : '',
+    frozenAt: user && user.frozenAt ? user.frozenAt : null,
+    isAdmin: !!(user && user.phone && adminPhoneSet.has(user.phone)),
+    isVip: vipState,
+    followersCount: Array.isArray(user && user.followers) ? user.followers.length : 0,
+    followingCount: Array.isArray(user && user.following) ? user.following.length : 0,
+    blockedCount: Array.isArray(user && user.blockedUsers) ? user.blockedUsers.length : 0,
+    createdAt: user && user.createdAt ? user.createdAt : null,
+    updatedAt: user && user.updatedAt ? user.updatedAt : null,
+  };
+};
+
 const sanitizeUserUpdateData = (updateData = {}) => {
   const sanitizedData = { ...updateData };
   VIP_PROTECTED_FIELDS.forEach((field) => {
@@ -136,6 +201,39 @@ const sanitizeUserUpdateData = (updateData = {}) => {
     }
   });
   return sanitizedData;
+};
+
+const isUserFrozen = (user) => user && user.accountStatus === 'frozen';
+
+const buildUserFrozenError = () => ({
+  code: -1,
+  message: '该账号已被冻结，请联系管理员',
+  errorCode: USER_ERROR_CODES.USER_FROZEN,
+});
+
+const getOperatorUserId = (payload = {}) => {
+  const candidateKeys = ['__operatorUserId', 'adminUserId', 'userId', 'currentUserId', 'followerId', '_id'];
+  for (const key of candidateKeys) {
+    if (payload && typeof payload[key] === 'string' && payload[key]) {
+      return payload[key];
+    }
+  }
+
+  return '';
+};
+
+const ensureOperatorNotFrozen = async (payload = {}) => {
+  const operatorUserId = getOperatorUserId(payload);
+  if (!operatorUserId) {
+    return null;
+  }
+
+  const operatorUser = await getUserDoc(operatorUserId);
+  if (isUserFrozen(operatorUser)) {
+    return buildUserFrozenError();
+  }
+
+  return null;
 };
 
 const getUserDisplayName = (user, fallback = '有人') =>
@@ -182,6 +280,7 @@ const addUser = async (data) => {
       nickname,
       avatar,
       isVip: isVip || false,
+      accountStatus: 'active',
       blockedUsers: [],
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),
@@ -195,6 +294,7 @@ const addUser = async (data) => {
         nickname,
         avatar,
         isVip: isVip || false,
+        accountStatus: 'active',
       },
     };
   } catch (error) {
@@ -202,6 +302,58 @@ const addUser = async (data) => {
     return {
       success: false,
       message: 'Failed to add user',
+      error: error.message,
+    };
+  }
+};
+
+const adminSetFreezeStatus = async (data) => {
+  try {
+    const { adminUserId, targetUserId, frozen, reason } = data || {};
+
+    if (!adminUserId || !targetUserId) {
+      return { success: false, message: '缺少必要的用户信息' };
+    }
+
+    if (adminUserId === targetUserId) {
+      return { success: false, message: '不能冻结当前管理员账号' };
+    }
+
+    const isAdmin = await isAdminUser(adminUserId);
+    if (!isAdmin) {
+      return { success: false, message: '无管理员权限' };
+    }
+
+    const targetUser = await getUserDoc(targetUserId);
+    if (!targetUser) {
+      return { success: false, message: '目标用户不存在' };
+    }
+
+    const targetIsAdmin = await isAdminUser(targetUserId);
+    if (targetIsAdmin) {
+      return { success: false, message: '暂不支持冻结管理员账号' };
+    }
+
+    await db.collection('users').doc(targetUserId).update({
+      accountStatus: frozen ? 'frozen' : 'active',
+      freezeReason: frozen ? String(reason || '管理员冻结').trim() || '管理员冻结' : '',
+      frozenAt: frozen ? Date.now() : null,
+      frozenBy: frozen ? adminUserId : '',
+      updatedAt: db.serverDate(),
+    });
+
+    return {
+      success: true,
+      data: {
+        targetUserId,
+        accountStatus: frozen ? 'frozen' : 'active',
+      },
+    };
+  } catch (error) {
+    console.error('Admin set freeze status error:', error);
+    return {
+      success: false,
+      message: '更新冻结状态失败',
       error: error.message,
     };
   }
@@ -617,6 +769,123 @@ const listUsers = async (data) => {
     return {
       success: false,
       message: 'Failed to list users',
+      error: error.message,
+    };
+  }
+};
+
+const adminListUsers = async (data) => {
+  try {
+    const {
+      adminUserId,
+      page = 1,
+      pageSize = 20,
+      keyword = '',
+      filter = 'all',
+    } = data || {};
+
+    if (!adminUserId) {
+      return {
+        success: false,
+        message: 'adminUserId is required',
+      };
+    }
+
+    const isAdmin = await isAdminUser(adminUserId);
+    if (!isAdmin) {
+      return {
+        success: false,
+        message: '无管理员权限',
+      };
+    }
+
+    const normalizedPage = Math.max(Number(page) || 1, 1);
+    const normalizedPageSize = Math.min(Math.max(Number(pageSize) || 20, 1), 50);
+    const skip = (normalizedPage - 1) * normalizedPageSize;
+    const trimmedKeyword = typeof keyword === 'string' ? keyword.trim() : '';
+    const queryConditions = [];
+
+    if (filter === 'vip') {
+      queryConditions.push({ 'isVip.value': true });
+    } else if (filter === 'deleted') {
+      queryConditions.push({ isDelete: true });
+    }
+
+    if (trimmedKeyword) {
+      const keywordRegex = db.RegExp({
+        regexp: escapeRegExp(trimmedKeyword),
+        options: 'i',
+      });
+
+      queryConditions.push(
+        _.or([
+          { nickname: keywordRegex },
+          { phone: keywordRegex },
+        ])
+      );
+    }
+
+    const whereCondition =
+      queryConditions.length > 1 ? _.and(queryConditions) : queryConditions[0] || {};
+
+    const usersCollection = db.collection('users');
+    const [result, countResult, vipCountResult, deletedCountResult, adminListResult] = await Promise.all([
+      usersCollection
+        .where(whereCondition)
+        .field({
+          _id: true,
+          nickname: true,
+          avatar: true,
+          phone: true,
+          profileBackground: true,
+          isDelete: true,
+          isVip: true,
+          followers: true,
+          following: true,
+          blockedUsers: true,
+          createdAt: true,
+          updatedAt: true,
+        })
+        .skip(skip)
+        .limit(normalizedPageSize)
+        .orderBy('createdAt', 'desc')
+        .get(),
+      usersCollection.where(whereCondition).count(),
+      usersCollection.where({ 'isVip.value': true }).count(),
+      usersCollection.where({ isDelete: true }).count(),
+      adminCollection.field({ phone: true }).get(),
+    ]);
+
+    const adminPhoneSet = new Set(
+      (Array.isArray(adminListResult.data) ? adminListResult.data : [])
+        .map((item) => item && item.phone)
+        .filter(Boolean)
+    );
+
+    const list = (Array.isArray(result.data) ? result.data : []).map((item) =>
+      buildAdminUserListItem(item, adminPhoneSet)
+    );
+
+    return {
+      success: true,
+      data: {
+        list,
+        total: countResult.total || 0,
+        page: normalizedPage,
+        pageSize: normalizedPageSize,
+        summary: {
+          totalUsers: await usersCollection.count().then((res) => res.total || 0),
+          vipUsers: vipCountResult.total || 0,
+          deletedUsers: deletedCountResult.total || 0,
+          adminUsers: adminPhoneSet.size,
+        },
+      },
+    };
+  } catch (error) {
+    console.error('Admin list users error:', error);
+    return {
+      success: false,
+      message: '获取用户列表失败',
       error: error.message,
     };
   }
@@ -1151,6 +1420,13 @@ const getFollowersList = async (data) => {
 exports.main = async (event, context) => {
   const { action, data } = event;
 
+  if (action !== 'adminSetFreeze') {
+    const frozenGuard = await ensureOperatorNotFrozen(data || {});
+    if (frozenGuard) {
+      return frozenGuard;
+    }
+  }
+
   switch (action) {
     case 'add':
       return await addUser(data);
@@ -1164,6 +1440,10 @@ exports.main = async (event, context) => {
       return await deactivateAccount(data);
     case 'list':
       return await listUsers(data);
+    case 'adminList':
+      return await adminListUsers(data);
+    case 'adminSetFreeze':
+      return await adminSetFreezeStatus(data);
     case 'syncVip':
       return await syncVipStatus(data);
     case 'verifyPurchase':

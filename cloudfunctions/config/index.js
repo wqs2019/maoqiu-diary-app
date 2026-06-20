@@ -10,6 +10,12 @@ const db = app.database();
 const usersCollection = db.collection('users');
 const adminCollection = db.collection('admin_list');
 const configCollection = db.collection('config');
+const USER_ERROR_CODES = {
+  USER_FROZEN: 'USER_FROZEN',
+};
+
+const getDocData = (result) =>
+  result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
 
 const getConfigDoc = async () => {
   const keyedResult = await configCollection.where({ configKey: APP_CONFIG_KEY }).limit(1).get();
@@ -44,6 +50,36 @@ const isAdminUser = async (userId) => {
 
   const adminResult = await adminCollection.where({ phone: user.phone }).limit(1).get();
   return !!(adminResult.data && adminResult.data.length > 0);
+};
+
+const getOperatorUserId = (payload = {}) => {
+  const candidateKeys = ['__operatorUserId', 'adminUserId', 'userId', '_id'];
+  for (const key of candidateKeys) {
+    if (payload && typeof payload[key] === 'string' && payload[key]) {
+      return payload[key];
+    }
+  }
+
+  return '';
+};
+
+const ensureOperatorNotFrozen = async (payload = {}) => {
+  const operatorUserId = getOperatorUserId(payload);
+  if (!operatorUserId) {
+    return null;
+  }
+
+  const operatorResult = await usersCollection.doc(operatorUserId).get();
+  const operatorUser = getDocData(operatorResult);
+  if (operatorUser && operatorUser.accountStatus === 'frozen') {
+    return {
+      code: -1,
+      message: '该账号已被冻结，请联系管理员',
+      errorCode: USER_ERROR_CODES.USER_FROZEN,
+    };
+  }
+
+  return null;
 };
 
 const getAppConfig = async () => {
@@ -129,6 +165,11 @@ const updateAppConfig = async (data) => {
 
 exports.main = async (event) => {
   const { action, data } = event;
+
+  const frozenGuard = await ensureOperatorNotFrozen(data || {});
+  if (frozenGuard) {
+    return frozenGuard;
+  }
 
   switch (action) {
     case 'get':

@@ -13,6 +13,9 @@ const feedbacksCollection = db.collection('feedbacks');
 const notificationsCollection = db.collection('notifications');
 const REVIEWABLE_FEEDBACK_TYPE = 'report_user';
 const REVIEWABLE_STATUSES = ['pending', 'processing', 'resolved', 'rejected'];
+const USER_ERROR_CODES = {
+  USER_FROZEN: 'USER_FROZEN',
+};
 
 const sendPushNotification = (expoPushToken, title, body, data = {}) =>
   new Promise((resolve, reject) => {
@@ -68,6 +71,35 @@ const getUserById = async (userId) => {
 
   const result = await usersCollection.doc(userId).get();
   return getDocData(result);
+};
+
+const getOperatorUserId = (payload = {}) => {
+  const candidateKeys = ['__operatorUserId', 'adminUserId', 'userId', 'currentUserId', '_id'];
+  for (const key of candidateKeys) {
+    if (payload && typeof payload[key] === 'string' && payload[key]) {
+      return payload[key];
+    }
+  }
+
+  return '';
+};
+
+const ensureOperatorNotFrozen = async (payload = {}) => {
+  const operatorUserId = getOperatorUserId(payload);
+  if (!operatorUserId) {
+    return null;
+  }
+
+  const operatorUser = await getUserById(operatorUserId);
+  if (operatorUser && operatorUser.accountStatus === 'frozen') {
+    return {
+      code: -1,
+      message: '该账号已被冻结，请联系管理员',
+      errorCode: USER_ERROR_CODES.USER_FROZEN,
+    };
+  }
+
+  return null;
 };
 
 const getDiaryById = async (diaryId) => {
@@ -828,6 +860,11 @@ const updateFeedback = async (data) => {
 
 exports.main = async (event, context) => {
   const { action, data } = event;
+
+  const frozenGuard = await ensureOperatorNotFrozen(data || {});
+  if (frozenGuard) {
+    return frozenGuard;
+  }
 
   switch (action) {
     case 'add':

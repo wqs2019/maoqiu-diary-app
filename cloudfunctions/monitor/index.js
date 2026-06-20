@@ -10,6 +10,9 @@ const usersCollection = db.collection('users');
 const adminCollection = db.collection('admin_list');
 const pageViewsCollection = db.collection('monitor_page_views');
 const errorLogsCollection = db.collection('monitor_error_logs');
+const USER_ERROR_CODES = {
+  USER_FROZEN: 'USER_FROZEN',
+};
 
 const getDocData = (result) =>
   result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
@@ -21,6 +24,35 @@ const getUserById = async (userId) => {
 
   const result = await usersCollection.doc(userId).get();
   return getDocData(result);
+};
+
+const getOperatorUserId = (payload = {}) => {
+  const candidateKeys = ['__operatorUserId', 'adminUserId', 'userId', 'currentUserId', '_id'];
+  for (const key of candidateKeys) {
+    if (payload && typeof payload[key] === 'string' && payload[key]) {
+      return payload[key];
+    }
+  }
+
+  return '';
+};
+
+const ensureOperatorNotFrozen = async (payload = {}) => {
+  const operatorUserId = getOperatorUserId(payload);
+  if (!operatorUserId) {
+    return null;
+  }
+
+  const operatorUser = await getUserById(operatorUserId);
+  if (operatorUser && operatorUser.accountStatus === 'frozen') {
+    return {
+      code: -1,
+      message: '该账号已被冻结，请联系管理员',
+      errorCode: USER_ERROR_CODES.USER_FROZEN,
+    };
+  }
+
+  return null;
 };
 
 const isAdminUser = async (userId) => {
@@ -296,6 +328,11 @@ const buildDashboard = async (data = {}) => {
 
 exports.main = async (event) => {
   const { action, data } = event;
+
+  const frozenGuard = await ensureOperatorNotFrozen(data || {});
+  if (frozenGuard) {
+    return frozenGuard;
+  }
 
   switch (action) {
     case 'trackPageView':

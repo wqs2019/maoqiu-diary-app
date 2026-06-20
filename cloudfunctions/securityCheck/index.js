@@ -4,6 +4,11 @@ const { SensitiveWordTool } = require('sensitive-word-tool');
 const app = cloud.init({
   env: cloud.SYMBOL_CURRENT_ENV,
 });
+const db = app.database();
+const usersCollection = db.collection('users');
+const USER_ERROR_CODES = {
+  USER_FROZEN: 'USER_FROZEN',
+};
 
 // 实例化 sensitive-word-tool，使用库内置的默认敏感词库
 const sensitiveWordTool = new SensitiveWordTool({
@@ -13,8 +18,54 @@ const sensitiveWordTool = new SensitiveWordTool({
 // 你也可以继续追加自定义的敏感词
 // sensitiveWordTool.addWords(['自定义违规词1', '自定义违规词2']);
 
+const getDocData = (result) =>
+  result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
+
+const getUserDoc = async (userId) => {
+  if (!userId) {
+    return null;
+  }
+
+  const result = await usersCollection.doc(userId).get();
+  return getDocData(result);
+};
+
+const getOperatorUserId = (payload = {}) => {
+  const candidateKeys = ['__operatorUserId', 'userId', 'currentUserId', '_id'];
+  for (const key of candidateKeys) {
+    if (payload && typeof payload[key] === 'string' && payload[key]) {
+      return payload[key];
+    }
+  }
+
+  return '';
+};
+
+const ensureOperatorNotFrozen = async (payload = {}) => {
+  const operatorUserId = getOperatorUserId(payload);
+  if (!operatorUserId) {
+    return null;
+  }
+
+  const operatorUser = await getUserDoc(operatorUserId);
+  if (operatorUser && operatorUser.accountStatus === 'frozen') {
+    return {
+      code: -1,
+      message: '该账号已被冻结，请联系管理员',
+      errorCode: USER_ERROR_CODES.USER_FROZEN,
+    };
+  }
+
+  return null;
+};
+
 exports.main = async (event, context) => {
   const { action, text } = event;
+
+  const frozenGuard = await ensureOperatorNotFrozen(event || {});
+  if (frozenGuard) {
+    return frozenGuard;
+  }
 
   if (action === 'checkText') {
     if (!text || typeof text !== 'string') {

@@ -8,6 +8,15 @@ const app = cloud.init({
 const db = app.database();
 const usersCollection = db.collection('users');
 const adminCollection = db.collection('admin_list');
+const USER_ERROR_CODES = {
+  USER_FROZEN: 'USER_FROZEN',
+};
+
+const buildUserFrozenError = (message = '该账号已被冻结，请联系管理员') => ({
+  code: -1,
+  message,
+  errorCode: USER_ERROR_CODES.USER_FROZEN,
+});
 
 const isPhoneAdmin = async (phone) => {
   if (!phone) {
@@ -60,6 +69,7 @@ async function loginHandler(data) {
         phone,
         nickname: `用户${phone.slice(-4)}`,
         avatar: '',
+        accountStatus: 'active',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -74,6 +84,10 @@ async function loginHandler(data) {
         ],
       };
     } else {
+      if (user.data[0] && user.data[0].accountStatus === 'frozen') {
+        return buildUserFrozenError('该账号已被冻结，暂时无法登录');
+      }
+
       // 用户存在，更新最后登录时间
       const userId = user.data[0]._id || user.data[0].id;
       await usersCollection.doc(userId).update({
@@ -172,6 +186,10 @@ async function validateTokenHandler(data) {
 
     if (userData.isDelete === true) {
       return { code: -1, message: '该账户已注销，登录已失效' };
+    }
+
+    if (userData.accountStatus === 'frozen') {
+      return buildUserFrozenError('该账号已被冻结，登录已失效');
     }
 
     const isAdmin = await isPhoneAdmin(userData.phone);

@@ -124,13 +124,11 @@ const AdminCenterScreen: React.FC = () => {
     {
       key: 'user-management',
       title: '用户管理',
-      description: '后续可扩展管理员封禁、申诉处理、重点用户跟进等能力',
+      description: '查看用户列表、会员状态、管理员身份和账号注销情况',
       icon: 'users',
       iconBg: isDark ? '#1F2937' : '#ECFDF5',
       iconColor: isDark ? '#6EE7B7' : '#059669',
-      actionLabel: '规划中',
-      disabled: true,
-      onPress: () => openPlannedFeature('用户管理'),
+      onPress: () => navigation.navigate('AdminUserManagement'),
     },
     {
       key: 'monitoring-dashboard',

@@ -630,7 +630,7 @@ const HomeScreen: React.FC = () => {
         ) : timelineItems.length === 0 ? (
           <View style={styles.emptyStateContainer}>
             <Text style={styles.ticketIcon}>🎫</Text>
-            <Text style={styles.emptyStateText}>每个平凡的一天，值得被好好保存</Text>
+            <Text style={styles.emptyStateText}>每个平凡的一天，都值得被好好保存</Text>
           </View>
         ) : (
           <View style={styles.timelineWrapper}>

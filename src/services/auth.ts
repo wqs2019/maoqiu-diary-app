@@ -17,6 +17,9 @@ export interface UserInfo {
   _id: string;
   phone: string;
   isAdmin?: boolean;
+  accountStatus?: 'active' | 'frozen';
+  freezeReason?: string;
+  frozenAt?: number | null;
   pushToken?: string;
   nickname?: string;
   avatar?: string;

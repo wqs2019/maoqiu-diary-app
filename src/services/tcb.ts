@@ -1,4 +1,5 @@
 // TCB 服务 - 完整的云函数调用实现
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import adapter from '@cloudbase/adapter-rn';
 import cloudbase from '@cloudbase/js-sdk';
 
@@ -8,6 +9,62 @@ import tcbConfig from '../config/tcb';
 cloudbase.useAdapters(adapter);
 
 let appInstance: any = null;
+const USER_INFO_KEY = 'user_info';
+const TOKEN_KEY = 'user_token';
+const USER_FROZEN_ERROR_CODE = 'USER_FROZEN';
+
+const readOperatorUserId = async () => {
+  try {
+    const userInfoString = await AsyncStorage.getItem(USER_INFO_KEY);
+    if (!userInfoString) {
+      return '';
+    }
+
+    const userInfo = JSON.parse(userInfoString);
+    return typeof userInfo?._id === 'string' ? userInfo._id : '';
+  } catch (error) {
+    console.error('[TCB] Read operator user failed:', error);
+    return '';
+  }
+};
+
+const attachOperatorUserId = async (payload: any) => {
+  if (!payload || typeof payload !== 'object') {
+    return payload;
+  }
+
+  const operatorUserId = await readOperatorUserId();
+  if (!operatorUserId) {
+    return payload;
+  }
+
+  const nextPayload = { ...payload };
+  if (nextPayload.data && typeof nextPayload.data === 'object' && !Array.isArray(nextPayload.data)) {
+    nextPayload.data = {
+      ...nextPayload.data,
+      __operatorUserId: nextPayload.data.__operatorUserId || operatorUserId,
+    };
+    return nextPayload;
+  }
+
+  nextPayload.__operatorUserId = nextPayload.__operatorUserId || operatorUserId;
+  return nextPayload;
+};
+
+const handleFrozenUserResponse = async (response: any) => {
+  const errorCode = response?.errorCode || response?.data?.errorCode;
+  if (errorCode !== USER_FROZEN_ERROR_CODE) {
+    return response;
+  }
+
+  try {
+    await AsyncStorage.multiRemove([TOKEN_KEY, USER_INFO_KEY]);
+  } catch (error) {
+    console.error('[TCB] Clear frozen user cache failed:', error);
+  }
+
+  return response;
+};
 
 /**
  * 初始化 CloudBase
@@ -110,14 +167,15 @@ export const CloudService = {
     }
 
     try {
-      console.log('[TCB] Calling function:', name, 'data:', JSON.stringify(data));
+      const payload = await attachOperatorUserId(data);
+      console.log('[TCB] Calling function:', name, 'data:', JSON.stringify(payload));
 
       // 确保已认证
       await ensureAuth(app);
 
       const res = await app.callFunction({
         name,
-        data,
+        data: payload,
         ...options,
       });
 
@@ -129,23 +187,23 @@ export const CloudService = {
 
       // 注意：这里为了兼容云函数直接返回 { code, message, data } 的格式
       if (cleanData.code !== undefined) {
-        return cleanData;
+        return await handleFrozenUserResponse(cleanData);
       }
 
       // 如果云函数返回的是 { success: false, message: ... } 格式
       if (cleanData.success === false) {
-        return {
+        return await handleFrozenUserResponse({
           code: -1,
           message: cleanData.message || '操作失败',
           data: cleanData as T,
-        };
+        });
       }
 
-      return {
+      return await handleFrozenUserResponse({
         code: 0,
         message: '',
         data: cleanData as T,
-      };
+      });
     } catch (error: any) {
       console.error(`[TCB] Call function ${name} error:`, error);
       console.error('[TCB] Error message:', error.message);
