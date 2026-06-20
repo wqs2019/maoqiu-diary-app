@@ -7,17 +7,20 @@ export type RemoteAppConfig = {
   configKey?: string;
   show_ai_chat?: boolean;
   show_circle?: boolean;
+  version?: string;
   updatedAt?: string;
 };
 
 export type AppConfigPayload = {
   show_ai_chat: boolean;
   show_circle: boolean;
+  version?: string;
 };
 
 export const normalizeAppConfig = (config?: RemoteAppConfig | null): AppConfigPayload => ({
   show_ai_chat: config?.show_ai_chat ?? true,
   show_circle: config?.show_circle ?? true,
+  version: config?.version ?? '',
 });
 
 export const fetchRemoteAppConfig = async (): Promise<{

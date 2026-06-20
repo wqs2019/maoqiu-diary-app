@@ -1,10 +1,12 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
+  Alert,
   TouchableOpacity,
   Image,
   ScrollView,
@@ -12,6 +14,7 @@ import {
   ScrollView as RNScrollView,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,6 +27,34 @@ const FEATURE_CARD_GAP = 10;
 const FEATURE_SNAP_INTERVAL = FEATURE_CARD_WIDTH + FEATURE_CARD_GAP;
 const USER_AGREEMENT_URL = 'https://wqs2019.github.io/maoqiu-diary-app/terms.html';
 const PRIVACY_POLICY_URL = 'https://wqs2019.github.io/maoqiu-diary-app/privacy.html';
+const APP_STORE_URL = 'https://apps.apple.com/cn/app/%E6%AF%9B%E7%90%83%E6%97%A5%E8%AE%B0/id6759290118';
+const APP_STORE_LOOKUP_URL = 'https://itunes.apple.com/lookup?id=6759290118&country=cn';
+const APP_VERSION = Constants.expoConfig?.version || Constants.nativeAppVersion || '未知版本';
+
+const compareVersions = (currentVersion: string, targetVersion: string) => {
+  const currentParts = String(currentVersion || '0')
+    .split('.')
+    .map((part) => Number(part) || 0);
+  const targetParts = String(targetVersion || '0')
+    .split('.')
+    .map((part) => Number(part) || 0);
+  const maxLength = Math.max(currentParts.length, targetParts.length);
+
+  for (let index = 0; index < maxLength; index += 1) {
+    const current = currentParts[index] || 0;
+    const target = targetParts[index] || 0;
+
+    if (current > target) {
+      return 1;
+    }
+
+    if (current < target) {
+      return -1;
+    }
+  }
+
+  return 0;
+};
 
 const FEATURE_CARDS = [
   {
@@ -100,6 +131,40 @@ const AboutScreen: React.FC = () => {
     return () => clearInterval(timer);
   }, [isFeatureAutoPlayPaused]);
 
+  const handleCheckUpdate = async () => {
+    try {
+      const response = await fetch(APP_STORE_LOOKUP_URL);
+
+      if (!response.ok) {
+        throw new Error('无法连接应用商店，请稍后再试');
+      }
+
+      const result = await response.json();
+      const latestVersion = result?.results?.[0]?.version?.trim();
+
+      if (!latestVersion) {
+        Alert.alert('检查更新', '暂未查询到应用商店版本信息，请稍后再试。');
+        return;
+      }
+
+      if (compareVersions(APP_VERSION, latestVersion) < 0) {
+        Alert.alert(
+          '发现新版本',
+          `当前版本 ${APP_VERSION}，应用商店最新版本 ${latestVersion}。`,
+          [
+            { text: '稍后再说', style: 'cancel' },
+            { text: '前往更新', onPress: () => Linking.openURL(APP_STORE_URL) },
+          ]
+        );
+        return;
+      }
+
+      Alert.alert('检查更新', `当前版本 ${APP_VERSION}，已经是最新版本。`);
+    } catch (error: any) {
+      Alert.alert('检查更新失败', error?.message || '暂时无法获取版本信息，请稍后再试');
+    }
+  };
+
   return (
     <View
       style={[
@@ -148,7 +213,7 @@ const AboutScreen: React.FC = () => {
             毛球日记
           </Text>
           <Text style={[styles.versionText, { color: isDark ? '#888' : HEALING_COLORS.gray[400] }]}>
-            Version 1.0.0
+            Version {APP_VERSION}
           </Text>
 
           <View
@@ -329,11 +394,31 @@ const AboutScreen: React.FC = () => {
               styles.menuItemBorder,
               { borderBottomColor: isDark ? '#333' : currentHealingColors.pink[50] },
             ]}
+            onPress={() => Linking.openURL(APP_STORE_URL)}
           >
             <Text
               style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
             >
               ✨ 去应用市场给毛球好评
+            </Text>
+            <Feather
+              name="chevron-right"
+              size={20}
+              color={isDark ? '#888' : HEALING_COLORS.gray[400]}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              styles.menuItemBorder,
+              { borderBottomColor: isDark ? '#333' : currentHealingColors.pink[50] },
+            ]}
+            onPress={handleCheckUpdate}
+          >
+            <Text
+              style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
+            >
+              🚀 检查更新
             </Text>
             <Feather
               name="chevron-right"

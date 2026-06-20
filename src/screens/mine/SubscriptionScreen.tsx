@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Constants from 'expo-constants';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -18,7 +19,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import { fetchRemoteAppConfig } from '../../services/configService';
 import { ensureIAPConnection } from '../../services/iapManager';
+import { CloudService } from '../../services/tcb';
 import { useAuthStore } from '../../store/authStore';
 
 import { useToast } from '@/components/common/Toast';
@@ -31,6 +34,87 @@ type SubscriptionScreenNavigationProp = NativeStackNavigationProp<
 const APPLE_EULA_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 const USER_AGREEMENT_URL = 'https://wqs2019.github.io/maoqiu-diary-app/terms.html';
 const PRIVACY_POLICY_URL = 'https://wqs2019.github.io/maoqiu-diary-app/privacy.html';
+const VIP_ERROR_CODES = {
+  SUBSCRIPTION_OWNED_BY_OTHER_USER: 'SUBSCRIPTION_OWNED_BY_OTHER_USER',
+} as const;
+
+const verifyVipPurchaseForUser = async (userId: string, receiptData: string) => {
+  const response: any = await CloudService.callFunction('user', {
+    action: 'verifyPurchase',
+    data: {
+      _id: userId,
+      receiptData,
+    },
+  });
+
+  const result = response?.data;
+  if (response?.code !== 0 || !result?.success) {
+    const error = new Error(result?.message || response?.message || '会员校验失败') as Error & {
+      code?: string;
+    };
+    error.code = result?.errorCode;
+    throw error;
+  }
+
+  await useAuthStore.getState().fetchUserInfo();
+  return result.data;
+};
+
+const syncVipStatusForUser = async (userId: string) => {
+  const response: any = await CloudService.callFunction('user', {
+    action: 'syncVip',
+    data: {
+      _id: userId,
+    },
+  });
+
+  const result = response?.data;
+  if (response?.code !== 0 || !result?.success) {
+    const error = new Error(result?.message || response?.message || '会员状态同步失败') as Error & {
+      code?: string;
+    };
+    error.code = result?.errorCode;
+    throw error;
+  }
+
+  await useAuthStore.getState().fetchUserInfo();
+  return result.data;
+};
+
+const APP_VERSION = Constants.expoConfig?.version || Constants.nativeAppVersion || '0.0.0';
+
+const compareVersions = (currentVersion: string, targetVersion: string) => {
+  const currentParts = String(currentVersion || '0')
+    .split('.')
+    .map((part) => Number(part) || 0);
+  const targetParts = String(targetVersion || '0')
+    .split('.')
+    .map((part) => Number(part) || 0);
+  const maxLength = Math.max(currentParts.length, targetParts.length);
+
+  for (let index = 0; index < maxLength; index += 1) {
+    const current = currentParts[index] || 0;
+    const target = targetParts[index] || 0;
+
+    if (current > target) {
+      return 1;
+    }
+
+    if (current < target) {
+      return -1;
+    }
+  }
+
+  return 0;
+};
+
+const getRestoreErrorMessage = (error: any) => {
+  if (error?.code === VIP_ERROR_CODES.SUBSCRIPTION_OWNED_BY_OTHER_USER) {
+    return '未查询到有效订阅';
+  }
+
+  return error?.message || '恢复失败，请稍后重试';
+};
 
 const SubscriptionScreen: React.FC = () => {
   const navigation = useNavigation<SubscriptionScreenNavigationProp>();
@@ -45,6 +129,7 @@ const SubscriptionScreen: React.FC = () => {
 
   const [selectedPlan, setSelectedPlan] = useState<string>('com.maoqiu.diary.yearly');
   const [loading, setLoading] = useState<boolean>(false);
+  const [latestVersion, setLatestVersion] = useState<string>('');
   const isActiveVIP = !!user?.isVip?.value;
   const isPurchasing = useRef(false);
 
@@ -95,6 +180,13 @@ const SubscriptionScreen: React.FC = () => {
 
     const initIAP = async () => {
       try {
+        try {
+          const { doc } = await fetchRemoteAppConfig();
+          setLatestVersion(doc?.version?.trim() || '');
+        } catch (configError) {
+          console.log('订阅页获取远程版本配置失败:', configError);
+        }
+
         console.log('IAP: 准备建立/复用全局连接...');
         await ensureIAPConnection();
         console.log('IAP: 建立/复用全局连接成功');
@@ -109,43 +201,13 @@ const SubscriptionScreen: React.FC = () => {
           console.warn('IAP: ⚠️ 警告: 未获取到任何商品信息，苹果可能会报 SKU not found 错误！');
         }
 
-        console.log('IAP: 开始初始检查用户历史订阅状态...');
-        const availablePurchases = await RNIap.getAvailablePurchases({ onlyIncludeActiveItemsIOS: true });
-        console.log('IAP: 初始检查获取到的有效订阅记录数量:', availablePurchases?.length);
-        if (availablePurchases && availablePurchases.length > 0) {
-          // Sort to get the most recent purchase
-          availablePurchases.sort((a, b) => Number(b.transactionDate) - Number(a.transactionDate));
-          const activePurchase = availablePurchases[0] as any;
-          console.log('IAP: => 发现有效订阅！该用户当前拥有VIP。', availablePurchases);
-          const currentUser = useAuthStore.getState().user;
-          const expiresAt = activePurchase.expirationDateIOS
-            ? Number(activePurchase.expirationDateIOS)
-            : undefined;
-          if (
-            currentUser &&
-            (!currentUser.isVip?.value ||
-              currentUser.isVip?.type !== activePurchase.productId ||
-              currentUser.isVip?.expiresAt !== expiresAt)
-          ) {
-            useAuthStore
-              .getState()
-              .updateProfile(currentUser._id, {
-                isVip: { value: true, type: activePurchase.productId, expiresAt },
-              })
-              .catch((e) => {
-                console.log(e);
-              });
-          }
-        } else {
-          console.log('IAP: => 未发现有效订阅，用户当前不是VIP。');
-          const currentUser = useAuthStore.getState().user;
-          if (currentUser?.isVip?.value) {
-            useAuthStore
-              .getState()
-              .updateProfile(currentUser._id, { isVip: { value: false } })
-              .catch((e) => {
-                console.log(e);
-              });
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser?._id) {
+          console.log('IAP: 开始基于当前账号同步会员状态...');
+          try {
+            await syncVipStatusForUser(currentUser._id);
+          } catch (syncError) {
+            console.log('IAP: 初始会员同步跳过/失败:', syncError);
           }
         }
       } catch (err: any) {
@@ -173,12 +235,7 @@ const SubscriptionScreen: React.FC = () => {
 
           const currentUser = useAuthStore.getState().user;
           if (currentUser) {
-            const expiresAt = (purchase as any).expirationDateIOS
-              ? Number((purchase as any).expirationDateIOS)
-              : undefined;
-            await useAuthStore.getState().updateProfile(currentUser._id, {
-              isVip: { value: true, type: purchase.productId, expiresAt },
-            });
+            await verifyVipPurchaseForUser(currentUser._id, receipt);
           }
 
           if (isPurchasing.current) {
@@ -274,6 +331,15 @@ const SubscriptionScreen: React.FC = () => {
 
   const handleSubscribe = async () => {
     if (loading) return;
+
+    if (latestVersion && compareVersions(APP_VERSION, latestVersion) < 0) {
+      Alert.alert(
+        '建议升级',
+        `当前版本为 ${APP_VERSION}，最新版本为 ${latestVersion}。请升级到最新版本后再开通会员。`
+      );
+      return;
+    }
+
     setLoading(true);
     isPurchasing.current = true;
     try {
@@ -317,41 +383,26 @@ const SubscriptionScreen: React.FC = () => {
         console.log('IAP: 恢复成功，找到了历史订阅', purchases);
         const activePurchase = purchases[0] as any;
         const currentUser = useAuthStore.getState().user;
-        const expiresAt = activePurchase.expirationDateIOS
-          ? Number(activePurchase.expirationDateIOS)
-          : undefined;
-        if (
-          currentUser &&
-          (!currentUser.isVip?.value ||
-            currentUser.isVip?.type !== activePurchase.productId ||
-            currentUser.isVip?.expiresAt !== expiresAt)
-        ) {
-          useAuthStore
-            .getState()
-            .updateProfile(currentUser._id, {
-              isVip: { value: true, type: activePurchase.productId, expiresAt },
-            })
-            .catch((e) => {
-              console.log(e);
-            });
+        const receipt =
+          activePurchase.purchaseToken || activePurchase.transactionReceipt || activePurchase.transactionId;
+
+        if (!currentUser?._id) {
+          throw new Error('请先登录原开通会员的账号');
         }
+
+        if (!receipt) {
+          throw new Error('未获取到可恢复的购买凭证，请稍后重试');
+        }
+
+        await verifyVipPurchaseForUser(currentUser._id, receipt);
         Alert.alert('恢复成功', '您的订阅状态已恢复。');
       } else {
         console.log('IAP: 恢复结束，没有找到有效的订阅记录');
-        const currentUser = useAuthStore.getState().user;
-        if (currentUser?.isVip?.value) {
-          useAuthStore
-            .getState()
-            .updateProfile(currentUser._id, { isVip: { value: false } })
-            .catch((e) => {
-              console.log(e);
-            });
-        }
         Alert.alert('恢复结果', '暂无需要恢复的订阅记录。');
       }
     } catch (err: any) {
       console.error('IAP: 恢复购买异常:', err);
-      Alert.alert('恢复失败', err.message);
+      Alert.alert('恢复失败', getRestoreErrorMessage(err));
     } finally {
       console.log('IAP: 恢复购买流程结束');
       setLoading(false);

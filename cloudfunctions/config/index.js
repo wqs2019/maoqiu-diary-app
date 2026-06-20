@@ -28,6 +28,7 @@ const getConfigDoc = async () => {
 const normalizeConfig = (doc) => ({
   show_ai_chat: doc && doc.show_ai_chat !== undefined ? !!doc.show_ai_chat : true,
   show_circle: doc && doc.show_circle !== undefined ? !!doc.show_circle : true,
+  version: doc && typeof doc.version === 'string' ? doc.version : '',
 });
 
 const isAdminUser = async (userId) => {
@@ -68,7 +69,7 @@ const getAppConfig = async () => {
 
 const updateAppConfig = async (data) => {
   try {
-    const { adminUserId, show_ai_chat, show_circle } = data || {};
+    const { adminUserId, show_ai_chat, show_circle, version } = data || {};
 
     if (!adminUserId) {
       return { success: false, message: '缺少管理员信息' };
@@ -84,6 +85,12 @@ const updateAppConfig = async (data) => {
       configKey: APP_CONFIG_KEY,
       show_ai_chat: show_ai_chat !== undefined ? !!show_ai_chat : true,
       show_circle: show_circle !== undefined ? !!show_circle : true,
+      version:
+        typeof version === 'string'
+          ? version.trim()
+          : existingDoc && typeof existingDoc.version === 'string'
+            ? existingDoc.version
+            : '',
       updatedAt: db.serverDate(),
       updatedBy: adminUserId,
     };
@@ -107,6 +114,7 @@ const updateAppConfig = async (data) => {
         configKey: APP_CONFIG_KEY,
         show_ai_chat: payload.show_ai_chat,
         show_circle: payload.show_circle,
+        version: payload.version,
       },
     };
   } catch (error) {

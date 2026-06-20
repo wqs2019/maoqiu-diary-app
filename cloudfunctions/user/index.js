@@ -21,6 +21,17 @@ const AUTO_BLOCK_GOVERNANCE_TRIGGER = 'user_block';
 const AUTO_BLOCK_OPEN_STATUSES = ['pending', 'processing'];
 const GOVERNANCE_RECORD_TYPE = 'report_user';
 const GOVERNANCE_REPORT_REASON = 'other';
+const VIP_PROTECTED_FIELDS = [
+  'isVip',
+  'latestReceipt',
+  'vipExpireAt',
+  'vipOriginalTransactionId',
+  'vipTransactionId',
+  'vipProductId',
+];
+const VIP_ERROR_CODES = {
+  SUBSCRIPTION_OWNED_BY_OTHER_USER: 'SUBSCRIPTION_OWNED_BY_OTHER_USER',
+};
 
 const getDocData = (result) =>
   result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
@@ -117,6 +128,16 @@ const getUserDoc = async (userId) => {
   return getDocData(result);
 };
 
+const sanitizeUserUpdateData = (updateData = {}) => {
+  const sanitizedData = { ...updateData };
+  VIP_PROTECTED_FIELDS.forEach((field) => {
+    if (Object.prototype.hasOwnProperty.call(sanitizedData, field)) {
+      delete sanitizedData[field];
+    }
+  });
+  return sanitizedData;
+};
+
 const getUserDisplayName = (user, fallback = '有人') =>
   (user && (user.nickname || user.username || user.name)) || fallback;
 
@@ -203,7 +224,7 @@ const updateUser = async (data) => {
       .collection('users')
       .doc(_id)
       .update({
-        ...updateData,
+        ...sanitizeUserUpdateData(updateData),
         updatedAt: db.serverDate(),
       });
 
@@ -351,29 +372,138 @@ const verifyAppleReceipt = (receiptData, isSandbox = false) => {
   });
 };
 
+const getLatestAppleSubscriptionRecord = (verifyJson) => {
+  const records = Array.isArray(verifyJson && verifyJson.latest_receipt_info)
+    ? verifyJson.latest_receipt_info
+    : [];
+
+  if (records.length === 0) {
+    return null;
+  }
+
+  return records
+    .slice()
+    .sort((a, b) => {
+      const expireA = parseInt((a && a.expires_date_ms) || '0', 10);
+      const expireB = parseInt((b && b.expires_date_ms) || '0', 10);
+      if (expireA !== expireB) {
+        return expireB - expireA;
+      }
+
+      const purchaseA = parseInt((a && a.purchase_date_ms) || '0', 10);
+      const purchaseB = parseInt((b && b.purchase_date_ms) || '0', 10);
+      return purchaseB - purchaseA;
+    })[0];
+};
+
+const buildVipState = ({ isActive, productId, expiresAt }) => ({
+  value: !!isActive,
+  ...(productId ? { type: productId } : {}),
+  ...(expiresAt ? { expiresAt } : {}),
+});
+
+const findSubscriptionOwner = async (originalTransactionId) => {
+  if (!originalTransactionId) {
+    return null;
+  }
+
+  const result = await db
+    .collection('users')
+    .where({
+      vipOriginalTransactionId: originalTransactionId,
+    })
+    .limit(1)
+    .get();
+
+  return getDocData(result);
+};
+
+const updateVipOwnershipForUser = async ({
+  userId,
+  receiptData,
+  originalTransactionId,
+  transactionId,
+  productId,
+  expiresAt,
+}) => {
+  await db.collection('users').doc(userId).update({
+    isVip: buildVipState({ isActive: true, productId, expiresAt }),
+    latestReceipt: receiptData,
+    vipExpireAt: expiresAt ? new Date(expiresAt) : null,
+    vipOriginalTransactionId: originalTransactionId || null,
+    vipTransactionId: transactionId || null,
+    vipProductId: productId || null,
+    updatedAt: db.serverDate(),
+  });
+};
+
+const clearVipStateForUser = async (userId) => {
+  await db.collection('users').doc(userId).update({
+    isVip: buildVipState({ isActive: false }),
+    vipExpireAt: null,
+    vipTransactionId: null,
+    vipProductId: null,
+    updatedAt: db.serverDate(),
+  });
+};
+
 // 客户端购买成功后，上传收据进行校验并开通 VIP
 const verifyPurchase = async (data) => {
   try {
     const { _id, receiptData } = data;
     if (!_id || !receiptData) return { success: false, message: 'Missing parameters' };
 
+    const currentUser = await getUserDoc(_id);
+    if (!currentUser) {
+      return { success: false, message: '用户不存在' };
+    }
+
     const verifyResult = await verifyAppleReceipt(receiptData);
-    
-    if (verifyResult.isValid && verifyResult.latestExpireMs > Date.now()) {
-      const expireDate = new Date(verifyResult.latestExpireMs);
-      // 更新数据库
-      await db.collection('users').doc(_id).update({
-        isVip: true,
-        vipExpireAt: expireDate,
-        latestReceipt: receiptData, // 保存最新的收据用于以后主动同步兜底
-        updatedAt: db.serverDate(),
-      });
-      return { success: true, data: { isVip: true, expireDate } };
-    } else {
+    const latestRecord = verifyResult.isValid ? getLatestAppleSubscriptionRecord(verifyResult.json) : null;
+    const expiresAt = latestRecord?.expires_date_ms ? parseInt(latestRecord.expires_date_ms, 10) : 0;
+    const originalTransactionId =
+      latestRecord?.original_transaction_id || latestRecord?.transaction_id || '';
+    const transactionId = latestRecord?.transaction_id || '';
+    const productId = latestRecord?.product_id || '';
+
+    if (!verifyResult.isValid || !latestRecord || expiresAt <= Date.now()) {
+      if (
+        currentUser.latestReceipt === receiptData ||
+        (currentUser.vipOriginalTransactionId &&
+          currentUser.vipOriginalTransactionId === originalTransactionId)
+      ) {
+        await clearVipStateForUser(_id);
+      }
       return { success: false, message: 'Receipt invalid or expired' };
     }
+
+    const existingOwner = await findSubscriptionOwner(originalTransactionId);
+    if (existingOwner && existingOwner._id && existingOwner._id !== _id) {
+      return {
+        success: false,
+        errorCode: VIP_ERROR_CODES.SUBSCRIPTION_OWNED_BY_OTHER_USER,
+        message: '该苹果订阅已绑定到其他账号，请使用原开通账号登录。',
+      };
+    }
+
+    await updateVipOwnershipForUser({
+      userId: _id,
+      receiptData,
+      originalTransactionId,
+      transactionId,
+      productId,
+      expiresAt,
+    });
+
+    return {
+      success: true,
+      data: {
+        isVip: buildVipState({ isActive: true, productId, expiresAt }),
+        originalTransactionId,
+      },
+    };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, message: error.message };
   }
 };
 
@@ -398,28 +528,50 @@ const syncVipStatus = async (data) => {
     // 如果有收据，去苹果服务器重新校验一下最新状态（苹果会自动返回该收据对应的最新续费状态）
     if (user.latestReceipt) {
       const verifyResult = await verifyAppleReceipt(user.latestReceipt);
-      if (verifyResult.isValid && verifyResult.latestExpireMs > Date.now()) {
+      const latestRecord = verifyResult.isValid ? getLatestAppleSubscriptionRecord(verifyResult.json) : null;
+      const expiresAt = latestRecord?.expires_date_ms ? parseInt(latestRecord.expires_date_ms, 10) : 0;
+      const originalTransactionId =
+        latestRecord?.original_transaction_id || latestRecord?.transaction_id || user.vipOriginalTransactionId || '';
+      const transactionId = latestRecord?.transaction_id || '';
+      const productId = latestRecord?.product_id || '';
+
+      if (verifyResult.isValid && latestRecord && expiresAt > Date.now()) {
         isVip = true;
+        const existingOwner = await findSubscriptionOwner(originalTransactionId);
+        if (existingOwner && existingOwner._id && existingOwner._id !== _id) {
+          return {
+            success: false,
+            errorCode: VIP_ERROR_CODES.SUBSCRIPTION_OWNED_BY_OTHER_USER,
+            message: '该苹果订阅已绑定到其他账号，请使用原开通账号登录。',
+          };
+        }
+
         await db.collection('users').doc(_id).update({
-          isVip: true,
-          vipExpireAt: new Date(verifyResult.latestExpireMs),
+          isVip: buildVipState({ isActive: true, productId, expiresAt }),
+          vipExpireAt: new Date(expiresAt),
+          vipOriginalTransactionId: originalTransactionId || null,
+          vipTransactionId: transactionId || null,
+          vipProductId: productId || null,
           updatedAt: db.serverDate(),
         });
       } else {
         // 过期了
-        await db.collection('users').doc(_id).update({
-          isVip: false,
-          updatedAt: db.serverDate(),
-        });
+        await clearVipStateForUser(_id);
       }
-    } else if (user.vipExpireAt && user.vipExpireAt > new Date()) {
+    } else if (user.isVip && user.isVip.value && user.vipExpireAt && user.vipExpireAt > new Date()) {
        // 如果没有 receipt 但过期时间没到，做个备用兼容
        isVip = true; 
+    } else if (user.isVip && user.isVip.value) {
+      // 兼容历史错误数据：如果既没有绑定的收据，也没有订阅归属标识，则撤销这类设备侧误发的 VIP。
+      await clearVipStateForUser(_id);
     }
 
     return {
       success: true,
-      data: { _id, isVip },
+      data: {
+        _id,
+        isVip: user.isVip && typeof user.isVip === 'object' ? user.isVip : buildVipState({ isActive: isVip }),
+      },
     };
   } catch (error) {
     console.error('Sync VIP error:', error);
