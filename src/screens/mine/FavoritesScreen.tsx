@@ -148,130 +148,129 @@ const FavoritesScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: pageBackgroundColor }]}>
       {!isDark && <AnimatedBackgroundBlobs />}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              style={[
+                styles.backBtn,
+                {
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.86)',
+                  borderColor,
+                },
+              ]}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="返回上一页"
+            >
+              <Ionicons name="arrow-back" size={20} color={primaryTextColor} />
+            </TouchableOpacity>
 
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.headerTopRow}>
-          <TouchableOpacity
-            style={[
-              styles.backBtn,
-              {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.86)',
-                borderColor,
-              },
-            ]}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="返回上一页"
-          >
-            <Ionicons name="arrow-back" size={20} color={primaryTextColor} />
-          </TouchableOpacity>
+            <View
+              style={[
+                styles.countPill,
+                {
+                  backgroundColor: isDark ? 'rgba(236,72,153,0.16)' : 'rgba(255,255,255,0.86)',
+                  borderColor,
+                },
+              ]}
+            >
+              <Ionicons name="heart" size={14} color={HEALING_COLORS.pink[500]} />
+              <Text style={[styles.countPillText, { color: primaryTextColor }]}>
+                {favoriteCount} 篇收藏
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.headerTextBlock}>
+            <Text style={[styles.eyebrow, { color: HEALING_COLORS.pink[500] }]}>Favorites</Text>
+            <Text style={[styles.title, { color: primaryTextColor }]}>收藏夹</Text>
+            <Text style={[styles.subtitle, { color: secondaryTextColor }]}>
+              把想反复回看的日记整理在一起，随时重温那些让你心动的片刻。
+            </Text>
+          </View>
 
           <View
             style={[
-              styles.countPill,
+              styles.heroCard,
               {
-                backgroundColor: isDark ? 'rgba(236,72,153,0.16)' : 'rgba(255,255,255,0.86)',
+                backgroundColor: surfaceColor,
                 borderColor,
+                shadowColor: isDark ? '#000' : HEALING_COLORS.pink[300],
               },
             ]}
           >
-            <Ionicons name="heart" size={14} color={HEALING_COLORS.pink[500]} />
-            <Text style={[styles.countPillText, { color: primaryTextColor }]}>
-              {favoriteCount} 篇收藏
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.headerTextBlock}>
-          <Text style={[styles.eyebrow, { color: HEALING_COLORS.pink[500] }]}>Favorites</Text>
-          <Text style={[styles.title, { color: primaryTextColor }]}>收藏夹</Text>
-          <Text style={[styles.subtitle, { color: secondaryTextColor }]}>
-            把想反复回看的日记整理在一起，随时重温那些让你心动的片刻。
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.heroCard,
-            {
-              backgroundColor: surfaceColor,
-              borderColor,
-              shadowColor: isDark ? '#000' : HEALING_COLORS.pink[300],
-            },
-          ]}
-        >
-          <View style={styles.heroCardHeader}>
-            <View
-              style={[
-                styles.heroIconWrap,
-                { backgroundColor: isDark ? 'rgba(236,72,153,0.18)' : HEALING_COLORS.pink[50] },
-              ]}
-            >
-              <Ionicons name="sparkles" size={18} color={HEALING_COLORS.pink[500]} />
+            <View style={styles.heroCardHeader}>
+              <View
+                style={[
+                  styles.heroIconWrap,
+                  { backgroundColor: isDark ? 'rgba(236,72,153,0.18)' : HEALING_COLORS.pink[50] },
+                ]}
+              >
+                <Ionicons name="sparkles" size={18} color={HEALING_COLORS.pink[500]} />
+              </View>
+              <Text style={[styles.heroCardTitle, { color: primaryTextColor }]}>你的珍藏回忆</Text>
             </View>
-            <Text style={[styles.heroCardTitle, { color: primaryTextColor }]}>你的珍藏回忆</Text>
-          </View>
 
-          <View style={styles.statsRow}>
-            <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
-              <Text style={[styles.statValue, { color: primaryTextColor }]}>{favoriteCount}</Text>
-              <Text style={[styles.statLabel, { color: secondaryTextColor }]}>已收藏日记</Text>
-            </View>
-            <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
-              <Text style={[styles.statValue, { color: primaryTextColor }]}>{coveredMonths}</Text>
-              <Text style={[styles.statLabel, { color: secondaryTextColor }]}>覆盖月份</Text>
-            </View>
-            <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
-              <Text style={[styles.statValue, { color: primaryTextColor }]}>
-                {formatSummaryDate(latestFavorite?.date)}
-              </Text>
-              <Text style={[styles.statLabel, { color: secondaryTextColor }]}>最近收藏</Text>
+            <View style={styles.statsRow}>
+              <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
+                <Text style={[styles.statValue, { color: primaryTextColor }]}>{favoriteCount}</Text>
+                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>已收藏日记</Text>
+              </View>
+              <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
+                <Text style={[styles.statValue, { color: primaryTextColor }]}>{coveredMonths}</Text>
+                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>覆盖月份</Text>
+              </View>
+              <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
+                <Text style={[styles.statValue, { color: primaryTextColor }]}>
+                  {formatSummaryDate(latestFavorite?.date)}
+                </Text>
+                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>最近收藏</Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
 
-      {isLoading ? (
-        <View style={styles.stateContainer}>
-          {renderStateCard({
-            icon: 'heart-outline',
-            iconColor: HEALING_COLORS.pink[500],
-            title: '正在整理你的收藏',
-            description: '我们正在加载那些被你标记为特别的日记，请稍候。',
-            loading: true,
-          })}
-        </View>
-      ) : error ? (
-        <View style={styles.stateContainer}>
-          {renderStateCard({
-            icon: 'cloud-offline-outline',
-            iconColor: HEALING_COLORS.pink[500],
-            title: '收藏加载失败',
-            description: '网络可能有点不稳定，重新试一次通常就能恢复。',
-            actionText: '重新加载',
-            onAction: () => {
-              void refetch();
-            },
-          })}
-        </View>
-      ) : timelineItems.length === 0 ? (
-        <View style={styles.stateContainer}>
-          {renderStateCard({
-            icon: 'bookmark-outline',
-            iconColor: HEALING_COLORS.pink[500],
-            title: '这里还没有收藏',
-            description: '去日记详情页点亮右上角星标，把值得反复回看的内容留在这里。',
-            actionText: '返回看看',
-            onAction: () => navigation.goBack(),
-          })}
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) + 24 }]}
-          showsVerticalScrollIndicator={false}
-        >
+        {isLoading ? (
+          <View style={styles.stateContainer}>
+            {renderStateCard({
+              icon: 'heart-outline',
+              iconColor: HEALING_COLORS.pink[500],
+              title: '正在整理你的收藏',
+              description: '我们正在加载那些被你标记为特别的日记，请稍候。',
+              loading: true,
+            })}
+          </View>
+        ) : error ? (
+          <View style={styles.stateContainer}>
+            {renderStateCard({
+              icon: 'cloud-offline-outline',
+              iconColor: HEALING_COLORS.pink[500],
+              title: '收藏加载失败',
+              description: '网络可能有点不稳定，重新试一次通常就能恢复。',
+              actionText: '重新加载',
+              onAction: () => {
+                void refetch();
+              },
+            })}
+          </View>
+        ) : timelineItems.length === 0 ? (
+          <View style={styles.stateContainer}>
+            {renderStateCard({
+              icon: 'bookmark-outline',
+              iconColor: HEALING_COLORS.pink[500],
+              title: '这里还没有收藏',
+              description: '去日记详情页点亮右上角星标，把值得反复回看的内容留在这里。',
+              actionText: '返回看看',
+              onAction: () => navigation.goBack(),
+            })}
+          </View>
+        ) : (
           <View
             style={[
               styles.listShell,
@@ -304,8 +303,8 @@ const FavoritesScreen: React.FC = () => {
 
             <TimelineView items={timelineItems} onItemPress={handleTimelineItemPress} />
           </View>
-        </ScrollView>
-      )}
+        )}
+      </ScrollView>
     </View>
   );
 };

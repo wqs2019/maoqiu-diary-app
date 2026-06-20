@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Image, Pressable, StyleProp, ViewStyle } from 'react-native';
 
@@ -73,6 +74,8 @@ export const CommentList: React.FC<CommentListProps> = ({
   onReplyPress,
   onCommentLongPress,
 }) => {
+  const navigation = useNavigation<any>();
+
   // 在组件内部将扁平的评论数组转换为树形结构
   const commentTree = useMemo(() => {
     const tree: Comment[] = [];
@@ -101,13 +104,27 @@ export const CommentList: React.FC<CommentListProps> = ({
       <Text style={styles.commentsTitle}>全部评论 ({comments.length})</Text>
       {commentTree.map((comment) => (
         <View key={comment.id} style={styles.commentItem}>
-          <View style={styles.commentAvatar}>
+          <Pressable
+            style={({ pressed }) => [styles.commentAvatar, pressed && comment.userId ? styles.pressedAvatar : null]}
+            onPress={
+              comment.userId
+                ? () => {
+                    navigation.push('UserProfile', { userId: comment.userId });
+                  }
+                : undefined
+            }
+            accessibilityRole={comment.userId ? 'button' : undefined}
+            accessibilityLabel={comment.userId ? `查看 ${comment.user} 的主页` : undefined}
+          >
             {comment.avatar ? (
               <Image source={{ uri: comment.avatar }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.commentAvatarEmoji}>😸</Text>
+              <Image
+                source={require('../../../assets/logo_bg.png')}
+                style={styles.avatarImage}
+              />
             )}
-          </View>
+          </Pressable>
           <View style={styles.commentContent}>
             <CommentPressable
               style={styles.commentMainPressable}
@@ -197,8 +214,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
   },
-  commentAvatarEmoji: {
-    fontSize: 18,
+  pressedAvatar: {
+    opacity: 0.78,
   },
   commentContent: {
     flex: 1,
