@@ -636,20 +636,18 @@ const HomeScreen: React.FC = () => {
                 ? `当前【${selectedScenarioTemplate.name}】无数据`
                 : '每个平凡的一天，都值得被好好保存'}
             </Text>
-            {selectedScenarioTemplate ? (
-              <TouchableOpacity
-                style={[
-                  styles.emptyStateActionButton,
-                  { backgroundColor: isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[400] },
-                ]}
-                onPress={() => {
-                  handleCreateDiary(selectedScenarioTemplate.type);
-                }}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.emptyStateActionButtonText}>去录入</Text>
-              </TouchableOpacity>
-            ) : null}
+            <TouchableOpacity
+              style={[
+                styles.emptyStateActionButton,
+                { backgroundColor: isDark ? currentHealingColors.pink[500] : currentHealingColors.pink[400] },
+              ]}
+              onPress={() => {
+                handleCreateDiary(selectedScenarioTemplate?.type);
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.emptyStateActionButtonText}>去录入</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.timelineWrapper}>
