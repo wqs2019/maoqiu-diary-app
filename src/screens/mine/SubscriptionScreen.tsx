@@ -137,9 +137,20 @@ const SubscriptionScreen: React.FC = () => {
 
   const [selectedPlan, setSelectedPlan] = useState<string>('com.maoqiu.diary.yearly');
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingMessage, setLoadingMessage] = useState<string>('处理中...');
   const [latestVersion, setLatestVersion] = useState<string>('');
   const isActiveVIP = !!user?.isVip?.value;
   const isPurchasing = useRef(false);
+
+  const startLoading = (message: string) => {
+    setLoadingMessage(message);
+    setLoading(true);
+  };
+
+  const stopLoading = () => {
+    setLoading(false);
+    setLoadingMessage('处理中...');
+  };
 
   const plans = [
     {
@@ -236,13 +247,14 @@ const SubscriptionScreen: React.FC = () => {
                 toast.success('订单处理中，请稍后查看');
               }
               isPurchasing.current = false;
-              setLoading(false);
+              stopLoading();
             }
             return;
           }
 
           const currentUser = useAuthStore.getState().user;
           if (currentUser) {
+            setLoadingMessage('正在验证购买结果...');
             await verifyVipPurchaseForUser(currentUser._id, receipt);
           }
 
@@ -258,16 +270,17 @@ const SubscriptionScreen: React.FC = () => {
           }
 
           console.log('IAP: 开始 finishTransaction...');
+          setLoadingMessage('正在完成订单...');
           await RNIap.finishTransaction({ purchase, isConsumable: false });
           console.log('IAP: finishTransaction 成功');
         } catch (err) {
           console.error('IAP: 处理订单或 finishTransaction 失败', err);
         } finally {
-          setLoading(false);
+          stopLoading();
         }
       } else {
         console.warn('IAP: ⚠️ 警告: purchase对象中没有 receipt/purchaseToken 字段');
-        setLoading(false);
+        stopLoading();
       }
     });
 
@@ -306,7 +319,7 @@ const SubscriptionScreen: React.FC = () => {
       if (navigation.isFocused()) {
         toast.error(errorMessage);
       }
-      setLoading(false);
+      stopLoading();
       isPurchasing.current = false;
       // 增加 E_USER_CANCELLED 的容错处理，有时它是作为字符串传递的
       if (
@@ -348,7 +361,7 @@ const SubscriptionScreen: React.FC = () => {
       return;
     }
 
-    setLoading(true);
+    startLoading('正在连接 App Store...');
     isPurchasing.current = true;
     try {
       console.log('IAP: 准备发起 requestPurchase，SKU:', selectedPlan);
@@ -362,12 +375,11 @@ const SubscriptionScreen: React.FC = () => {
         },
       });
       console.log('IAP: requestPurchase 发起成功，返回信息:', requestResult);
-      // 苹果支付弹窗关闭后（无论成功或放弃），立刻结束按钮的 loading 状态
-      // 真实的交易结果和发货逻辑由全局的 purchaseUpdatedListener 处理
-      setLoading(false);
+      // 购买结果由 purchaseUpdatedListener / purchaseErrorListener 驱动，在此保持全局 loading
+      setLoadingMessage('请稍候，正在等待苹果返回购买结果...');
     } catch (err: any) {
       console.error('IAP: requestPurchase 异常:', err);
-      setLoading(false);
+      stopLoading();
       isPurchasing.current = false;
       if (err.code !== 'user-cancelled' && err.code !== 'E_USER_CANCELLED') {
         Alert.alert('请求失败', err.message);
@@ -377,7 +389,7 @@ const SubscriptionScreen: React.FC = () => {
 
   const handleRestore = async () => {
     if (loading) return;
-    setLoading(true);
+    startLoading('正在恢复购买...');
     console.log('IAP: 开始执行恢复购买流程...');
     // 移除了 Alert.alert('恢复购买...') 避免与结果弹窗重叠显示
     try {
@@ -401,6 +413,7 @@ const SubscriptionScreen: React.FC = () => {
           throw new Error('未获取到可恢复的购买凭证，请稍后重试');
         }
 
+        setLoadingMessage('正在验证恢复结果...');
         await verifyVipPurchaseForUser(currentUser._id, receipt);
         Alert.alert('恢复成功', '您的订阅状态已恢复。');
       } else {
@@ -412,7 +425,7 @@ const SubscriptionScreen: React.FC = () => {
       Alert.alert('恢复失败', getRestoreErrorMessage(err));
     } finally {
       console.log('IAP: 恢复购买流程结束');
-      setLoading(false);
+      stopLoading();
     }
   };
 
@@ -452,6 +465,20 @@ const SubscriptionScreen: React.FC = () => {
           <View style={styles.headerRight} />
         )}
       </View>
+
+      {loading && (
+        <View style={styles.globalLoadingOverlay} pointerEvents="auto">
+          <View style={[styles.globalLoadingCard, { backgroundColor: isDark ? 'rgba(30,30,30,0.96)' : 'rgba(255,255,255,0.96)' }]}>
+            <ActivityIndicator size="large" color={currentHealingColors.pink[500]} />
+            <Text style={[styles.globalLoadingTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
+              正在处理订阅
+            </Text>
+            <Text style={[styles.globalLoadingText, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>
+              {loadingMessage}
+            </Text>
+          </View>
+        </View>
+      )}
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* VIP 卡片区 */}
@@ -787,6 +814,38 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  globalLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  globalLoadingCard: {
+    width: '100%',
+    maxWidth: 280,
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  globalLoadingTitle: {
+    marginTop: 14,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  globalLoadingText: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
   },
   cardContainer: {
     paddingHorizontal: 20,
