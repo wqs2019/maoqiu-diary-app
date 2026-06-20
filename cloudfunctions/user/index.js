@@ -15,7 +15,11 @@ const app = cloud.init({
 });
 const db = app.database();
 const _ = db.command;
+const CURRENT_ENV_ID = process.env.TCB_ENV || 'maoqiu-diary-app-2fpzvwp2e01dbaf';
+const DEFAULT_STORAGE_BUCKET = '6d61-maoqiu-diary-app-2fpzvwp2e01dbaf-1417164439';
+const DIARY_BATCH_LIMIT = 100;
 const adminCollection = db.collection('admin_list');
+const diariesCollection = db.collection('diaries');
 const notificationsCollection = db.collection('notifications');
 const AUTO_BLOCK_GOVERNANCE_SOURCE = 'block_auto';
 const AUTO_BLOCK_GOVERNANCE_TRIGGER = 'user_block';
@@ -43,6 +47,141 @@ const USER_ERROR_CODES = {
 
 const getDocData = (result) =>
   result && result.data ? (Array.isArray(result.data) ? result.data[0] : result.data) : null;
+
+const buildCloudFileId = (cloudPath, bucket = DEFAULT_STORAGE_BUCKET) => {
+  if (!cloudPath || typeof cloudPath !== 'string') {
+    return '';
+  }
+
+  const normalizedPath = cloudPath.replace(/^\/+/, '');
+  if (!normalizedPath) {
+    return '';
+  }
+
+  return `cloud://${CURRENT_ENV_ID}.${bucket}/${normalizedPath}`;
+};
+
+const getCloudStorageFileIdFromUrl = (value) => {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  if (value.startsWith('cloud://')) {
+    return value;
+  }
+
+  if (!/^https?:\/\//i.test(value)) {
+    return buildCloudFileId(value);
+  }
+
+  try {
+    const parsedUrl = new URL(value);
+    const cloudPath = decodeURIComponent(parsedUrl.pathname || '').replace(/^\/+/, '');
+    const bucket = parsedUrl.hostname.endsWith('.tcb.qcloud.la')
+      ? parsedUrl.hostname.replace(/\.tcb\.qcloud\.la$/i, '')
+      : DEFAULT_STORAGE_BUCKET;
+    return buildCloudFileId(cloudPath, bucket);
+  } catch (error) {
+    console.error('Parse cloud storage file id failed:', value, error);
+    return '';
+  }
+};
+
+const collectDiaryMediaFileList = (diary) => {
+  if (!diary || !Array.isArray(diary.media) || diary.media.length === 0) {
+    return [];
+  }
+
+  const fileSet = new Set();
+
+  diary.media.forEach((item) => {
+    [item && item.uri, item && item.thumbnail, item && item.livePhotoVideoUri].forEach((value) => {
+      const filePath = getCloudStorageFileIdFromUrl(value);
+
+      // 只清理日记目录下的附件，避免误删到其他业务目录。
+      if (filePath && filePath.includes('/diary/')) {
+        fileSet.add(filePath);
+      }
+    });
+  });
+
+  return [...fileSet];
+};
+
+const deleteDiaryMediaFileList = async (fileList) => {
+  if (!Array.isArray(fileList) || fileList.length === 0) {
+    return;
+  }
+
+  try {
+    const result = await app.deleteFile({
+      fileList,
+    });
+
+    const failedItems = Array.isArray(result && result.fileList)
+      ? result.fileList.filter((item) => item && item.code && item.code !== 'SUCCESS')
+      : [];
+
+    if (failedItems.length > 0) {
+      console.error('Delete diary media partially failed:', failedItems);
+      throw new Error(failedItems.map((item) => `${item.fileID}: ${item.code}`).join('; '));
+    }
+  } catch (error) {
+    console.error('Delete diary media failed:', error, fileList);
+    throw error;
+  }
+};
+
+const listAllUserDiaries = async (userId) => {
+  const diaries = [];
+  let skip = 0;
+
+  while (true) {
+    const result = await diariesCollection
+      .where({ userId })
+      .skip(skip)
+      .limit(DIARY_BATCH_LIMIT)
+      .get();
+
+    const batch = Array.isArray(result && result.data) ? result.data : [];
+    if (batch.length === 0) {
+      break;
+    }
+
+    diaries.push(...batch);
+    skip += batch.length;
+
+    if (batch.length < DIARY_BATCH_LIMIT) {
+      break;
+    }
+  }
+
+  return diaries;
+};
+
+const purgeUserDiariesAndMedia = async (userId) => {
+  const diaries = await listAllUserDiaries(userId);
+  if (diaries.length === 0) {
+    return {
+      diaryCount: 0,
+      attachmentCount: 0,
+    };
+  }
+
+  const fileSet = new Set();
+  diaries.forEach((diary) => {
+    collectDiaryMediaFileList(diary).forEach((fileId) => fileSet.add(fileId));
+  });
+
+  const fileList = [...fileSet];
+  await deleteDiaryMediaFileList(fileList);
+  await diariesCollection.where({ userId }).remove();
+
+  return {
+    diaryCount: diaries.length,
+    attachmentCount: fileList.length,
+  };
+};
 
 const normalizeRelationIds = (items) =>
   Array.isArray(items)
@@ -928,6 +1067,8 @@ const deactivateAccount = async (data) => {
     const userResp = await getUser({ _id });
     const originalPhone = userResp.data && userResp.data.phone ? userResp.data.phone : _id;
 
+    const purgeResult = await purgeUserDiariesAndMedia(_id);
+
     // Soft delete the user and scramble the phone number to free it up for re-registration
     await db.collection('users').doc(_id).update({
       isDelete: true,
@@ -938,6 +1079,7 @@ const deactivateAccount = async (data) => {
     return {
       success: true,
       message: 'Account deactivated successfully',
+      data: purgeResult,
     };
   } catch (error) {
     console.error('Deactivate account error:', error);
