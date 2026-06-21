@@ -25,6 +25,14 @@
           "en"
         ],
         "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSExceptionDomains": {
+            "ip-api.com": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": true
+            }
+          }
+        },
         "NSPhotoLibraryUsageDescription": "毛球日记需要访问您的相册以选择照片和视频，记录美好时光",
         "NSCameraUsageDescription": "毛球日记需要使用相机拍摄照片和视频",
         "NSMicrophoneUsageDescription": "毛球日记需要访问麦克风以录制视频声音"

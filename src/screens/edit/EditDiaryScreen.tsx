@@ -68,14 +68,13 @@ const EditDiaryScreen: React.FC = () => {
   React.useEffect(() => {
     const fetchIpLocation = async () => {
       try {
-        // 使用腾讯新闻的免费接口
-        const response = await fetch('https://i.news.qq.com/api/ip2city');
+        const response = await fetch('http://ip-api.com/json?lang=zh-CN');
         const data = await response.json();
-
-        if (data.ret === 0 && data.province) {
-          // 如果是中国，显示省份；如果是国外，显示国家
-          const loc = data.country === '中国' ? data.province : data.country;
-          setIpLocation(loc);
+        if (data.status === 'success') {
+          const loc = data.countryCode === 'CN' ? data.regionName : data.country;
+          if (loc) {
+            setIpLocation(loc);
+          }
         }
       } catch (e) {
         console.log('获取 IP 属地失败:', e);
