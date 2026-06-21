@@ -26,13 +26,21 @@ import Reanimated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import ViewShot from 'react-native-view-shot';
 
+import { useAuthStore } from '../../store/authStore';
 import { MediaResource } from '../../types';
 
 const { width, height } = Dimensions.get('window');
+const WATERMARK_EXPORT_MAX_WIDTH = 1440;
 const { LivePhotoSaver } = NativeModules as {
   LivePhotoSaver?: {
-    saveLivePhoto: (imageUri: string, videoUri: string) => Promise<boolean>;
+    saveLivePhoto: (
+      imageUri: string,
+      videoUri: string,
+      brandText: string,
+      userText: string
+    ) => Promise<boolean>;
   };
 };
 
@@ -41,6 +49,12 @@ interface MediaPreviewerProps {
   media: MediaResource[];
   initialIndex: number;
   onClose: () => void;
+}
+
+interface WatermarkCaptureTask {
+  uri: string;
+  width: number;
+  height: number;
 }
 
 const clamp = (value: number, min: number, max: number) => {
@@ -295,10 +309,14 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   initialIndex,
   onClose,
 }) => {
+  const user = useAuthStore((state) => state.user);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isSavingImage, setIsSavingImage] = useState(false);
+  const [watermarkTask, setWatermarkTask] = useState<WatermarkCaptureTask | null>(null);
   const isZoomedRef = useRef(false);
+  const watermarkViewShotRef = useRef<ViewShot>(null);
+  const watermarkReadyResolverRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     isZoomedRef.current = isZoomed;
@@ -401,6 +419,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   const currentItem = media[currentIndex];
   const showZoomHint = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
   const canDownloadCurrentImage = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
+  const watermarkUserName = user?.nickname || user?.phone || '毛球用户';
 
   const getExtensionFromUri = (uri?: string) => {
     if (!uri) {
@@ -443,15 +462,60 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     return 'mov';
   };
 
-  const saveRegularImageToLibrary = async (item: MediaResource) => {
-    const fileName = `maoqiu-diary-${Date.now()}.${getDownloadFileExtension(item)}`;
-    const downloadedFile = await File.downloadFileAsync(item.uri, new File(Paths.cache, fileName));
+  const getRemoteImageSize = async (uri: string) =>
+    new Promise<{ width: number; height: number }>((resolve, reject) => {
+      Image.getSize(
+        uri,
+        (imageWidth, imageHeight) => resolve({ width: imageWidth, height: imageHeight }),
+        reject
+      );
+    });
+
+  const waitForWatermarkRender = async () => {
+    await new Promise<void>((resolve) => {
+      let finished = false;
+      const finish = () => {
+        if (finished) {
+          return;
+        }
+        finished = true;
+        watermarkReadyResolverRef.current = null;
+        resolve();
+      };
+
+      watermarkReadyResolverRef.current = finish;
+      setTimeout(finish, 800);
+    });
+  };
+
+  const buildWatermarkedImage = async (item: MediaResource) => {
+    const { width: imageWidth, height: imageHeight } = await getRemoteImageSize(item.uri);
+    const exportWidth = Math.min(imageWidth, WATERMARK_EXPORT_MAX_WIDTH);
+    const exportHeight = Math.max(1, Math.round((imageHeight / imageWidth) * exportWidth));
+
+    setWatermarkTask({
+      uri: item.uri,
+      width: exportWidth,
+      height: exportHeight,
+    });
 
     try {
-      await MediaLibrary.saveToLibraryAsync(downloadedFile.uri);
+      await waitForWatermarkRender();
+      const captureUri = await watermarkViewShotRef.current?.capture?.();
+
+      if (!captureUri) {
+        throw new Error('watermark_capture_failed');
+      }
+
+      return captureUri;
     } finally {
-      downloadedFile.delete();
+      setWatermarkTask(null);
     }
+  };
+
+  const saveRegularImageToLibrary = async (item: MediaResource) => {
+    const watermarkedUri = await buildWatermarkedImage(item);
+    await MediaLibrary.saveToLibraryAsync(watermarkedUri);
   };
 
   const saveLivePhotoToLibrary = async (item: MediaResource) => {
@@ -474,7 +538,12 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     );
 
     try {
-      await LivePhotoSaver.saveLivePhoto(imageFile.uri, videoFile.uri);
+      await LivePhotoSaver.saveLivePhoto(
+        imageFile.uri,
+        videoFile.uri,
+        '毛球日记',
+        `用户：${watermarkUserName}`
+      );
     } finally {
       imageFile.delete();
       videoFile.delete();
@@ -518,15 +587,6 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Animated.View style={[styles.container, { opacity: bgOpacity }]}>
         <View style={styles.header}>
-          {canDownloadCurrentImage ? (
-            <Pressable onPress={handleDownloadImage} style={styles.downloadButton} disabled={isSavingImage}>
-              {isSavingImage ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <Ionicons name="download-outline" size={24} color="#FFF" />
-              )}
-            </Pressable>
-          ) : null}
           <Text style={styles.counterText}>
             {media.length ? `${currentIndex + 1} / ${media.length}` : '0 / 0'}
           </Text>
@@ -570,6 +630,44 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
             <Text style={styles.zoomHintText}>双指缩放，双击还原</Text>
           </View>
         ) : null}
+
+        {canDownloadCurrentImage ? (
+          <Pressable onPress={handleDownloadImage} style={styles.floatingDownloadButton} disabled={isSavingImage}>
+            {isSavingImage ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Ionicons name="download-outline" size={22} color="#FFF" />
+            )}
+          </Pressable>
+        ) : null}
+
+        {watermarkTask ? (
+          <View style={styles.hiddenWatermarkContainer} pointerEvents="none">
+            <ViewShot
+              ref={watermarkViewShotRef}
+              options={{ format: 'jpg', quality: 0.95 }}
+              style={{ width: watermarkTask.width, height: watermarkTask.height }}
+            >
+              <View style={[styles.watermarkCanvas, { width: watermarkTask.width, height: watermarkTask.height }]}>
+                <Image
+                  source={{ uri: watermarkTask.uri }}
+                  style={styles.watermarkImage}
+                  resizeMode="cover"
+                  onLoadEnd={() => watermarkReadyResolverRef.current?.()}
+                  onError={() => watermarkReadyResolverRef.current?.()}
+                />
+                <View style={styles.watermarkOverlay}>
+                  <View style={styles.watermarkBadge}>
+                    <View style={styles.watermarkBadgeDot} />
+                    <Text style={styles.watermarkBadgeText}>毛球日记</Text>
+                  </View>
+
+                  <Text style={styles.watermarkUser}>用户：{watermarkUserName}</Text>
+                </View>
+              </View>
+            </ViewShot>
+          </View>
+        ) : null}
       </Animated.View>
     </Modal>
   );
@@ -601,10 +699,16 @@ const styles = StyleSheet.create({
     right: 20,
     padding: 8,
   },
-  downloadButton: {
+  floatingDownloadButton: {
     position: 'absolute',
-    left: 20,
-    padding: 8,
+    right: 20,
+    bottom: 84,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   itemContainer: {
     width,
@@ -663,5 +767,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
+  },
+  hiddenWatermarkContainer: {
+    position: 'absolute',
+    left: -10000,
+    top: -10000,
+  },
+  watermarkCanvas: {
+    backgroundColor: '#000',
+  },
+  watermarkImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  watermarkOverlay: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    minWidth: 148,
+    maxWidth: 220,
+    backgroundColor: 'rgba(17,17,17,0.48)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  watermarkBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
+  watermarkBadgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F8D26A',
+    marginRight: 6,
+  },
+  watermarkBadgeText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
+  watermarkUser: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 4,
   },
 });

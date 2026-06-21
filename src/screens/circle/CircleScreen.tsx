@@ -158,7 +158,7 @@ const CircleScreen: React.FC = () => {
                 <View style={[styles.timeLocationRow, { justifyContent: 'space-between' }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={[styles.time, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                      {FormatUtil.formatRelativeTime(item.createdAt || item.date)}
+                      {FormatUtil.formatRelativeTime(item.publicPublishedAt || item.createdAt || item.date)}
                     </Text>
                     {/* ip location */}
                     {item.ipLocation && (
