@@ -76,8 +76,7 @@ const EditDiaryScreen: React.FC = () => {
             setIpLocation(loc);
           }
         }
-      } catch (e) {
-        console.log('获取 IP 属地失败:', e);
+      } catch {
       }
     };
     fetchIpLocation();

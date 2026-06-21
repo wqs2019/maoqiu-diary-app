@@ -35,6 +35,11 @@ const { width, height } = Dimensions.get('window');
 const WATERMARK_EXPORT_MAX_WIDTH = 1440;
 const { LivePhotoSaver } = NativeModules as {
   LivePhotoSaver?: {
+    saveVideo: (
+      videoUri: string,
+      brandText: string,
+      userText: string
+    ) => Promise<boolean>;
     saveLivePhoto: (
       imageUri: string,
       videoUri: string,
@@ -312,7 +317,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   const user = useAuthStore((state) => state.user);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
-  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [isSavingMedia, setIsSavingMedia] = useState(false);
   const [watermarkTask, setWatermarkTask] = useState<WatermarkCaptureTask | null>(null);
   const isZoomedRef = useRef(false);
   const watermarkViewShotRef = useRef<ViewShot>(null);
@@ -418,7 +423,8 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
 
   const currentItem = media[currentIndex];
   const showZoomHint = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
-  const canDownloadCurrentImage = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
+  const canDownloadCurrentMedia =
+    currentItem?.type === 'image' || currentItem?.type === 'livePhoto' || currentItem?.type === 'video';
   const watermarkUserName = user?.nickname || user?.phone || '毛球用户';
 
   const getExtensionFromUri = (uri?: string) => {
@@ -460,6 +466,27 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     }
 
     return 'mov';
+  };
+
+  const getVideoFileExtension = (item: MediaResource) => {
+    const matchedExtension = getExtensionFromUri(item.uri);
+    if (matchedExtension) {
+      return matchedExtension;
+    }
+
+    if (item.mimeType?.includes('quicktime')) {
+      return 'mov';
+    }
+
+    if (item.mimeType?.includes('mp4')) {
+      return 'mp4';
+    }
+
+    if (item.mimeType?.includes('3gpp')) {
+      return '3gp';
+    }
+
+    return 'mp4';
   };
 
   const getRemoteImageSize = async (uri: string) =>
@@ -550,36 +577,62 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     }
   };
 
-  const handleDownloadImage = async () => {
-    if (!currentItem || !canDownloadCurrentImage || isSavingImage) {
+  const saveVideoToLibrary = async (item: MediaResource) => {
+    const timestamp = Date.now();
+    const downloadedVideo = await File.downloadFileAsync(
+      item.uri,
+      new File(Paths.cache, `maoqiu-diary-video-${timestamp}.${getVideoFileExtension(item)}`)
+    );
+
+    try {
+      if (Platform.OS === 'ios' && LivePhotoSaver?.saveVideo) {
+        await LivePhotoSaver.saveVideo(
+          downloadedVideo.uri,
+          '毛球日记',
+          `用户：${watermarkUserName}`
+        );
+      } else {
+        await MediaLibrary.saveToLibraryAsync(downloadedVideo.uri);
+      }
+    } finally {
+      downloadedVideo.delete();
+    }
+  };
+
+  const handleDownloadMedia = async () => {
+    if (!currentItem || !canDownloadCurrentMedia || isSavingMedia) {
       return;
     }
 
     try {
-      setIsSavingImage(true);
+      setIsSavingMedia(true);
 
       const permission = await MediaLibrary.requestPermissionsAsync(true);
       if (!permission.granted) {
-        Alert.alert('无法保存', '请先允许毛球日记访问相册，以便保存图片。');
+        Alert.alert('无法保存', '请先允许毛球日记访问相册，以便保存图片或视频。');
         return;
       }
 
-      if (currentItem.type === 'livePhoto' && currentItem.livePhotoVideoUri) {
+      if (currentItem.type === 'video') {
+        await saveVideoToLibrary(currentItem);
+        Alert.alert('保存成功', '视频已保存到系统相册。');
+      } else if (currentItem.type === 'livePhoto' && currentItem.livePhotoVideoUri) {
         await saveLivePhotoToLibrary(currentItem);
         Alert.alert('保存成功', '实况图片已保存到系统相册。');
       } else {
         await saveRegularImageToLibrary(currentItem);
         Alert.alert('保存成功', '图片已保存到系统相册。');
       }
-    } catch (error) {
-      console.warn('保存图片失败:', error);
-      if (currentItem.type === 'livePhoto') {
+    } catch {
+      if (currentItem.type === 'video') {
+        Alert.alert('保存失败', '下载视频失败，请稍后重试。');
+      } else if (currentItem.type === 'livePhoto') {
         Alert.alert('保存失败', '保存实况图片失败，请稍后重试。');
       } else {
         Alert.alert('保存失败', '下载图片失败，请稍后重试。');
       }
     } finally {
-      setIsSavingImage(false);
+      setIsSavingMedia(false);
     }
   };
 
@@ -631,9 +684,9 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
           </View>
         ) : null}
 
-        {canDownloadCurrentImage ? (
-          <Pressable onPress={handleDownloadImage} style={styles.floatingDownloadButton} disabled={isSavingImage}>
-            {isSavingImage ? (
+        {canDownloadCurrentMedia ? (
+          <Pressable onPress={handleDownloadMedia} style={styles.floatingDownloadButton} disabled={isSavingMedia}>
+            {isSavingMedia ? (
               <ActivityIndicator size="small" color="#FFF" />
             ) : (
               <Ionicons name="download-outline" size={22} color="#FFF" />
