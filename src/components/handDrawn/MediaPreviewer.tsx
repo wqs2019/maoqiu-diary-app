@@ -1,9 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Video, ResizeMode, Audio } from 'expo-av';
+import { File, Paths } from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
+  NativeModules,
+  Platform,
   View,
   StyleSheet,
   Text,
@@ -25,6 +30,11 @@ import Reanimated, {
 import { MediaResource } from '../../types';
 
 const { width, height } = Dimensions.get('window');
+const { LivePhotoSaver } = NativeModules as {
+  LivePhotoSaver?: {
+    saveLivePhoto: (imageUri: string, videoUri: string) => Promise<boolean>;
+  };
+};
 
 interface MediaPreviewerProps {
   visible: boolean;
@@ -287,6 +297,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [isSavingImage, setIsSavingImage] = useState(false);
   const isZoomedRef = useRef(false);
 
   useEffect(() => {
@@ -389,11 +400,133 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
 
   const currentItem = media[currentIndex];
   const showZoomHint = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
+  const canDownloadCurrentImage = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
+
+  const getExtensionFromUri = (uri?: string) => {
+    if (!uri) {
+      return undefined;
+    }
+
+    const cleanUri = uri.split('?')[0];
+    const matchedExtension = cleanUri.match(/\.([a-zA-Z0-9]+)$/)?.[1]?.toLowerCase();
+    return matchedExtension;
+  };
+
+  const getDownloadFileExtension = (item: MediaResource) => {
+    const matchedExtension = getExtensionFromUri(item.uri);
+
+    if (matchedExtension) {
+      return matchedExtension;
+    }
+
+    if (item.mimeType?.includes('png')) {
+      return 'png';
+    }
+
+    if (item.mimeType?.includes('webp')) {
+      return 'webp';
+    }
+
+    if (item.mimeType?.includes('heic')) {
+      return 'heic';
+    }
+
+    return 'jpg';
+  };
+
+  const getLivePhotoVideoExtension = (item: MediaResource) => {
+    const matchedExtension = getExtensionFromUri(item.livePhotoVideoUri);
+    if (matchedExtension) {
+      return matchedExtension;
+    }
+
+    return 'mov';
+  };
+
+  const saveRegularImageToLibrary = async (item: MediaResource) => {
+    const fileName = `maoqiu-diary-${Date.now()}.${getDownloadFileExtension(item)}`;
+    const downloadedFile = await File.downloadFileAsync(item.uri, new File(Paths.cache, fileName));
+
+    try {
+      await MediaLibrary.saveToLibraryAsync(downloadedFile.uri);
+    } finally {
+      downloadedFile.delete();
+    }
+  };
+
+  const saveLivePhotoToLibrary = async (item: MediaResource) => {
+    if (!item.livePhotoVideoUri) {
+      throw new Error('live_photo_video_missing');
+    }
+
+    if (Platform.OS !== 'ios' || !LivePhotoSaver?.saveLivePhoto) {
+      throw new Error('live_photo_not_supported');
+    }
+
+    const timestamp = Date.now();
+    const imageFile = await File.downloadFileAsync(
+      item.uri,
+      new File(Paths.cache, `maoqiu-diary-live-${timestamp}.${getDownloadFileExtension(item)}`)
+    );
+    const videoFile = await File.downloadFileAsync(
+      item.livePhotoVideoUri,
+      new File(Paths.cache, `maoqiu-diary-live-${timestamp}.${getLivePhotoVideoExtension(item)}`)
+    );
+
+    try {
+      await LivePhotoSaver.saveLivePhoto(imageFile.uri, videoFile.uri);
+    } finally {
+      imageFile.delete();
+      videoFile.delete();
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    if (!currentItem || !canDownloadCurrentImage || isSavingImage) {
+      return;
+    }
+
+    try {
+      setIsSavingImage(true);
+
+      const permission = await MediaLibrary.requestPermissionsAsync(true);
+      if (!permission.granted) {
+        Alert.alert('无法保存', '请先允许毛球日记访问相册，以便保存图片。');
+        return;
+      }
+
+      if (currentItem.type === 'livePhoto' && currentItem.livePhotoVideoUri) {
+        await saveLivePhotoToLibrary(currentItem);
+        Alert.alert('保存成功', '实况图片已保存到系统相册。');
+      } else {
+        await saveRegularImageToLibrary(currentItem);
+        Alert.alert('保存成功', '图片已保存到系统相册。');
+      }
+    } catch (error) {
+      console.warn('保存图片失败:', error);
+      if (currentItem.type === 'livePhoto') {
+        Alert.alert('保存失败', '保存实况图片失败，请稍后重试。');
+      } else {
+        Alert.alert('保存失败', '下载图片失败，请稍后重试。');
+      }
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Animated.View style={[styles.container, { opacity: bgOpacity }]}>
         <View style={styles.header}>
+          {canDownloadCurrentImage ? (
+            <Pressable onPress={handleDownloadImage} style={styles.downloadButton} disabled={isSavingImage}>
+              {isSavingImage ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Ionicons name="download-outline" size={24} color="#FFF" />
+              )}
+            </Pressable>
+          ) : null}
           <Text style={styles.counterText}>
             {media.length ? `${currentIndex + 1} / ${media.length}` : '0 / 0'}
           </Text>
@@ -466,6 +599,11 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     right: 20,
+    padding: 8,
+  },
+  downloadButton: {
+    position: 'absolute',
+    left: 20,
     padding: 8,
   },
   itemContainer: {
