@@ -54,6 +54,7 @@ interface MediaPreviewerProps {
   media: MediaResource[];
   initialIndex: number;
   onClose: () => void;
+  watermarkOwnerName?: string;
 }
 
 interface WatermarkCaptureTask {
@@ -313,6 +314,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   media,
   initialIndex,
   onClose,
+  watermarkOwnerName,
 }) => {
   const user = useAuthStore((state) => state.user);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -425,7 +427,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   const showZoomHint = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
   const canDownloadCurrentMedia =
     currentItem?.type === 'image' || currentItem?.type === 'livePhoto' || currentItem?.type === 'video';
-  const watermarkUserName = user?.nickname || user?.phone || '毛球用户';
+  const watermarkUserName = watermarkOwnerName || user?.nickname || user?.phone || '毛球用户';
 
   const getExtensionFromUri = (uri?: string) => {
     if (!uri) {
@@ -709,12 +711,15 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
                   onLoadEnd={() => watermarkReadyResolverRef.current?.()}
                   onError={() => watermarkReadyResolverRef.current?.()}
                 />
-                <View style={styles.watermarkOverlay}>
-                  <View style={styles.watermarkBadge}>
-                    <View style={styles.watermarkBadgeDot} />
-                    <Text style={styles.watermarkBadgeText}>毛球日记</Text>
-                  </View>
-
+                <View
+                  style={[
+                    styles.watermarkOverlay,
+                    {
+                      maxWidth: Math.min(Math.max(watermarkTask.width * 0.72, 160), 280),
+                    },
+                  ]}
+                >
+                  <Text style={styles.watermarkTitle}>毛球日记</Text>
                   <Text style={styles.watermarkUser}>用户：{watermarkUserName}</Text>
                 </View>
               </View>
@@ -836,47 +841,28 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 24,
     bottom: 24,
-    minWidth: 148,
-    maxWidth: 220,
-    backgroundColor: 'rgba(17,17,17,0.48)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    minWidth: 120,
+    alignItems: 'flex-start',
   },
-  watermarkBadge: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginBottom: 8,
-  },
-  watermarkBadgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#F8D26A',
-    marginRight: 6,
-  },
-  watermarkBadgeText: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.6,
+  watermarkTitle: {
+    color: '#FFF',
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '800',
+    width: '100%',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   watermarkUser: {
     color: 'rgba(255,255,255,0.82)',
     fontSize: 12,
     lineHeight: 16,
-    marginTop: 4,
+    marginTop: 6,
+    width: '100%',
+    flexShrink: 1,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
   },
 });

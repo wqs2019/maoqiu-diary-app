@@ -329,6 +329,7 @@ const DiaryDetailScreen: React.FC = () => {
               <NineGridMedia
                 media={diary.media}
                 containerWidth={width - 40}
+                watermarkOwnerName={diary.authorInfo?.nickname}
               />
             </View>
           )}

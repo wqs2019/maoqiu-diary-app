@@ -204,6 +204,7 @@ const CircleScreen: React.FC = () => {
                 <NineGridMedia
                   media={item.media!}
                   containerWidth={CONTENT_WIDTH - 32} // 减去内边距 16 * 2
+                  watermarkOwnerName={item.authorInfo?.nickname}
                 />
               </View>
             )}

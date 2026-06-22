@@ -616,6 +616,7 @@ const UserProfileScreen: React.FC = () => {
                 <NineGridMedia
                   media={item.media!}
                   containerWidth={CONTENT_WIDTH - 32}
+                  watermarkOwnerName={item.authorInfo?.nickname}
                 />
               </View>
             )}

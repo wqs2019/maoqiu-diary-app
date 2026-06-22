@@ -12,6 +12,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 interface NineGridMediaProps {
   media: MediaResource[];
   containerWidth?: number;
+  watermarkOwnerName?: string;
 }
 
 const IMAGE_MARGIN = 4;
@@ -21,6 +22,7 @@ const IMAGE_MARGIN = 4;
 export const NineGridMedia: React.FC<NineGridMediaProps> = ({
   media,
   containerWidth = SCREEN_WIDTH - 64, // 默认宽度减去一些 padding
+  watermarkOwnerName,
 }) => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -92,6 +94,7 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
         visible={previewVisible}
         media={media}
         initialIndex={previewIndex}
+        watermarkOwnerName={watermarkOwnerName}
         onClose={() => {
           setPreviewVisible(false);
         }}

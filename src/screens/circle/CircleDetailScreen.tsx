@@ -363,6 +363,7 @@ const CircleDetailScreen: React.FC = () => {
             <NineGridMedia
               media={diary.media}
               containerWidth={width - 32} // 左右各 16 的 padding
+              watermarkOwnerName={diary.authorInfo?.nickname}
             />
           </View>
         )}
