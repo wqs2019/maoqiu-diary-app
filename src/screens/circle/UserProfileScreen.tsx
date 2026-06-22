@@ -412,13 +412,6 @@ const UserProfileScreen: React.FC = () => {
 
 
   const renderHeader = () => {
-    if (profileLoading) {
-      return (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={HEALING_COLORS.pink[400]} />
-        </View>
-      );
-    }
     if (!profile) return null;
 
     const isSelf = currentUser?._id === targetUserId;
@@ -539,35 +532,38 @@ const UserProfileScreen: React.FC = () => {
 
         {/* Tab 栏（仅自己可见） */}
         {isSelf && (
-          <View style={[styles.tabContainer, { borderBottomColor: isDark ? '#333' : '#E5E7EB' }]}>
+          <View style={styles.tabContainer}>
             <TouchableOpacity
-              style={[styles.tabItem, activeTab === 'public' && { borderBottomColor: HEALING_COLORS.pink[500] }]}
+              style={styles.tabItem}
               onPress={() => setActiveTab('public')}
             >
-              <Text style={[styles.tabText, { color: isDark ? '#AAA' : '#6B7280' }, activeTab === 'public' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
+              <Text style={[styles.tabText, { color: isDark ? '#E5E7EB' : '#374151' }, activeTab === 'public' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
                 我的公开
               </Text>
+              {activeTab === 'public' && <View style={styles.activeTabIndicator} />}
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.tabItem, activeTab === 'commented' && { borderBottomColor: HEALING_COLORS.pink[500] }]}
+              style={styles.tabItem}
               onPress={() => setActiveTab('commented')}
             >
-              <Text style={[styles.tabText, { color: isDark ? '#AAA' : '#6B7280' }, activeTab === 'commented' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
+              <Text style={[styles.tabText, { color: isDark ? '#E5E7EB' : '#374151' }, activeTab === 'commented' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
                 评论
               </Text>
+              {activeTab === 'commented' && <View style={styles.activeTabIndicator} />}
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.tabItem, activeTab === 'liked' && { borderBottomColor: HEALING_COLORS.pink[500] }]}
+              style={styles.tabItem}
               onPress={() => setActiveTab('liked')}
             >
-              <Text style={[styles.tabText, { color: isDark ? '#AAA' : '#6B7280' }, activeTab === 'liked' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
+              <Text style={[styles.tabText, { color: isDark ? '#E5E7EB' : '#374151' }, activeTab === 'liked' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
                 赞过
               </Text>
+              {activeTab === 'liked' && <View style={styles.activeTabIndicator} />}
             </TouchableOpacity>
           </View>
         )}
 
-        <View style={{ height: 8, backgroundColor }} />
+        <View style={{ height: 2, backgroundColor }} />
       </View>
     );
   };
@@ -666,6 +662,7 @@ const UserProfileScreen: React.FC = () => {
   };
 
   const backgroundColor = isDark ? '#121212' : '#F9FAFB';
+  const headerBackgroundFadeOpacity = isDark ? 0.92 : 0.6;
   const hasBackground = !!(!profileLoading && profile?.profileBackground);
   const isSelf = currentUser?._id === targetUserId;
   const shouldHideContent = !isSelf && !!(profile?.isBlockedByCurrentUser || profile?.blockedByTargetUser);
@@ -706,7 +703,7 @@ const UserProfileScreen: React.FC = () => {
               <Defs>
                 <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
                   <Stop offset="0" stopColor={backgroundColor} stopOpacity="0" />
-                  <Stop offset="1" stopColor={backgroundColor} stopOpacity="1" />
+                  <Stop offset="1" stopColor={backgroundColor} stopOpacity={headerBackgroundFadeOpacity} />
                 </LinearGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="url(#grad)" />
@@ -716,7 +713,11 @@ const UserProfileScreen: React.FC = () => {
       )}
       
 
-      {errorMsg ? (
+      {profileLoading ? (
+        <View style={[styles.screenLoadingContainer, { backgroundColor }]}>
+          <ActivityIndicator size="large" color={HEALING_COLORS.pink[400]} />
+        </View>
+      ) : errorMsg ? (
         <View style={styles.errorContainer}>
           <Ionicons name="person-circle-outline" size={64} color={isDark ? '#555' : '#D1D5DB'} />
           <Text style={[styles.errorText, { color: isDark ? '#AAA' : '#6B7280' }]}>{errorMsg}</Text>
@@ -1314,17 +1315,24 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    borderBottomWidth: 1,
     marginTop: 12,
   },
   tabItem: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    position: 'relative',
+    alignItems: 'center',
   },
   tabText: {
     fontSize: 15,
+  },
+  activeTabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    width: 60,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: HEALING_COLORS.pink[500],
   },
   listContent: {
     paddingBottom: 40,
@@ -1390,6 +1398,11 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  screenLoadingContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

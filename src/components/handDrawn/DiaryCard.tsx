@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   dateText: {
-    fontSize: 12,
+    fontSize: 11,
     color: HEALING_COLORS.gray[500],
     fontWeight: '500',
     marginLeft: 4,
