@@ -141,6 +141,7 @@ export interface Diary {
   tags?: TagType[];
   createdAt: string;
   updatedAt: string;
+  publicPublishedAt?: string | null;
   isFavorite?: boolean;
   isPrivate?: boolean;
   isPublic?: boolean;

@@ -2,7 +2,7 @@
   "expo": {
     "name": "毛球日记",
     "slug": "maoqiu-diary",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "scheme": "maoqiudiary",
@@ -25,7 +25,16 @@
           "en"
         ],
         "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSExceptionDomains": {
+            "ip-api.com": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": true
+            }
+          }
+        },
         "NSPhotoLibraryUsageDescription": "毛球日记需要访问您的相册以选择照片和视频，记录美好时光",
+        "NSPhotoLibraryAddUsageDescription": "毛球日记需要访问您的相册以保存下载的图片",
         "NSCameraUsageDescription": "毛球日记需要使用相机拍摄照片和视频",
         "NSMicrophoneUsageDescription": "毛球日记需要访问麦克风以录制视频声音"
       },
@@ -55,6 +64,13 @@
       "favicon": "./assets/logo.png"
     },
     "plugins": [
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "毛球日记需要访问您的相册以选择照片和视频，记录美好时光",
+          "savePhotosPermission": "毛球日记需要访问您的相册以保存下载的图片"
+        }
+      ],
       [
         "expo-image-picker",
         {

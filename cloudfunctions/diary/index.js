@@ -21,6 +21,7 @@ const notificationsCollection = db.collection('notifications');
 const USER_ERROR_CODES = {
   USER_FROZEN: 'USER_FROZEN',
 };
+let publicPublishedAtBackfillAttempted = false;
 
 const sendPushNotification = (expoPushToken, title, body, data = {}) =>
   new Promise((resolve, reject) => {
@@ -233,6 +234,56 @@ const deleteDiaryMediaFileList = async (fileList) => {
   } catch (error) {
     console.error('Delete diary media failed:', error, fileList);
     throw error;
+  }
+};
+
+const backfillPublicPublishedAtForLegacyDiaries = async () => {
+  if (publicPublishedAtBackfillAttempted) {
+    return;
+  }
+
+  publicPublishedAtBackfillAttempted = true;
+
+  try {
+    const batchSize = 100;
+    const maxBatches = 20;
+
+    for (let batchIndex = 0; batchIndex < maxBatches; batchIndex++) {
+      const result = await diariesCollection
+        .where({ isPublic: true })
+        .field({
+          _id: true,
+          createdAt: true,
+          publicPublishedAt: true,
+        })
+        .orderBy('createdAt', 'desc')
+        .skip(batchIndex * batchSize)
+        .limit(batchSize)
+        .get();
+
+      const diaries = result.data || [];
+      if (diaries.length === 0) {
+        break;
+      }
+
+      const legacyPublicDiaries = diaries.filter((diary) => !diary.publicPublishedAt && diary.createdAt);
+
+      if (legacyPublicDiaries.length > 0) {
+        await Promise.all(
+          legacyPublicDiaries.map((diary) =>
+            diariesCollection.doc(diary._id).update({
+              publicPublishedAt: diary.createdAt,
+            })
+          )
+        );
+      }
+
+      if (diaries.length < batchSize) {
+        break;
+      }
+    }
+  } catch (error) {
+    console.error('Backfill publicPublishedAt failed:', error);
   }
 };
 
@@ -683,6 +734,7 @@ const createDiary = async (data) => {
       tags: tags || [],
       media: media || [], // 保存 media 字段
       isPublic: isPublic || false, // 世界功能
+      publicPublishedAt: isPublic ? db.serverDate() : null,
       // 扩展字段（预留，后续实现）
       isFavorite: false, // 收藏功能
       isPrivate: data.isPrivate || false, // TODO: 私密日记 - 需要密码查看，共享日记本中对伴侣不可见
@@ -716,6 +768,7 @@ const createDiary = async (data) => {
         media,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        publicPublishedAt: isPublic ? new Date().toISOString() : null,
         isFavorite: false,
         isPrivate: data.isPrivate || false,
         authorInfo: data.authorInfo || null,
@@ -784,8 +837,12 @@ const updateDiary = async (data) => {
       HIDDEN_MODERATION_STATUSES.includes(diaryData.moderationStatus) &&
       hasModerationRelevantChanges(updateData);
 
+    const shouldSetPublicPublishedAt =
+      updateData.isPublic === true && diaryData.isPublic !== true && !diaryData.publicPublishedAt;
+
     await diariesCollection.doc(_id).update({
       ...updateData,
+      ...(shouldSetPublicPublishedAt ? { publicPublishedAt: db.serverDate() } : {}),
       moderationStatus: shouldTriggerReReview ? 'pending_recheck' : diaryData.moderationStatus,
       reReviewRequestedAt: shouldTriggerReReview ? db.serverDate() : diaryData.reReviewRequestedAt || null,
       updatedAt: db.serverDate(),
@@ -1027,11 +1084,16 @@ const getDiaryList = async (data) => {
 
     console.log('Query List finalQuery:', JSON.stringify(finalQuery));
 
+    const shouldSortByPublicPublishedAt = isPublic === true;
+    if (shouldSortByPublicPublishedAt) {
+      await backfillPublicPublishedAtForLegacyDiaries();
+    }
+
     // 获取数据
     const result = await db
       .collection('diaries')
       .where(finalQuery)
-      .orderBy('date', 'desc')
+      .orderBy(shouldSortByPublicPublishedAt ? 'publicPublishedAt' : 'date', 'desc')
       .skip(skip)
       .limit(pageSize)
       .get();
