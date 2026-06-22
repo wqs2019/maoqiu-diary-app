@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Screens
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -121,6 +122,7 @@ const AuthNavigator = () => (
 
 const MainNavigator = () => {
   const { themeName, colors } = useAppTheme();
+  const { t } = useTranslation();
   const appConfig = useAppStore((state) => state.appConfig);
   const user = useAuthStore((state) => state.user);
   const circleUnreadCount = useNotificationStore((state) => state.circleUnreadCount);
@@ -202,27 +204,28 @@ const MainNavigator = () => {
         },
       })}
     >
-      <MainTab.Screen name="Home" component={HomeScreen} options={{ title: '足迹' }} />
+      <MainTab.Screen name="Home" component={HomeScreen} options={{ title: t('navigation.tabs.home') }} />
       {shouldShowCircleTab && (
-        <MainTab.Screen name="Circle" component={CircleScreen} options={{ title: '圈子' }} />
+        <MainTab.Screen name="Circle" component={CircleScreen} options={{ title: t('navigation.tabs.circle') }} />
       )}
-      <MainTab.Screen name="Category" component={CategoryScreen} options={{ title: '分类' }} />
+      <MainTab.Screen name="Category" component={CategoryScreen} options={{ title: t('navigation.tabs.category') }} />
       {appConfig?.show_ai_chat !== false && (
         <MainTab.Screen
           name="AI"
           component={AIScreen}
           options={{
-            title: 'AI问答',
+            title: t('navigation.tabs.ai'),
             tabBarStyle: { display: 'none' },
           }}
         />
       )}
-      <MainTab.Screen name="Mine" component={MineScreen} options={{ title: '我的' }} />
+      <MainTab.Screen name="Mine" component={MineScreen} options={{ title: t('navigation.tabs.mine') }} />
     </MainTab.Navigator>
   );
 };
 
 export const RootNavigator = () => {
+  const { t } = useTranslation();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isFirstLaunch = useAppStore((state) => state.isFirstLaunch);
   const { colors } = useAppTheme();
@@ -238,52 +241,52 @@ export const RootNavigator = () => {
             name="EditDiary"
             component={EditDiaryScreen}
             options={{
-              title: '写日记',
+              title: t('navigation.stacks.editDiary'),
               headerShown: true,
               headerStyle: {
                 backgroundColor: colors.surface,
               },
               headerTintColor: colors.text,
-              headerBackTitle: '返回',
+              headerBackTitle: t('common.back'),
             }}
           />
           <RootStack.Screen
             name="DiaryDetail"
             component={DiaryDetailScreen}
             options={{
-              title: '日记详情',
+              title: t('navigation.stacks.diaryDetail'),
               headerShown: true,
               headerStyle: {
                 backgroundColor: colors.surface,
               },
               headerTintColor: colors.text,
-              headerBackTitle: '返回',
+              headerBackTitle: t('common.back'),
             }}
           />
           <RootStack.Screen
             name="CircleDetail"
             component={CircleDetailScreen}
             options={{
-              title: '圈子详情',
+              title: t('navigation.stacks.circleDetail'),
               headerShown: true,
               headerStyle: {
                 backgroundColor: colors.surface,
               },
               headerTintColor: colors.text,
-              headerBackTitle: '返回',
+              headerBackTitle: t('common.back'),
             }}
           />
           <RootStack.Screen
             name="CircleInteractionList"
             component={CircleInteractionListScreen}
             options={{
-              title: '互动消息',
+              title: t('navigation.stacks.circleInteractionList'),
               headerShown: true,
               headerStyle: {
                 backgroundColor: colors.surface,
               },
               headerTintColor: colors.text,
-              headerBackTitle: '返回',
+              headerBackTitle: t('common.back'),
             }}
           />
           <RootStack.Screen
@@ -297,13 +300,13 @@ export const RootNavigator = () => {
             name="ReportDiaryPicker"
             component={ReportDiaryPickerScreen}
             options={{
-              title: '选择关联笔记',
+              title: t('navigation.stacks.reportDiaryPicker'),
               headerShown: true,
               headerStyle: {
                 backgroundColor: colors.surface,
               },
               headerTintColor: colors.text,
-              headerBackTitle: '返回',
+              headerBackTitle: t('common.back'),
             }}
           />
           <RootStack.Screen
@@ -317,26 +320,26 @@ export const RootNavigator = () => {
             name="MonitoringDashboard"
             component={MonitoringDashboardScreen}
             options={{
-              title: '监控大盘',
+              title: t('navigation.stacks.monitoringDashboard'),
               headerShown: true,
               headerStyle: {
                 backgroundColor: colors.surface,
               },
               headerTintColor: colors.text,
-              headerBackTitle: '返回',
+              headerBackTitle: t('common.back'),
             }}
           />
           <RootStack.Screen
             name="SystemConfig"
             component={SystemConfigScreen}
             options={{
-              title: '系统配置',
+              title: t('navigation.stacks.systemConfig'),
               headerShown: true,
               headerStyle: {
                 backgroundColor: colors.surface,
               },
               headerTintColor: colors.text,
-              headerBackTitle: '返回',
+              headerBackTitle: t('common.back'),
             }}
           />
           <RootStack.Screen

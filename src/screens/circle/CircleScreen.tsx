@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -39,6 +40,7 @@ type CircleInteractionNotification = Notification & {
 const CircleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const circleUnreadCount = useNotificationStore((state) => state.circleUnreadCount);
   const { isDark } = useAppTheme();
@@ -101,7 +103,7 @@ const CircleScreen: React.FC = () => {
   const handleLike = (item: Diary) => {
     if (likeMutation.isGlobalMutating) return;
     if (!user) {
-      Alert.alert('提示', '请先登录！');
+      Alert.alert(t('common.tip'), t('circleScreen.loginRequired'));
       return;
     }
     const hasLiked = (item.likedUserIds || []).includes(user._id);
@@ -153,7 +155,7 @@ const CircleScreen: React.FC = () => {
               </TouchableOpacity>
               <View style={styles.headerInfo}>
                 <Text style={[styles.nickname, { color: isDark ? '#FFF' : '#111827' }]}>
-                  {item.authorInfo?.nickname || '某只毛球'}
+                  {item.authorInfo?.nickname || t('circleScreen.defaultAuthor')}
                 </Text>
                 <View style={[styles.timeLocationRow, { justifyContent: 'space-between' }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -259,23 +261,21 @@ const CircleScreen: React.FC = () => {
     >
       <View style={styles.header}>
         <View style={styles.headerTextContainer}>
-          <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>圈子</Text>
-          <Text style={[styles.headerSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>
-            探索大家分享的美好瞬间
-          </Text>
+          <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>{t('circleScreen.title')}</Text>
+          <Text style={[styles.headerSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>{t('circleScreen.subtitle')}</Text>
         </View>
         <TouchableOpacity
           style={[styles.myProfileBtn, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}
           onPress={() => {
             if (!user) {
-              Alert.alert('提示', '请先登录！');
+              Alert.alert(t('common.tip'), t('circleScreen.loginRequired'));
               return;
             }
             navigation.navigate('UserProfile', { userId: user._id });
           }}
         >
           <Ionicons name="person-circle-outline" size={20} color={isDark ? '#FFF' : '#111827'} />
-          <Text style={[styles.myProfileText, { color: isDark ? '#FFF' : '#111827' }]}>我的主页</Text>
+          <Text style={[styles.myProfileText, { color: isDark ? '#FFF' : '#111827' }]}>{t('circleScreen.myProfile')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -306,13 +306,13 @@ const CircleScreen: React.FC = () => {
           />
           <View style={styles.interactionTextContainer}>
             <Text style={[styles.interactionTitle, { color: isDark ? '#FFF1F6' : '#8A1D4F' }]}>
-              {circleUnreadCount}条新信息
+              {t('circleScreen.newMessages', { count: circleUnreadCount })}
             </Text>
             <Text
               style={[styles.interactionSubtitle, { color: isDark ? '#F6C7DA' : '#A63A68' }]}
               numberOfLines={1}
             >
-              {latestInteraction.content || '点击查看最新互动'}
+              {latestInteraction.content || t('circleScreen.latestInteractionFallback')}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={isDark ? '#FFD3E4' : '#C24B79'} />
@@ -342,7 +342,7 @@ const CircleScreen: React.FC = () => {
         <View style={styles.centerContainer}>
           <Ionicons name="globe-outline" size={48} color={isDark ? '#555' : '#D1D5DB'} />
           <Text style={[styles.emptyText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-            圈子里还没有人分享日记呢，快去成为第一个吧！
+            {t('circleScreen.empty')}
           </Text>
         </View>
       )}

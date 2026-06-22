@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -24,6 +25,7 @@ type MineScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'M
 
 const MineScreen: React.FC = () => {
   const navigation = useNavigation<MineScreenNavigationProp>();
+  const { t } = useTranslation();
   const { user, logout, fetchUserInfo } = useAuthStore();
   const insets = useSafeAreaInsets();
   const themeStyle = HAND_DRAWN_STYLES.soft; // 使用柔和手绘风格
@@ -60,10 +62,10 @@ const MineScreen: React.FC = () => {
   }, [user?._id, isFocused, refreshUnreadCount]);
 
   const handleLogout = async () => {
-    Alert.alert('退出登录', '确认退出当前账号吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('mineScreen.logoutTitle'), t('mineScreen.logoutMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '退出',
+        text: t('mineScreen.logoutConfirm'),
         style: 'destructive',
         onPress: () => {
           void logout();
@@ -219,7 +221,7 @@ const MineScreen: React.FC = () => {
                 <Text
                   style={[styles.userName, { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 }]}
                 >
-                  {user?.nickname || '毛球日记'}
+                  {user?.nickname || t('mineScreen.defaultNickname')}
                 </Text>
               </View>
               <Text
@@ -230,7 +232,7 @@ const MineScreen: React.FC = () => {
               >
                 {user?.phone
                   ? user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
-                  : '点击登录 / 注册 ✨'}
+                  : t('mineScreen.guestPhone')}
               </Text>
               {user && (
                 <View
@@ -245,7 +247,7 @@ const MineScreen: React.FC = () => {
                       { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
                     ]}
                   >
-                    来毛球日记的第 {joinDays} 天
+                    {t('mineScreen.joinDays', { days: joinDays })}
                   </Text>
                 </View>
               )}
@@ -264,7 +266,7 @@ const MineScreen: React.FC = () => {
                 style={[styles.vipBadge, { backgroundColor: isDark ? 'rgba(55,65,81,0.8)' : 'rgba(255,255,255,0.2)' }]}
               >
                 <Feather name="award" size={14} color="#FFD700" style={styles.vipBadgeIcon} />
-                <Text style={[styles.vipBadgeText, { color: '#FFD700', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]} >尊贵会员</Text>
+                <Text style={[styles.vipBadgeText, { color: '#FFD700', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]} >{t('mineScreen.vipBadge')}</Text>
                 <Feather name="chevron-right" size={14} color="#FFD700" style={{ marginLeft: 2 }} />
               </View>
             </TouchableOpacity>
@@ -301,7 +303,7 @@ const MineScreen: React.FC = () => {
                     { color: isDark ? '#FFF' : currentHealingColors.gray[800] },
                   ]}
                 >
-                  毛球日记 高级会员
+                  {t('mineScreen.vipTitle')}
                 </Text>
                 <Text
                   style={[
@@ -309,7 +311,7 @@ const MineScreen: React.FC = () => {
                     { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
                   ]}
                 >
-                  解锁创建多本日记、自定义主题、应用锁等功能
+                  {t('mineScreen.vipSubtitle')}
                 </Text>
               </View>
             </View>
@@ -319,7 +321,7 @@ const MineScreen: React.FC = () => {
                 { backgroundColor: currentHealingColors.pink[500] },
               ]}
             >
-              <Text style={styles.vipBannerButtonText}>立即开通</Text>
+              <Text style={styles.vipBannerButtonText}>{t('mineScreen.vipAction')}</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -349,7 +351,7 @@ const MineScreen: React.FC = () => {
                 { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
               ]}
             >
-              日记本
+              {t('mineScreen.stats.notebooks')}
             </Text>
           </View>
           <View
@@ -373,7 +375,7 @@ const MineScreen: React.FC = () => {
                 { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
               ]}
             >
-              日记
+              {t('mineScreen.stats.diaries')}
             </Text>
           </View>
           <View
@@ -397,7 +399,7 @@ const MineScreen: React.FC = () => {
                 { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
               ]}
             >
-              最高连续(天)
+              {t('mineScreen.stats.streak')}
             </Text>
           </View>
           <View
@@ -427,7 +429,7 @@ const MineScreen: React.FC = () => {
                 { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
               ]}
             >
-              徽章
+              {t('mineScreen.stats.badges')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -450,7 +452,7 @@ const MineScreen: React.FC = () => {
         >
           {renderMenuItem(
             'book-open',
-            '我的日记本',
+            t('mineScreen.menus.notebooks'),
             currentHealingColors.pink[500],
             false,
             () => {
@@ -459,7 +461,7 @@ const MineScreen: React.FC = () => {
           )}
           {renderMenuItem(
             'star',
-            '收藏夹',
+            t('mineScreen.menus.favorites'),
             currentHealingColors.pink[500],
             false,
             () => {
@@ -468,7 +470,7 @@ const MineScreen: React.FC = () => {
           )}
           {renderMenuItem(
             'calendar',
-            '打卡日历',
+            t('mineScreen.menus.calendar'),
             currentHealingColors.pink[500],
             true,
             () => {
@@ -495,7 +497,7 @@ const MineScreen: React.FC = () => {
         >
           {renderMenuItem(
             'settings',
-            '应用设置',
+            t('mineScreen.menus.settings'),
             currentHealingColors.pink[500],
             false,
             () => {
@@ -504,7 +506,7 @@ const MineScreen: React.FC = () => {
           )}
           {renderMenuItem(
             'info',
-            '关于毛球',
+            t('mineScreen.menus.about'),
             currentHealingColors.pink[500],
             false,
             () => {
@@ -513,7 +515,7 @@ const MineScreen: React.FC = () => {
           )}
           {renderMenuItem(
             'help-circle',
-            '帮助与反馈',
+            t('mineScreen.menus.feedback'),
             currentHealingColors.pink[600],
             true,
             () => {
@@ -541,7 +543,7 @@ const MineScreen: React.FC = () => {
           >
             {renderMenuItem(
               'shield',
-              '管理员中心',
+              t('mineScreen.menus.adminCenter'),
               currentHealingColors.pink[600],
               true,
               () => {
@@ -565,7 +567,7 @@ const MineScreen: React.FC = () => {
             onPress={handleLogout}
           >
             <Text style={[styles.logoutButtonText, { color: currentHealingColors.pink[600] }]}>
-              退出登录
+              {t('mine.logout')}
             </Text>
           </TouchableOpacity>
         )}

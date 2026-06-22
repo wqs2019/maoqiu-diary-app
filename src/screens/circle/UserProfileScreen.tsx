@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -43,24 +44,14 @@ const formatCount = (count: number | undefined): string => {
 
 const { width } = Dimensions.get('window');
 const CONTENT_WIDTH = width;
-const REPORT_REASON_OPTIONS: Array<{ value: ReportReason; label: string }> = [
-  { value: 'spam', label: '垃圾营销' },
-  { value: 'abuse', label: '辱骂攻击' },
-  { value: 'harassment', label: '骚扰他人' },
-  { value: 'pornography', label: '色情低俗' },
-  { value: 'violence', label: '暴力血腥' },
-  { value: 'fraud', label: '诈骗欺诈' },
-  { value: 'other', label: '其他原因' },
-];
-
-const getReportDiaryTitle = (diary: Diary): string => {
+const getReportDiaryTitle = (diary: Diary, fallbackTitle: string): string => {
   const title = diary.title?.trim();
   if (title) return title;
 
   const content = diary.content?.trim();
   if (content) return content.slice(0, 24);
 
-  return '未命名公开笔记';
+  return fallbackTitle;
 };
 
 type SelectedReportDiary = {
@@ -81,7 +72,17 @@ const UserProfileScreen: React.FC = () => {
   const currentUser = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useTranslation();
   const { isDark } = useAppTheme();
+  const REPORT_REASON_OPTIONS: Array<{ value: ReportReason; label: string }> = [
+    { value: 'spam', label: t('userProfileScreen.reportReasons.spam') },
+    { value: 'abuse', label: t('userProfileScreen.reportReasons.abuse') },
+    { value: 'harassment', label: t('userProfileScreen.reportReasons.harassment') },
+    { value: 'pornography', label: t('userProfileScreen.reportReasons.pornography') },
+    { value: 'violence', label: t('userProfileScreen.reportReasons.violence') },
+    { value: 'fraud', label: t('userProfileScreen.reportReasons.fraud') },
+    { value: 'other', label: t('userProfileScreen.reportReasons.other') },
+  ];
 
   const [profile, setProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -121,7 +122,7 @@ const UserProfileScreen: React.FC = () => {
       setProfile(data);
     } catch (error: any) {
       console.error('Failed to fetch profile', error);
-      setErrorMsg(error.message || '获取主页信息失败');
+      setErrorMsg(error.message || t('userProfileScreen.profileLoadFailed'));
     } finally {
       setProfileLoading(false);
     }
@@ -150,7 +151,7 @@ const UserProfileScreen: React.FC = () => {
 
   const handleFollow = async () => {
     if (!currentUser) {
-      Alert.alert('提示', '请先登录');
+      Alert.alert(t('common.tip'), t('userProfileScreen.loginRequired'));
       return;
     }
     if (followLoading) return;
@@ -177,7 +178,7 @@ const UserProfileScreen: React.FC = () => {
       // #region debug-point D:follow-action-error
       fetch('http://127.0.0.1:7777/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'follow-red-dot',runId:'pre',hypothesisId:'D',location:'UserProfileScreen.handleFollow:error',msg:'[DEBUG] follow action error',data:{currentUserId:currentUser._id,targetUserId,action,error:error instanceof Error ? error.message : String(error)},ts:Date.now()})}).catch(()=>{});
       // #endregion
-      Alert.alert('提示', '操作失败');
+      Alert.alert(t('common.tip'), t('userProfileScreen.actionFailed'));
     } finally {
       setFollowLoading(false);
     }
@@ -190,7 +191,7 @@ const UserProfileScreen: React.FC = () => {
   const handleLike = (item: Diary) => {
     if (likeMutation.isGlobalMutating) return;
     if (!currentUser) {
-      Alert.alert('提示', '请先登录！');
+      Alert.alert(t('common.tip'), t('userProfileScreen.loginRequiredStrong'));
       return;
     }
     const hasLiked = (item.likedUserIds || []).includes(currentUser._id);
@@ -206,17 +207,18 @@ const UserProfileScreen: React.FC = () => {
 
     try {
       const profileUrl = Linking.createURL(`user/${targetUserId}`);
-      const avatarText = profile.avatar ? `头像：${profile.avatar}\n` : '';
-      const shareMessage = `来看看 ${profile.nickname || '这位用户'} 在毛球日记的个人主页吧\n${avatarText}主页链接：${profileUrl}`;
+      const avatarText = profile.avatar ? t('userProfileScreen.profileAvatarLine', { avatar: profile.avatar }) : '';
+      const shareName = profile.nickname || t('userProfileScreen.shareDefaultName');
+      const shareMessage = t('userProfileScreen.shareMessage', { name: shareName, avatarText, url: profileUrl });
 
       await Share.share({
-        title: `${profile.nickname || '这位用户'}的毛球主页`,
+        title: t('userProfileScreen.shareTitle', { name: shareName }),
         message: shareMessage,
         url: profileUrl,
       });
     } catch (error) {
       console.error('Share profile error:', error);
-      Alert.alert('提示', '分享失败，请稍后再试');
+      Alert.alert(t('common.tip'), t('userProfileScreen.shareFailed'));
     }
   }, [profile, targetUserId]);
 
@@ -233,7 +235,7 @@ const UserProfileScreen: React.FC = () => {
 
   const handleOpenReportModal = useCallback(() => {
     if (!currentUser?._id) {
-      Alert.alert('提示', '请先登录');
+      Alert.alert(t('common.tip'), t('userProfileScreen.loginRequired'));
       return;
     }
     if (!profile || currentUser._id === targetUserId) {
@@ -251,12 +253,12 @@ const UserProfileScreen: React.FC = () => {
 
   const handleSubmitReport = useCallback(async () => {
     if (!currentUser?._id || !profile || !targetUserId) {
-      Alert.alert('提示', '请先登录后再举报');
+      Alert.alert(t('common.tip'), t('userProfileScreen.reportLoginRequired'));
       return;
     }
 
     if (!reportDescription.trim()) {
-      Alert.alert('提示', '请补充举报说明');
+      Alert.alert(t('common.tip'), t('userProfileScreen.reportDescriptionRequired'));
       return;
     }
 
@@ -284,10 +286,10 @@ const UserProfileScreen: React.FC = () => {
       setReportModalVisible(false);
       setSelectedReportDiary(null);
       setReportDescription('');
-      toast.success('举报已提交，我们会尽快处理');
+      toast.success(t('userProfileScreen.reportSubmitted'));
     } catch (error: any) {
       console.error('Submit user report failed:', error);
-      Alert.alert('提交失败', error.message || '举报提交失败，请稍后再试');
+      Alert.alert(t('userProfileScreen.reportSubmitFailedTitle'), error.message || t('userProfileScreen.reportSubmitFailed'));
     } finally {
       setReportSubmitting(false);
     }
@@ -315,7 +317,7 @@ const UserProfileScreen: React.FC = () => {
 
   const handleToggleBlock = useCallback(() => {
     if (!currentUser?._id || !profile || !targetUserId) {
-      Alert.alert('提示', '请先登录');
+      Alert.alert(t('common.tip'), t('userProfileScreen.loginRequired'));
       return;
     }
     if (blockSubmitting) {
@@ -323,13 +325,13 @@ const UserProfileScreen: React.FC = () => {
     }
 
     const isBlocked = !!profile.isBlockedByCurrentUser;
-    const actionText = isBlocked ? '取消拉黑' : '拉黑用户';
+    const actionText = isBlocked ? t('userProfileScreen.unblock') : t('userProfileScreen.block');
     const message = isBlocked
-      ? '取消拉黑后，对方的公开内容会恢复展示。'
-      : '拉黑后，你将不再看到对方的主页内容和圈子内容。';
+      ? t('userProfileScreen.unblockDesc')
+      : t('userProfileScreen.blockDesc');
 
     Alert.alert(actionText, message, [
-      { text: '取消', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
       {
         text: actionText,
         style: isBlocked ? 'default' : 'destructive',
@@ -348,7 +350,7 @@ const UserProfileScreen: React.FC = () => {
                     }
                   : prev
               );
-              toast.success('已取消拉黑');
+              toast.success(t('userProfileScreen.unblocked'));
             } else {
               await userService.blockUser(currentUser._id, targetUserId);
               setProfile((prev: any) =>
@@ -363,7 +365,7 @@ const UserProfileScreen: React.FC = () => {
                     }
                   : prev
               );
-              toast.success('已拉黑该用户');
+              toast.success(t('userProfileScreen.blocked'));
             }
 
             await Promise.all([
@@ -374,7 +376,7 @@ const UserProfileScreen: React.FC = () => {
             ]);
           } catch (error: any) {
             console.error('Toggle block failed:', error);
-            Alert.alert('操作失败', error.message || '请稍后再试');
+            Alert.alert(t('userProfileScreen.actionFailed'), error.message || t('notificationCenterScreen.alerts.retry'));
           } finally {
             setBlockSubmitting(false);
           }
@@ -453,7 +455,7 @@ const UserProfileScreen: React.FC = () => {
           <View style={styles.profileInfo}>
             <View style={styles.nicknameRow}>
               <Text style={[styles.nickname, { color: textColor }, textShadowStyle]}>
-                {profile.nickname || '某只毛球'}
+                {profile.nickname || t('userProfileScreen.defaultName')}
               </Text>
               {!isSelf && !isBlocked && !isRestricted && (
                 <TouchableOpacity
@@ -479,7 +481,7 @@ const UserProfileScreen: React.FC = () => {
                         styles.followIconText,
                         { color: profile.isFollowing ? (hasBackground ? '#FFF' : (isDark ? '#FFF' : '#6B7280')) : '#fff' }
                       ]}>
-                        {profile.isFollowing ? '已关注' : '关注'}
+                        {profile.isFollowing ? t('userProfileScreen.followed') : t('userProfileScreen.follow')}
                       </Text>
                     </>
                   )}
@@ -491,7 +493,7 @@ const UserProfileScreen: React.FC = () => {
                 <Text style={[styles.statValue, { color: textColor }, textShadowStyle]}>
                   {formatCount(profile.publicDiariesCount)}
                 </Text>
-                <Text style={[styles.statLabel, { color: labelColor }, textShadowStyle]}>公开日记</Text>
+                <Text style={[styles.statLabel, { color: labelColor }, textShadowStyle]}>{t('userProfileScreen.stats.publicDiaries')}</Text>
               </View>
               <TouchableOpacity 
                 style={styles.statItem}
@@ -501,13 +503,13 @@ const UserProfileScreen: React.FC = () => {
                 <Text style={[styles.statValue, { color: textColor }, textShadowStyle]}>
                   {formatCount(profile.followersCount)}
                 </Text>
-                <Text style={[styles.statLabel, { color: labelColor }, textShadowStyle]}>粉丝</Text>
+                <Text style={[styles.statLabel, { color: labelColor }, textShadowStyle]}>{t('userProfileScreen.stats.followers')}</Text>
               </TouchableOpacity>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: textColor }, textShadowStyle]}>
                   {formatCount(profile.totalLikes)}
                 </Text>
-                <Text style={[styles.statLabel, { color: labelColor }, textShadowStyle]}>获赞</Text>
+                <Text style={[styles.statLabel, { color: labelColor }, textShadowStyle]}>{t('userProfileScreen.stats.likes')}</Text>
               </View>
             </View>
           </View>
@@ -516,7 +518,7 @@ const UserProfileScreen: React.FC = () => {
             <View style={[styles.relationNotice, { backgroundColor: hasBackground ? 'rgba(255,255,255,0.14)' : isDark ? '#2A1F24' : '#FFF4F6' }]}>
               <Ionicons name="ban-outline" size={16} color={hasBackground ? '#FFF' : HEALING_COLORS.pink[500]} />
               <Text style={[styles.relationNoticeText, { color: textColor }, textShadowStyle]}>
-                已拉黑该用户，对方公开内容已对你隐藏
+                {t('userProfileScreen.blockedNotice')}
               </Text>
             </View>
           )}
@@ -524,7 +526,7 @@ const UserProfileScreen: React.FC = () => {
             <View style={[styles.relationNotice, { backgroundColor: hasBackground ? 'rgba(255,255,255,0.14)' : isDark ? '#1F2937' : '#F3F4F6' }]}>
               <Ionicons name="lock-closed-outline" size={16} color={hasBackground ? '#FFF' : '#6B7280'} />
               <Text style={[styles.relationNoticeText, { color: textColor }, textShadowStyle]}>
-                对方已限制访问，暂时无法查看更多公开内容
+                {t('userProfileScreen.restrictedNotice')}
               </Text>
             </View>
           )}
@@ -538,7 +540,7 @@ const UserProfileScreen: React.FC = () => {
               onPress={() => setActiveTab('public')}
             >
               <Text style={[styles.tabText, { color: isDark ? '#E5E7EB' : '#374151' }, activeTab === 'public' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
-                我的公开
+                {t('userProfileScreen.tabs.public')}
               </Text>
               {activeTab === 'public' && <View style={styles.activeTabIndicator} />}
             </TouchableOpacity>
@@ -547,7 +549,7 @@ const UserProfileScreen: React.FC = () => {
               onPress={() => setActiveTab('commented')}
             >
               <Text style={[styles.tabText, { color: isDark ? '#E5E7EB' : '#374151' }, activeTab === 'commented' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
-                评论
+                {t('userProfileScreen.tabs.commented')}
               </Text>
               {activeTab === 'commented' && <View style={styles.activeTabIndicator} />}
             </TouchableOpacity>
@@ -556,7 +558,7 @@ const UserProfileScreen: React.FC = () => {
               onPress={() => setActiveTab('liked')}
             >
               <Text style={[styles.tabText, { color: isDark ? '#E5E7EB' : '#374151' }, activeTab === 'liked' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
-                赞过
+                {t('userProfileScreen.tabs.liked')}
               </Text>
               {activeTab === 'liked' && <View style={styles.activeTabIndicator} />}
             </TouchableOpacity>
@@ -670,17 +672,17 @@ const UserProfileScreen: React.FC = () => {
   const displayedDiaries = shouldHideContent ? [] : diaries;
   const emptyMessage = shouldHideContent
     ? profile?.isBlockedByCurrentUser
-      ? '你已拉黑该用户，对方公开内容已隐藏'
-      : '由于访问受限，暂时无法查看该用户的公开内容'
+      ? t('userProfileScreen.empty.blocked')
+      : t('userProfileScreen.empty.restricted')
     : isSelf
       ? activeTab === 'public'
-        ? '你还没有发布公开日记'
+        ? t('userProfileScreen.empty.selfPublic')
         : activeTab === 'commented'
-          ? '你还没有评论过日记'
-          : '你还没有赞过日记'
-      : '该用户还没有发布公开日记';
-  const moreActionTitle = isSelf ? '分享我的主页' : '分享这位用户的主页';
-  const blockActionTitle = profile?.isBlockedByCurrentUser ? '取消拉黑该用户' : '拉黑该用户';
+          ? t('userProfileScreen.empty.selfCommented')
+          : t('userProfileScreen.empty.selfLiked')
+      : t('userProfileScreen.empty.otherPublic');
+  const moreActionTitle = isSelf ? t('userProfileScreen.popup.shareSelf') : t('userProfileScreen.popup.shareOther');
+  const blockActionTitle = profile?.isBlockedByCurrentUser ? t('userProfileScreen.unblock') : t('userProfileScreen.block');
 
   return (
     <View
@@ -768,7 +770,7 @@ const UserProfileScreen: React.FC = () => {
             ]}
           >
             <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>
-              更多操作
+              {t('userProfileScreen.popup.moreActions')}
             </Text>
             <TouchableOpacity
               style={[
@@ -800,7 +802,7 @@ const UserProfileScreen: React.FC = () => {
                   color="#F59E0B"
                 />
                 <Text style={[styles.popupActionText, { color: isDark ? '#FFF' : '#111827' }]}>
-                  举报用户
+                  {t('userProfileScreen.popup.reportUser')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -819,7 +821,7 @@ const UserProfileScreen: React.FC = () => {
                   color={profile?.isBlockedByCurrentUser ? '#10B981' : '#EF4444'}
                 />
                 <Text style={[styles.popupActionText, { color: isDark ? '#FFF' : '#111827' }]}>
-                  {blockSubmitting ? '处理中...' : blockActionTitle}
+                  {blockSubmitting ? t('userProfileScreen.popup.processing') : blockActionTitle}
                 </Text>
               </TouchableOpacity>
             )}
@@ -828,7 +830,7 @@ const UserProfileScreen: React.FC = () => {
               onPress={() => setMoreActionsVisible(false)}
             >
               <Text style={[styles.popupCancelText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                取消
+                {t('common.cancel')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -852,10 +854,10 @@ const UserProfileScreen: React.FC = () => {
             ]}
           >
             <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>
-              举报用户
+              {t('userProfileScreen.popup.reportUser')}
             </Text>
             <Text style={[styles.reportHint, { color: isDark ? '#AAA' : '#6B7280' }]}>
-              请选择举报原因，并补充说明，帮助我们更快处理。
+              {t('userProfileScreen.popup.reportHint')}
             </Text>
             <View style={styles.reasonList}>
               {REPORT_REASON_OPTIONS.map((option) => {
@@ -902,10 +904,10 @@ const UserProfileScreen: React.FC = () => {
             </View>
             <View style={styles.reportDiarySection}>
               <Text style={[styles.reportSectionTitle, { color: isDark ? '#FFF' : '#111827' }]}>
-                关联公开笔记（可选）
+                {t('userProfileScreen.popup.relatedDiary')}
               </Text>
               <Text style={[styles.reportSectionHint, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                如果本次举报和该用户发布的某篇圈子公开笔记有关，可以一并关联，便于核查。
+                {t('userProfileScreen.popup.relatedDiaryHint')}
               </Text>
               <TouchableOpacity
                 style={[
@@ -923,7 +925,7 @@ const UserProfileScreen: React.FC = () => {
               >
                 <View style={styles.reportDiaryPickerContent}>
                   <Text style={[styles.reportDiaryPickerLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                    当前关联
+                    {t('userProfileScreen.popup.currentRelated')}
                   </Text>
                   <Text
                     style={[
@@ -932,7 +934,9 @@ const UserProfileScreen: React.FC = () => {
                     ]}
                     numberOfLines={1}
                   >
-                    {selectedReportDiary ? getReportDiaryTitle(selectedReportDiary as Diary) : '未选择'}
+                    {selectedReportDiary
+                      ? getReportDiaryTitle(selectedReportDiary as Diary, t('userProfileScreen.unnamedDiary'))
+                      : t('userProfileScreen.popup.notSelected')}
                   </Text>
                   {selectedReportDiary?.content ? (
                     <Text
@@ -952,7 +956,7 @@ const UserProfileScreen: React.FC = () => {
                       }}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Text style={styles.reportDiaryClearText}>清除关联</Text>
+                      <Text style={styles.reportDiaryClearText}>{t('userProfileScreen.popup.clearRelated')}</Text>
                     </TouchableOpacity>
                   ) : null}
                   <Ionicons name="chevron-forward" size={18} color={isDark ? '#AAA' : '#9CA3AF'} />
@@ -961,7 +965,7 @@ const UserProfileScreen: React.FC = () => {
               <Text style={[styles.reportDiaryEmpty, { color: isDark ? '#6B7280' : '#9CA3AF' }]}>
                 {selectedReportDiary
                   ? FormatUtil.formatRelativeTime(selectedReportDiary.createdAt || selectedReportDiary.date || '')
-                  : '未关联公开笔记，可进入选择页挑选'}
+                  : t('userProfileScreen.popup.notRelatedHint')}
               </Text>
             </View>
             <TextInput
@@ -973,7 +977,7 @@ const UserProfileScreen: React.FC = () => {
                   color: isDark ? '#FFF' : '#111827',
                 },
               ]}
-              placeholder="请补充举报说明，便于我们核查"
+              placeholder={t('userProfileScreen.popup.reportPlaceholder')}
               placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
               multiline
               textAlignVertical="top"
@@ -990,7 +994,7 @@ const UserProfileScreen: React.FC = () => {
                 onPress={() => setReportModalVisible(false)}
               >
                 <Text style={[styles.reportSecondaryText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                  取消
+                  {t('common.cancel')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -1005,7 +1009,7 @@ const UserProfileScreen: React.FC = () => {
                 disabled={reportSubmitting}
               >
                 <Text style={styles.reportPrimaryText}>
-                  {reportSubmitting ? '提交中...' : '提交举报'}
+                  {reportSubmitting ? t('userProfileScreen.popup.submitting') : t('userProfileScreen.popup.submit')}
                 </Text>
               </TouchableOpacity>
             </View>

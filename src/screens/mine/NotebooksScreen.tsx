@@ -2,6 +2,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -40,6 +41,7 @@ const NotebooksScreen: React.FC = () => {
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const user = useAuthStore((state) => state.user);
   const { isDark } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
   const { checkVipPermission } = useVipGuard();
 
@@ -82,12 +84,12 @@ const NotebooksScreen: React.FC = () => {
     if (!user?._id) return;
     try {
       await notebookService.respondInvitation(invitationId, action, user._id);
-      Alert.alert('提示', action === 'accept' ? '已加入日记本' : '已拒绝邀请');
+      Alert.alert(t('common.tip'), action === 'accept' ? t('notebooksScreen.alerts.joined') : t('notebooksScreen.alerts.rejected'));
       // 刷新列表
       await useNotebookStore.getState().fetchNotebooks(user._id);
       fetchInvitations();
     } catch (error: any) {
-      Alert.alert('提示', error.message || '处理邀请失败');
+      Alert.alert(t('common.tip'), error.message || t('notebooksScreen.alerts.invitationFailed'));
     }
   };
 
@@ -110,7 +112,7 @@ const NotebooksScreen: React.FC = () => {
 
       if (!result.canceled && result.assets[0]) {
         if (!user?._id) {
-          Alert.alert('提示', '请先登录后再上传封面');
+          Alert.alert(t('common.tip'), t('notebooksScreen.alerts.loginUploadRequired'));
           return;
         }
 
@@ -133,11 +135,11 @@ const NotebooksScreen: React.FC = () => {
         if (uploadResult.success && uploadResult.data?.url) {
           setNotebookCover(uploadResult.data.url);
         } else {
-          throw new Error(uploadResult.message || '上传封面失败');
+          throw new Error(uploadResult.message || t('notebooksScreen.alerts.uploadCoverFailed'));
         }
       }
     } catch (error: any) {
-      Alert.alert('提示', error.message || '更换封面失败，请重试');
+      Alert.alert(t('common.tip'), error.message || t('notebooksScreen.alerts.changeCoverFailed'));
     } finally {
       setIsUploadingCover(false);
     }
@@ -146,11 +148,11 @@ const NotebooksScreen: React.FC = () => {
   const handleSaveNotebook = async () => {
     if (!newNotebookName.trim() || !user?._id) return;
     if (notebookType === 'shared' && !inviteePhone.trim()) {
-      Alert.alert('提示', '共享日记本需要输入对方手机号哦');
+      Alert.alert(t('common.tip'), t('notebooksScreen.alerts.sharedPhoneRequired'));
       return;
     }
     if (notebookType === 'shared' && inviteePhone.trim() === user.phone) {
-      Alert.alert('提示', '不能邀请自己哦');
+      Alert.alert(t('common.tip'), t('notebooksScreen.alerts.cannotInviteSelf'));
       return;
     }
 
@@ -169,7 +171,10 @@ const NotebooksScreen: React.FC = () => {
       setIsAddModalVisible(false);
     } catch (error: any) {
       console.error('Failed to save notebook', error);
-      Alert.alert('提示', error.message || (isEditMode ? '修改日记本失败，请重试' : '创建日记本失败，请重试'));
+      Alert.alert(
+        t('common.tip'),
+        error.message || (isEditMode ? t('notebooksScreen.alerts.editFailed') : t('notebooksScreen.alerts.createFailed'))
+      );
     } finally {
       setIsAdding(false);
     }
@@ -198,21 +203,21 @@ const NotebooksScreen: React.FC = () => {
 
   const confirmDelete = (notebook: Notebook) => {
     if (notebook.isDefault) {
-      Alert.alert('提示', '默认日记本不允许删除哦～');
+      Alert.alert(t('common.tip'), t('notebooksScreen.alerts.defaultDeleteBlocked'));
       return;
     }
-    Alert.alert('确认删除', `确定要删除日记本"${notebook.name}"吗？此操作不可恢复。`, [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('notebooksScreen.alerts.confirmDeleteTitle'), t('notebooksScreen.alerts.confirmDeleteMessage', { name: notebook.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
       { 
-        text: '删除', 
+        text: t('common.delete'), 
         style: 'destructive', 
         onPress: async () => {
           if (!user?._id) return;
           try {
             await deleteNotebook(user._id, notebook._id);
-            Alert.alert('提示', '删除成功');
+            Alert.alert(t('common.tip'), t('notebooksScreen.alerts.deleteSuccess'));
           } catch (error: any) {
-            Alert.alert('提示', error.message || '删除失败，请重试');
+            Alert.alert(t('common.tip'), error.message || t('notebooksScreen.alerts.deleteFailed'));
           }
         } 
       },
@@ -220,18 +225,18 @@ const NotebooksScreen: React.FC = () => {
   };
 
   const confirmUnbind = (notebook: Notebook) => {
-    Alert.alert('解除共享', `解除后，你将无法再看到对方的日记，且该日记本无法再邀请其他人加入，确定解除吗？`, [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('notebooksScreen.alerts.confirmUnbindTitle'), t('notebooksScreen.alerts.confirmUnbindMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       { 
-        text: '解除', 
+        text: t('notebooksScreen.actions.unbind'), 
         style: 'destructive', 
         onPress: async () => {
           if (!user?._id) return;
           try {
             await useNotebookStore.getState().unbindNotebook(user._id, notebook._id);
-            Alert.alert('提示', '已解除共享');
+            Alert.alert(t('common.tip'), t('notebooksScreen.alerts.unbindSuccess'));
           } catch (error: any) {
-            Alert.alert('提示', error.message || '解除失败，请重试');
+            Alert.alert(t('common.tip'), error.message || t('notebooksScreen.alerts.unbindFailed'));
           }
         } 
       },
@@ -242,26 +247,26 @@ const NotebooksScreen: React.FC = () => {
     if (!checkVipPermission('manageNotebook', undefined, { isSharedNotebook: notebook.type === 'shared' })) return;
 
     const options: any[] = [
-      { text: '取消', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
     ];
     
     // 只有非共享日记本或者是创建者才能编辑
     if (notebook.type !== 'shared' || notebook.userId === user?._id) {
-      options.push({ text: '编辑', onPress: () => openEditModal(notebook) });
+      options.push({ text: t('notebooksScreen.actions.edit'), onPress: () => openEditModal(notebook) });
     }
 
     if (notebook.type === 'shared' && notebook.status === 'active') {
-      options.push({ text: '解除共享', style: 'destructive', onPress: () => confirmUnbind(notebook) });
+      options.push({ text: t('notebooksScreen.actions.unbindShared'), style: 'destructive', onPress: () => confirmUnbind(notebook) });
     }
 
     // 默认日记本不能删除，其余日记本只要是创建者就可以删除（包括已解除的共享日记本）
     if (!notebook.isDefault && (notebook.type !== 'shared' || notebook.userId === user?._id)) {
-      options.push({ text: '删除', style: 'destructive', onPress: () => confirmDelete(notebook) });
+      options.push({ text: t('common.delete'), style: 'destructive', onPress: () => confirmDelete(notebook) });
     }
 
     Alert.alert(
-      '日记本操作',
-      '请选择要进行的操作',
+      t('notebooksScreen.alerts.notebookActionsTitle'),
+      t('notebooksScreen.alerts.notebookActionsMessage'),
       options
     );
   };
@@ -286,7 +291,7 @@ const NotebooksScreen: React.FC = () => {
           />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
-          我的日记本
+          {t('notebooksScreen.title')}
         </Text>
         <TouchableOpacity
           style={styles.addButton}
@@ -299,18 +304,18 @@ const NotebooksScreen: React.FC = () => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {invitations.length > 0 && (
           <View style={styles.invitationsContainer}>
-            <Text style={[styles.sectionTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>新的邀请</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>{t('notebooksScreen.invitationsTitle')}</Text>
             {invitations.map((inv) => (
               <View key={inv._id} style={[styles.invitationCard, { backgroundColor: isDark ? '#1E1E1E' : '#FFF0F3' }]}>
                 <Text style={[styles.invitationText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
-                  <Text style={{ fontWeight: 'bold' }}>{inv.inviterName}</Text> 邀请你共写日记本 <Text style={{ fontWeight: 'bold' }}>{inv.notebookName}</Text>
+                  {t('notebooksScreen.invitationText', { inviter: inv.inviterName, notebook: inv.notebookName })}
                 </Text>
                 <View style={styles.invitationButtons}>
                   <TouchableOpacity style={[styles.invBtn, styles.invBtnReject]} onPress={() => handleRespondInvitation(inv._id, 'reject')}>
-                    <Text style={styles.invBtnRejectText}>拒绝</Text>
+                    <Text style={styles.invBtnRejectText}>{t('notebooksScreen.reject')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.invBtn, styles.invBtnAccept, { backgroundColor: currentHealingColors.pink[500] }]} onPress={() => handleRespondInvitation(inv._id, 'accept')}>
-                    <Text style={styles.invBtnAcceptText}>同意</Text>
+                    <Text style={styles.invBtnAcceptText}>{t('notebooksScreen.accept')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -392,7 +397,7 @@ const NotebooksScreen: React.FC = () => {
                           styles.sharedTagText, 
                           { color: currentHealingColors.pink[500] },
                           isActive && { color: isDark ? currentHealingColors.pink[300] : currentHealingColors.pink[600] }
-                        ]}>👥 共享</Text>
+                        ]}>{t('notebooksScreen.sharedTag')}</Text>
                       </View>
                     )}
                   </View>
@@ -414,7 +419,7 @@ const NotebooksScreen: React.FC = () => {
                       { color: isDark ? '#888' : currentHealingColors.gray[500] },
                     ]}
                   >
-                    创建于 {new Date(notebook.createdAt).toLocaleDateString()}
+                    {t('notebooksScreen.createdAt', { date: new Date(notebook.createdAt).toLocaleDateString(i18n.language) })}
                   </Text>
                 </View>
                 {isActive && (
@@ -479,7 +484,7 @@ const NotebooksScreen: React.FC = () => {
                 <Text
                   style={[styles.modalTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
                 >
-                  {isEditMode ? '编辑日记本' : '新建日记本'}
+                  {isEditMode ? t('notebooksScreen.modal.editTitle') : t('notebooksScreen.modal.createTitle')}
                 </Text>
                 
                 <TouchableOpacity style={styles.coverSelector} onPress={handlePickCover}>
@@ -488,7 +493,7 @@ const NotebooksScreen: React.FC = () => {
                   ) : (
                     <View style={[styles.coverPlaceholder, { backgroundColor: isDark ? '#333' : '#F5F5F5' }]}>
                       <Feather name="image" size={20} color={isDark ? '#AAA' : currentHealingColors.gray[400]} />
-                      <Text style={[styles.coverText, { color: isDark ? '#AAA' : currentHealingColors.gray[400] }]}>上传封面</Text>
+                      <Text style={[styles.coverText, { color: isDark ? '#AAA' : currentHealingColors.gray[400] }]}>{t('notebooksScreen.modal.uploadCover')}</Text>
                     </View>
                   )}
                   {isUploadingCover && (
@@ -507,7 +512,7 @@ const NotebooksScreen: React.FC = () => {
                       color: isDark ? '#FFF' : '#333',
                     },
                   ]}
-                  placeholder="给日记本起个名字吧..."
+                  placeholder={t('notebooksScreen.modal.namePlaceholder')}
                   placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
                   value={newNotebookName}
                   onChangeText={setNewNotebookName}
@@ -524,7 +529,7 @@ const NotebooksScreen: React.FC = () => {
                       marginTop: -8, // 减少与标题的间距
                     },
                   ]}
-                  placeholder="给这本日记本添加一点描述吧 (可选)..."
+                  placeholder={t('notebooksScreen.modal.descPlaceholder')}
                   placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
                   value={newNotebookDesc}
                   onChangeText={setNewNotebookDesc}
@@ -533,7 +538,7 @@ const NotebooksScreen: React.FC = () => {
 
                 {!isEditMode && (
                   <View style={styles.typeSelectorContainer}>
-                    <Text style={[styles.typeLabel, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>类型</Text>
+                    <Text style={[styles.typeLabel, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{t('notebooksScreen.modal.type')}</Text>
                     <View style={styles.typeButtons}>
                       <TouchableOpacity
                         style={[
@@ -546,7 +551,7 @@ const NotebooksScreen: React.FC = () => {
                         <Text style={[
                           styles.typeButtonText,
                           notebookType === 'private' && [styles.typeButtonTextActive, { color: currentHealingColors.pink[600] }]
-                        ]}>私密日记本</Text>
+                        ]}>{t('notebooksScreen.modal.private')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[
@@ -557,9 +562,9 @@ const NotebooksScreen: React.FC = () => {
                         ]}
                         onPress={() => {
                           if (!user?.isVip?.value) {
-                            Alert.alert('VIP 专属特权', '共享日记本是 VIP 用户的专属功能哦，升级即可解锁与 TA 共同记录美好回忆～', [
-                              { text: '取消', style: 'cancel' },
-                              { text: '去升级', onPress: () => navigation.navigate('Subscription') },
+                            Alert.alert(t('notebooksScreen.alerts.vipOnlyTitle'), t('notebooksScreen.alerts.vipOnlyMessage'), [
+                              { text: t('common.cancel'), style: 'cancel' },
+                              { text: t('notebooksScreen.alerts.upgradeNow'), onPress: () => navigation.navigate('Subscription') },
                             ]);
                             return;
                           }
@@ -572,7 +577,7 @@ const NotebooksScreen: React.FC = () => {
                             styles.typeButtonText,
                             notebookType === 'shared' && [styles.typeButtonTextActive, { color: currentHealingColors.pink[600] }],
                             !user?.isVip?.value && styles.typeButtonTextDisabled
-                          ]}>共享日记本</Text>
+                          ]}>{t('notebooksScreen.modal.shared')}</Text>
                           {!user?.isVip?.value && (
                             <View style={styles.vipBadge}>
                               <Text style={styles.vipBadgeText}>VIP</Text>
@@ -583,7 +588,7 @@ const NotebooksScreen: React.FC = () => {
                     </View>
                     {notebookType === 'shared' && (
                       <Text style={[styles.typeHintText, { color: isDark ? '#888' : currentHealingColors.gray[500] }]}>
-                        💡 适合记录情侣日常、闺蜜旅行、家庭账本等共同回忆。
+                        {t('notebooksScreen.modal.sharedHint')}
                       </Text>
                     )}
                   </View>
@@ -599,7 +604,7 @@ const NotebooksScreen: React.FC = () => {
                         color: isDark ? '#FFF' : '#333',
                       },
                     ]}
-                    placeholder="输入对方手机号..."
+                    placeholder={t('notebooksScreen.modal.inviteePlaceholder')}
                     placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
                     value={inviteePhone}
                     onChangeText={setInviteePhone}
@@ -619,7 +624,7 @@ const NotebooksScreen: React.FC = () => {
                       setIsAddModalVisible(false);
                     }}
                   >
-                    <Text style={[styles.cancelButtonText, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>取消</Text>
+                    <Text style={[styles.cancelButtonText, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -635,7 +640,7 @@ const NotebooksScreen: React.FC = () => {
                     onPress={handleSaveNotebook}
                     disabled={isAdding || !newNotebookName.trim() || isUploadingCover}
                   >
-                    <Text style={styles.confirmButtonText}>{isAdding ? '保存中...' : '确定'}</Text>
+                    <Text style={styles.confirmButtonText}>{isAdding ? t('notebooksScreen.modal.saving') : t('common.confirm')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>

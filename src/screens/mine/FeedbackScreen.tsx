@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -28,6 +29,7 @@ const FeedbackScreen: React.FC = () => {
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const user = useAuthStore((state) => state.user);
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   const [feedbackType, setFeedbackType] = useState<'bug' | 'feature' | 'other'>('bug');
@@ -38,12 +40,12 @@ const FeedbackScreen: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!content.trim()) {
-      Alert.alert('提示', '请先填写反馈内容哦～');
+      Alert.alert(t('common.tip'), t('feedbackScreen.alerts.emptyContent'));
       return;
     }
 
     if (!user?._id) {
-      Alert.alert('提示', '请先登录后再提交反馈～');
+      Alert.alert(t('common.tip'), t('feedbackScreen.alerts.loginRequired'));
       return;
     }
 
@@ -63,16 +65,16 @@ const FeedbackScreen: React.FC = () => {
         media: cleanMedia.length > 0 ? cleanMedia : undefined,
       });
 
-      Alert.alert('发送成功！', '毛球已经收到你的反馈啦，我们会努力变得更好！🐾', [
+      Alert.alert(t('feedbackScreen.alerts.successTitle'), t('feedbackScreen.alerts.successMessage'), [
         {
-          text: '好的',
+          text: t('common.ok'),
           onPress: () => {
             navigation.goBack();
           },
         },
       ]);
     } catch (error: any) {
-      Alert.alert('提交失败', error.message || '网络开小差了，请稍后重试');
+      Alert.alert(t('feedbackScreen.alerts.submitFailed'), error.message || t('feedbackScreen.alerts.submitFailedFallback'));
     } finally {
       setIsSubmitting(false);
     }
@@ -143,7 +145,7 @@ const FeedbackScreen: React.FC = () => {
           />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
-          帮助与反馈
+          {t('feedbackScreen.title')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -158,23 +160,23 @@ const FeedbackScreen: React.FC = () => {
           <Text
             style={[styles.greetingTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
           >
-            Hi，遇到什么问题了吗？
+            {t('feedbackScreen.greetTitle')}
           </Text>
           <Text
             style={[styles.greetingSub, { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] }]}
           >
-            无论是报错还是新想法，都欢迎告诉毛球～
+            {t('feedbackScreen.greetSubtitle')}
           </Text>
         </View>
 
         <View style={styles.formSection}>
           <Text style={[styles.label, { color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[700] }]}>
-            反馈类型
+            {t('feedbackScreen.typeLabel')}
           </Text>
           <View style={styles.typeContainer}>
-            {renderTypeOption('bug', '遇到Bug', '🐛')}
-            {renderTypeOption('feature', '新功能建议', '✨')}
-            {renderTypeOption('other', '其他想说的', '💬')}
+            {renderTypeOption('bug', t('feedbackScreen.types.bug'), '🐛')}
+            {renderTypeOption('feature', t('feedbackScreen.types.feature'), '✨')}
+            {renderTypeOption('other', t('feedbackScreen.types.other'), '💬')}
           </View>
 
           <Text
@@ -183,7 +185,7 @@ const FeedbackScreen: React.FC = () => {
               { marginTop: 24, color: isDark ? '#E5E7EB' : HEALING_COLORS.gray[700] },
             ]}
           >
-            想对毛球说的话
+            {t('feedbackScreen.contentLabel')}
           </Text>
           <TextInput
             style={[
@@ -195,7 +197,7 @@ const FeedbackScreen: React.FC = () => {
                 color: isDark ? '#FFF' : currentHealingColors.gray[800],
               },
             ]}
-            placeholder="请详细描述你遇到的问题或建议，毛球会认真阅读的..."
+            placeholder={t('feedbackScreen.contentPlaceholder')}
             placeholderTextColor={isDark ? '#6B7280' : currentHealingColors.gray[400]}
             multiline
             textAlignVertical="top"
@@ -215,7 +217,7 @@ const FeedbackScreen: React.FC = () => {
               { marginTop: 12, color: isDark ? '#E5E7EB' : currentHealingColors.gray[700] },
             ]}
           >
-            图片/视频（最多3个）
+            {t('feedbackScreen.mediaLabel')}
           </Text>
           <View style={styles.mediaContainer}>
             <MediaSelector media={media} onMediaChange={setMedia} maxCount={3} hideHeader />
@@ -227,7 +229,7 @@ const FeedbackScreen: React.FC = () => {
               { marginTop: 12, color: isDark ? '#E5E7EB' : currentHealingColors.gray[700] },
             ]}
           >
-            联系方式（选填）
+            {t('feedbackScreen.contactLabel')}
           </Text>
           <TextInput
             style={[
@@ -239,7 +241,7 @@ const FeedbackScreen: React.FC = () => {
                 color: isDark ? '#FFF' : currentHealingColors.gray[800],
               },
             ]}
-            placeholder="留下你的邮箱或微信，方便我们回复你"
+            placeholder={t('feedbackScreen.contactPlaceholder')}
             placeholderTextColor={isDark ? '#6B7280' : currentHealingColors.gray[400]}
             value={contact}
             onChangeText={setContact}
@@ -262,7 +264,7 @@ const FeedbackScreen: React.FC = () => {
             {isSubmitting ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitButtonText}>发送给毛球</Text>
+              <Text style={styles.submitButtonText}>{t('feedbackScreen.submit')}</Text>
             )}
           </TouchableOpacity>
         </View>

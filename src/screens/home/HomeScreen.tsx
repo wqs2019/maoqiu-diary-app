@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -40,6 +41,7 @@ const { width, height } = Dimensions.get('window');
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { fetchUserInfo } = useAuthStore();
@@ -190,25 +192,22 @@ const HomeScreen: React.FC = () => {
   const getGreeting = () => {
     const hour = new Date().getHours();
     let timeGreeting = '';
-    if (hour < 6) timeGreeting = '凌晨好';
-    else if (hour < 12) timeGreeting = '上午好';
-    else if (hour < 18) timeGreeting = '下午好';
-    else timeGreeting = '晚上好';
+    if (hour < 6) timeGreeting = t('homeScreen.timeGreetings.lateNight');
+    else if (hour < 12) timeGreeting = t('homeScreen.timeGreetings.morning');
+    else if (hour < 18) timeGreeting = t('homeScreen.timeGreetings.afternoon');
+    else timeGreeting = t('homeScreen.timeGreetings.evening');
 
-    const name = user?.nickname || '毛球';
-    return `${name}，${timeGreeting}`;
+    const name = user?.nickname || t('homeScreen.guestName');
+    return t('homeScreen.greetingFormat', { name, timeGreeting });
   };
 
   const getFormattedDate = () => {
-    const d = new Date();
-    // 使用当前时间格式化，或者固定匹配设计图 2026年3月28日 星期六
-    // const d = new Date('2026-03-28T00:00:00');
-    const year = d.getFullYear();
-    const month = d.getMonth() + 1;
-    const day = d.getDate();
-    const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-    const dayOfWeek = days[d.getDay()];
-    return `${year}年${month}月${day}日 ${dayOfWeek}`;
+    return new Intl.DateTimeFormat(i18n.language, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    }).format(new Date());
   };
 
   const handleRefresh = async () => {
@@ -238,7 +237,7 @@ const HomeScreen: React.FC = () => {
     return {
       _id: diary._id,
       type: 'diary',
-      title: diary.title || '无标题',
+      title: diary.title || t('homeScreen.untitled'),
       description: diary.content || '',
       date: diary.date || diary.createdAt || new Date().toISOString(),
       scenario: diary.scenario,
@@ -302,11 +301,11 @@ const HomeScreen: React.FC = () => {
               onPress={() => setIsNotebookModalVisible(true)}
             >
               <Text style={[styles.title, { color: isDark ? '#FFF' : '#333', flexShrink: 1 }]} numberOfLines={1}>
-                {currentNotebook?.name || '毛球日记'}
+                {currentNotebook?.name || t('homeScreen.notebookFallback')}
               </Text>
               {currentNotebook?.type === 'shared' && (
                 <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3', marginLeft: 8 }]}>
-                  <Text style={[styles.sharedTagText, { color: currentHealingColors.pink[500] }]}>👥 共享</Text>
+                  <Text style={[styles.sharedTagText, { color: currentHealingColors.pink[500] }]}>{t('homeScreen.sharedTag')}</Text>
                 </View>
               )}
               <Ionicons
@@ -320,7 +319,7 @@ const HomeScreen: React.FC = () => {
           </View>
           <View style={styles.headerRight}>
             <Text style={[styles.greetingText, { color: currentHealingColors.pink[400] }]}>{getGreeting()}</Text>
-            <Text style={styles.subtitleText}>生活明朗，万物可爱</Text>
+            <Text style={styles.subtitleText}>{t('homeScreen.subtitle')}</Text>
           </View>
         </View>
 
@@ -336,7 +335,7 @@ const HomeScreen: React.FC = () => {
           >
             <TextInput
               style={[styles.searchInput, { color: isDark ? '#FFF' : '#333' }]}
-              placeholder="搜索你的回忆..."
+              placeholder={t('homeScreen.searchPlaceholder')}
               placeholderTextColor="#999"
               value={searchQuery}
               onChangeText={handleSearchChange}
@@ -369,7 +368,7 @@ const HomeScreen: React.FC = () => {
           <View style={[styles.pendingBanner, { backgroundColor: isDark ? '#333' : '#FFF0F3' }]}>
             <Ionicons name="time-outline" size={16} color={currentHealingColors.pink[500]} />
             <Text style={[styles.pendingBannerText, { color: currentHealingColors.pink[600] }]}>
-              等待对方加入中...
+              {t('homeScreen.pendingJoin')}
             </Text>
           </View>
         )}
@@ -389,7 +388,7 @@ const HomeScreen: React.FC = () => {
             >
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>
-                  筛选场景
+                  {t('homeScreen.filterTitle')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -414,7 +413,7 @@ const HomeScreen: React.FC = () => {
                       !selectedScenario && styles.filterChipTextActive,
                     ]}
                   >
-                    全部
+                    {t('homeScreen.all')}
                   </Text>
                 </TouchableOpacity>
 
@@ -440,7 +439,7 @@ const HomeScreen: React.FC = () => {
                       <Text
                         style={[styles.filterChipText, isActive && styles.filterChipTextActive]}
                       >
-                        {template.name}
+                        {t(`scenario.${type}`)}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -465,7 +464,7 @@ const HomeScreen: React.FC = () => {
             >
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>
-                  我的日记本
+                  {t('homeScreen.notebooksTitle')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -534,7 +533,7 @@ const HomeScreen: React.FC = () => {
                         </Text>
                         {notebook.type === 'shared' && (
                           <View style={[styles.sharedTag, { backgroundColor: isDark ? '#333' : '#FFF0F3', marginLeft: 8 }]}>
-                            <Text style={[styles.sharedTagText, { color: currentHealingColors.pink[500] }]}>👥 共享</Text>
+                            <Text style={[styles.sharedTagText, { color: currentHealingColors.pink[500] }]}>{t('homeScreen.sharedTag')}</Text>
                           </View>
                         )}
                       </View>
@@ -573,7 +572,7 @@ const HomeScreen: React.FC = () => {
                     (navigation.navigate as any)('Notebooks', { openAddModal: true });
                   }}
                 >
-                  <Text style={[styles.addNotebookBtnText, { fontSize: 16 }]}>+ 新建日记本</Text>
+                  <Text style={[styles.addNotebookBtnText, { fontSize: 16 }]}>{t('homeScreen.addNotebook')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -622,19 +621,19 @@ const HomeScreen: React.FC = () => {
         {/* Content Area */}
         {isLoading ? (
           <View style={styles.centerContainer}>
-            <Text style={styles.loadingText}>加载中...</Text>
+            <Text style={styles.loadingText}>{t('homeScreen.loading')}</Text>
           </View>
         ) : error ? (
           <View style={styles.centerContainer}>
-            <Text style={styles.errorText}>加载失败，请稍后重试</Text>
+            <Text style={styles.errorText}>{t('homeScreen.loadFailed')}</Text>
           </View>
         ) : timelineItems.length === 0 ? (
           <View style={styles.emptyStateContainer}>
             <Text style={styles.ticketIcon}>🎫</Text>
             <Text style={styles.emptyStateText}>
               {selectedScenarioTemplate
-                ? `当前【${selectedScenarioTemplate.name}】无数据`
-                : '每个平凡的一天，都值得被好好保存'}
+                ? t('homeScreen.emptyWithScenario', { name: t(`scenario.${selectedScenarioTemplate.type}`) })
+                : t('homeScreen.emptyDefault')}
             </Text>
             <TouchableOpacity
               style={[
@@ -646,7 +645,7 @@ const HomeScreen: React.FC = () => {
               }}
               activeOpacity={0.85}
             >
-              <Text style={styles.emptyStateActionButtonText}>去录入</Text>
+              <Text style={styles.emptyStateActionButtonText}>{t('homeScreen.emptyAction')}</Text>
             </TouchableOpacity>
           </View>
         ) : (

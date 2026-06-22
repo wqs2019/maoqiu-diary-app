@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -33,8 +34,9 @@ const PHOTO_SIZE = Math.floor((width - GRID_SPACING * 2 - 24 - PHOTO_GRID_SPACIN
 const CategoryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | 'all'>('all');
-  const { isDark, colors } = useAppTheme();
+  const { isDark } = useAppTheme();
 
   const user = useAuthStore((state) => state.user);
   const userId = user?._id;
@@ -76,9 +78,9 @@ const CategoryScreen: React.FC = () => {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>生活洞察</Text>
+      <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>{t('categoryScreen.title')}</Text>
       <Text style={[styles.headerSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>
-        按场景回顾你的美好生活
+        {t('categoryScreen.subtitle')}
       </Text>
 
       {/* 分类网格 */}
@@ -113,7 +115,7 @@ const CategoryScreen: React.FC = () => {
               ],
             ]}
           >
-            全部
+            {t('homeScreen.all')}
           </Text>
         </TouchableOpacity>
 
@@ -157,7 +159,7 @@ const CategoryScreen: React.FC = () => {
                   ],
                 ]}
               >
-                {scenario.name}
+                {t(`scenario.${type}`)}
               </Text>
             </TouchableOpacity>
           );
@@ -169,7 +171,7 @@ const CategoryScreen: React.FC = () => {
   const renderStats = () => (
     <View style={styles.sectionContainer}>
       <Text style={[styles.sectionTitle, { marginBottom: 12, color: isDark ? '#FFF' : '#111827' }]}>
-        数据概览
+        {t('categoryScreen.statsTitle')}
       </Text>
       <View style={styles.statsRow}>
         <View
@@ -185,7 +187,7 @@ const CategoryScreen: React.FC = () => {
           <Text style={[styles.statsValue, { color: isDark ? '#FFF' : '#111827' }]}>
             {totalCount}
           </Text>
-          <Text style={[styles.statsLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>篇日记</Text>
+          <Text style={[styles.statsLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>{t('categoryScreen.diariesCount')}</Text>
         </View>
         <View
           style={[
@@ -202,7 +204,7 @@ const CategoryScreen: React.FC = () => {
           </Text>
           <View style={styles.statsLabelRow}>
             <Text style={[styles.statsLabel, { color: isDark ? '#AAA' : '#6B7280' }]}>
-              图片/视频总数
+              {t('categoryScreen.mediaCount')}
             </Text>
           </View>
         </View>
@@ -217,7 +219,7 @@ const CategoryScreen: React.FC = () => {
         <Text
           style={[styles.sectionTitle, { marginBottom: 12, color: isDark ? '#FFF' : '#111827' }]}
         >
-          心情晴雨表
+          {t('categoryScreen.moodTitle')}
         </Text>
         <View
           style={[
@@ -249,7 +251,7 @@ const CategoryScreen: React.FC = () => {
                       {config.label}
                     </Text>
                     <Text style={[styles.moodCount, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                      {count}次 ({percent}%)
+                      {t('categoryScreen.moodCount', { count, percent })}
                     </Text>
                   </View>
                   <View
@@ -277,7 +279,7 @@ const CategoryScreen: React.FC = () => {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionTitle, { color: isDark ? '#FFF' : '#111827' }]}>
-            时光相册
+            {t('categoryScreen.photoWallTitle')}
           </Text>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -285,7 +287,7 @@ const CategoryScreen: React.FC = () => {
             style={styles.viewAllButton}
           >
             <Text style={[styles.viewAllText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-              查看全部
+              {t('categoryScreen.viewAll')}
             </Text>
             <Ionicons name="chevron-forward" size={14} color={isDark ? '#AAA' : '#6B7280'} />
           </TouchableOpacity>
@@ -314,7 +316,7 @@ const CategoryScreen: React.FC = () => {
               {media.type === 'livePhoto' && (
                 <View style={styles.liveBadge}>
                   <Ionicons name="aperture" size={10} color="#FFF" />
-                  <Text style={styles.liveBadgeText}>实况</Text>
+                  <Text style={styles.liveBadgeText}>{t('categoryScreen.livePhoto')}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -322,7 +324,7 @@ const CategoryScreen: React.FC = () => {
         </View>
         {allMedia.length > 9 && (
           <Text style={[styles.morePhotosText, { color: isDark ? '#AAA' : '#9CA3AF' }]}>
-            只展示最近 9 个瞬间，更多请在日记中查看~
+            {t('categoryScreen.morePhotosHint')}
           </Text>
         )}
       </View>
@@ -362,7 +364,7 @@ const CategoryScreen: React.FC = () => {
         ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="leaf-outline" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyText}>这个分类下还没有记录哦</Text>
+            <Text style={styles.emptyText}>{t('categoryScreen.empty')}</Text>
           </View>
         )}
       </ScrollView>

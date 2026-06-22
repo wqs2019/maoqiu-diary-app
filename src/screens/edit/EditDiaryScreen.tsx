@@ -1,5 +1,6 @@
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -23,7 +24,6 @@ import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useCreateDiary, useUpdateDiary, useDiaryDetail } from '../../hooks/useDiaryQuery';
-import { useQueryClient } from '../../hooks/useQuery';
 import { useVipGuard } from '../../hooks/useVipGuard';
 import { textSafetyService } from '../../services/textSafetyService';
 import { useAuthStore } from '../../store/authStore';
@@ -38,9 +38,9 @@ type EditDiaryRouteProp = RouteProp<
 const EditDiaryScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<EditDiaryRouteProp>();
-  const queryClient = useQueryClient();
   const { isDark } = useAppTheme();
   const toast = useToast();
+  const { t } = useTranslation();
   const initialScenario = route.params?.scenario || 'daily';
   const diaryId = route.params?.diaryId;
   const isEditMode = !!diaryId;
@@ -97,8 +97,6 @@ const EditDiaryScreen: React.FC = () => {
     }
   }, [isEditMode, existingDiary]);
 
-  const template = SCENARIO_TEMPLATES[scenario];
-
   // 使用 useCreateDiary/useUpdateDiary 处理日记保存
   const createDiaryMutation = useCreateDiary();
   const updateDiaryMutation = useUpdateDiary();
@@ -116,7 +114,7 @@ const EditDiaryScreen: React.FC = () => {
 
     try {
       if (!title.trim() && !content.trim()) {
-        Alert.alert('提示', '请至少填写标题或内容哦～');
+        Alert.alert(t('common.tip'), t('editDiaryScreen.fillTitleOrContent'));
         return;
       }
 
@@ -132,8 +130,8 @@ const EditDiaryScreen: React.FC = () => {
         );
         if (!isSafe) {
           Alert.alert(
-            '发布失败',
-            '日记内容包含敏感词汇（如涉政、色情、暴恐等）。为了维护阳光健康的社区环境，请修改后再尝试发布哦～'
+            t('editDiaryScreen.publishFailedTitle'),
+            t('editDiaryScreen.publishFailedContent')
           );
           return;
         }
@@ -147,7 +145,7 @@ const EditDiaryScreen: React.FC = () => {
         .map(({ uploadStatus, subUploadStatus, uploadError, ...rest }) => rest);
 
       if (!currentNotebook) {
-        Alert.alert('提示', '未找到当前日记本');
+        Alert.alert(t('common.tip'), t('editDiaryScreen.currentNotebookMissing'));
         return;
       }
 
@@ -178,14 +176,14 @@ const EditDiaryScreen: React.FC = () => {
           },
           {
             onSuccess: () => {
-              toast.success('日记更新成功～');
+              toast.success(t('editDiaryScreen.updateSuccess'));
               setTimeout(() => {
                 navigation.goBack();
               }, 500);
             },
             onError: (error) => {
               console.error('Update diary error:', error);
-              Alert.alert('更新失败', '请检查网络连接后重试', [{ text: '确定' }]);
+              Alert.alert(t('editDiaryScreen.updateFailedTitle'), t('editDiaryScreen.networkRetry'), [{ text: t('common.confirm') }]);
             },
             onSettled: () => {
               setIsSaving(false);
@@ -196,14 +194,14 @@ const EditDiaryScreen: React.FC = () => {
         // 调用 mutation 保存日记
         createDiaryMutation.mutate(payload, {
           onSuccess: () => {
-            toast.success('日记已保存到云端，继续记录美好时光吧～');
+            toast.success(t('editDiaryScreen.saveSuccess'));
             setTimeout(() => {
               navigation.goBack();
             }, 500);
           },
           onError: (error) => {
             console.error('Save diary error:', error);
-            Alert.alert('保存失败', '请检查网络连接后重试', [{ text: '确定' }]);
+            Alert.alert(t('editDiaryScreen.saveFailedTitle'), t('editDiaryScreen.networkRetry'), [{ text: t('common.confirm') }]);
           },
           onSettled: () => {
             setIsSaving(false);
@@ -212,12 +210,10 @@ const EditDiaryScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Save diary error:', error);
-      Alert.alert('保存失败', '请检查网络连接后重试', [{ text: '确定' }]);
+      Alert.alert(t('editDiaryScreen.saveFailedTitle'), t('editDiaryScreen.networkRetry'), [{ text: t('common.confirm') }]);
       setIsSaving(false);
     }
   };
-
-  const template1 = SCENARIO_TEMPLATES[scenario];
 
   // 处理拖动时的滚动禁用
   const [scrollEnabled, setScrollEnabled] = React.useState(true);
@@ -276,7 +272,7 @@ const EditDiaryScreen: React.FC = () => {
               const template = SCENARIO_TEMPLATES[type];
               const isSelected = type === scenario;
               // 简短的名称，去掉"记录"或"时刻"以节省空间
-              const shortName = template.name.replace('记录', '').replace('时刻', '');
+              const shortName = t(`scenarioShort.${type}`);
 
               return (
                 <TouchableOpacity
@@ -326,7 +322,7 @@ const EditDiaryScreen: React.FC = () => {
         <View style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
           <TextInput
             style={[styles.titleInput, { color: isDark ? '#FFF' : '#333' }]}
-            placeholder={template1.placeholder}
+            placeholder={t(`scenarioPlaceholder.${scenario}`)}
             placeholderTextColor={isDark ? '#888' : '#CCC'}
             value={title}
             onChangeText={setTitle}
@@ -334,7 +330,7 @@ const EditDiaryScreen: React.FC = () => {
           <View style={[styles.divider, { borderBottomColor: isDark ? '#333' : '#F0F0F0' }]} />
           <TextInput
             style={[styles.contentInput, { color: isDark ? '#FFF' : '#444' }]}
-            placeholder="记录今天的故事..."
+            placeholder={t('editDiaryScreen.contentPlaceholder')}
             placeholderTextColor={isDark ? '#888' : '#CCC'}
             value={content}
             onChangeText={setContent}
@@ -370,14 +366,14 @@ const EditDiaryScreen: React.FC = () => {
           />
           {!user?.isVip?.value && (
             <Text style={[styles.vipHintText, { color: isDark ? '#888' : '#999' }]}>
-              开通 VIP 可上传最多 9 张图片/视频
+              {t('editDiaryScreen.vipMediaHint')}
             </Text>
           )}
         </View>
 
         {/* 属性卡片 (日期、地点、心情、天气) */}
         <View style={[styles.card, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
-          <DatePicker selectedDate={date} onDateChange={setDate} label="日期" />
+          <DatePicker selectedDate={date} onDateChange={setDate} label={t('editDiaryScreen.dateLabel')} />
           <View
             style={[
               styles.divider,
@@ -386,10 +382,10 @@ const EditDiaryScreen: React.FC = () => {
           />
 
           <View style={styles.locationRow}>
-            <Text style={[styles.metadataLabel, { color: isDark ? '#AAA' : '#666' }]}>地点</Text>
+            <Text style={[styles.metadataLabel, { color: isDark ? '#AAA' : '#666' }]}>{t('editDiaryScreen.locationLabel')}</Text>
             <TextInput
               style={[styles.locationInput, { color: isDark ? '#FFF' : '#333' }]}
-              placeholder="📍 添加地点（选填）"
+              placeholder={t('editDiaryScreen.locationPlaceholder')}
               placeholderTextColor={isDark ? '#888' : '#CCC'}
               value={location}
               onChangeText={setLocation}
@@ -423,10 +419,10 @@ const EditDiaryScreen: React.FC = () => {
         >
           <View style={styles.switchInfo}>
             <Text style={[styles.switchTitle, { color: isDark ? '#FFF' : '#333' }]}>
-              🌍 分享到圈子
+              {t('editDiaryScreen.publicTitle')}
             </Text>
             <Text style={[styles.switchSubtitle, { color: isDark ? '#AAA' : '#999' }]}>
-              让所有人都能看到这篇美好的日记
+              {t('editDiaryScreen.publicSubtitle')}
             </Text>
           </View>
           <Switch
@@ -440,7 +436,7 @@ const EditDiaryScreen: React.FC = () => {
         {/* 保存按钮 */}
         <View style={styles.saveButtonContainer}>
           <HandDrawnButton
-            title={isEditMode ? '更新日记' : '保存日记'}
+            title={isEditMode ? t('editDiaryScreen.updateDiary') : t('editDiaryScreen.saveDiary')}
             size="large"
             onPress={handleSave}
             color={HEALING_COLORS.pink[500]}

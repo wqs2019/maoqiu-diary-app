@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -15,7 +16,6 @@ import {
 import { MediaPreviewer } from '../../components/handDrawn/MediaPreviewer';
 import { LoadableImage } from '../../components/handDrawn/PhotoWall';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
-import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
@@ -41,6 +41,7 @@ interface PhotoItem extends MediaResource {
 const PhotoWallScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
   const { scenario } = route.params || {};
   const { isDark } = useAppTheme();
 
@@ -65,7 +66,7 @@ const PhotoWallScreen: React.FC = () => {
           mediaList.push({
             ...m,
             diaryId: d._id,
-            diaryTitle: d.title || '无标题日记',
+            diaryTitle: d.title || t('photoWallScreen.untitledDiary'),
           });
         });
       }
@@ -96,8 +97,10 @@ const PhotoWallScreen: React.FC = () => {
 
   const scenarioName =
     scenario === 'all' || !scenario
-      ? '全部记录'
-      : SCENARIO_TEMPLATES[scenario as ScenarioType]?.name || '记录';
+      ? t('photoWallScreen.allRecords')
+      : scenario
+        ? t(`scenario.${scenario as ScenarioType}`)
+        : t('photoWallScreen.record');
 
   const handlePreview = (index: number) => {
     setPreviewIndex(index);
@@ -135,7 +138,7 @@ const PhotoWallScreen: React.FC = () => {
         {item.type === 'livePhoto' && (
           <View style={styles.liveBadge}>
             <Ionicons name="aperture" size={12} color="#FFF" />
-            <Text style={styles.liveBadgeText}>实况</Text>
+            <Text style={styles.liveBadgeText}>{t('photoWallScreen.livePhoto')}</Text>
           </View>
         )}
 
@@ -164,7 +167,7 @@ const PhotoWallScreen: React.FC = () => {
           <Ionicons name="chevron-back" size={24} color={isDark ? '#FFF' : '#111827'} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>
-          {scenarioName} - 时光相册
+          {t('photoWallScreen.title', { scenarioName })}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -194,7 +197,7 @@ const PhotoWallScreen: React.FC = () => {
           <View style={styles.emptyContainer}>
             <Ionicons name="images-outline" size={48} color={isDark ? '#444' : '#D1D5DB'} />
             <Text style={[styles.emptyText, { color: isDark ? '#888' : '#9CA3AF' }]}>
-              这里空空如也，快去记录吧
+              {t('photoWallScreen.empty')}
             </Text>
           </View>
         )}

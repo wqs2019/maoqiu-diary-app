@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Constants from 'expo-constants';
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -116,17 +117,18 @@ const compareVersions = (currentVersion: string, targetVersion: string) => {
   return 0;
 };
 
-const getRestoreErrorMessage = (error: any) => {
+const getRestoreErrorMessage = (error: any, t: (key: string) => string) => {
   if (error?.code === VIP_ERROR_CODES.SUBSCRIPTION_OWNED_BY_OTHER_USER) {
-    return '未查询到有效订阅';
+    return t('subscriptionScreen.errors.noValidSubscription');
   }
 
-  return error?.message || '恢复失败，请稍后重试';
+  return error?.message || t('subscriptionScreen.errors.restoreFailed');
 };
 
 const SubscriptionScreen: React.FC = () => {
   const navigation = useNavigation<SubscriptionScreenNavigationProp>();
   const { isDark } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const currentHealingColors = isDark
     ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS }
@@ -137,7 +139,7 @@ const SubscriptionScreen: React.FC = () => {
 
   const [selectedPlan, setSelectedPlan] = useState<string>('com.maoqiu.diary.yearly');
   const [loading, setLoading] = useState<boolean>(false);
-  const [loadingMessage, setLoadingMessage] = useState<string>('处理中...');
+  const [loadingMessage, setLoadingMessage] = useState<string>(t('subscriptionScreen.loading.processing'));
   const [latestVersion, setLatestVersion] = useState<string>('');
   const isActiveVIP = !!user?.isVip?.value;
   const isPurchasing = useRef(false);
@@ -149,48 +151,48 @@ const SubscriptionScreen: React.FC = () => {
 
   const stopLoading = () => {
     setLoading(false);
-    setLoadingMessage('处理中...');
+    setLoadingMessage(t('subscriptionScreen.loading.processing'));
   };
 
   const plans = [
     {
       id: 'com.maoqiu.diary.monthly',
-      title: '连续包月',
+      title: t('subscriptionScreen.plans.monthly.title'),
       price: '¥8',
       originalPrice: '¥12',
-      label: '基础体验',
+      label: t('subscriptionScreen.plans.monthly.label'),
     },
     {
       id: 'com.maoqiu.diary.quarterly',
-      title: '连续包季',
+      title: t('subscriptionScreen.plans.quarterly.title'),
       price: '¥25',
       originalPrice: '¥36',
-      label: '折扣优选',
+      label: t('subscriptionScreen.plans.quarterly.label'),
     },
     {
       id: 'com.maoqiu.diary.half_yearly',
-      title: '连续包半年',
+      title: t('subscriptionScreen.plans.halfYearly.title'),
       price: '¥40',
       originalPrice: '¥72',
-      label: '超值特惠',
+      label: t('subscriptionScreen.plans.halfYearly.label'),
     },
     {
       id: 'com.maoqiu.diary.yearly',
-      title: '连续包年',
+      title: t('subscriptionScreen.plans.yearly.title'),
       price: '¥72',
       originalPrice: '¥144',
-      label: '年度最低，仅 ¥6/月',
+      label: t('subscriptionScreen.plans.yearly.label'),
       isHot: true,
     },
   ];
 
   const features = [
-    { icon: 'image', title: '更多图片', desc: '日记可上传9张高清图片/视频' },
-    { icon: 'book', title: '无限日记本', desc: '不限数量创建分类日记本' },
-    { icon: 'cpu', title: 'AI 智能问答', desc: '解锁无限制 AI 聊天与日记分析' },
-    { icon: 'shield', title: '专属应用锁', desc: '更高强度的隐私保护功能' },
-    { icon: 'share', title: '共享日记本', desc: '与好友分享日记本，同步更新' },
-    { icon: 'briefcase', title: '自定义主题', desc: '根据个人喜好调整应用主题' },
+    { icon: 'image', title: t('subscriptionScreen.features.image.title'), desc: t('subscriptionScreen.features.image.desc') },
+    { icon: 'book', title: t('subscriptionScreen.features.book.title'), desc: t('subscriptionScreen.features.book.desc') },
+    { icon: 'cpu', title: t('subscriptionScreen.features.cpu.title'), desc: t('subscriptionScreen.features.cpu.desc') },
+    { icon: 'shield', title: t('subscriptionScreen.features.shield.title'), desc: t('subscriptionScreen.features.shield.desc') },
+    { icon: 'share', title: t('subscriptionScreen.features.share.title'), desc: t('subscriptionScreen.features.share.desc') },
+    { icon: 'briefcase', title: t('subscriptionScreen.features.briefcase.title'), desc: t('subscriptionScreen.features.briefcase.desc') },
   ];
 
   useEffect(() => {
@@ -243,8 +245,8 @@ const SubscriptionScreen: React.FC = () => {
           if (purchase.purchaseState === 'pending') {
             console.log('IAP: 订单仍在 pending 状态，暂不发放VIP');
             if (isPurchasing.current) {
-              if (navigation.isFocused()) {
-                toast.success('订单处理中，请稍后查看');
+            if (navigation.isFocused()) {
+              toast.success(t('subscriptionScreen.loading.pendingOrder'));
               }
               isPurchasing.current = false;
               stopLoading();
@@ -254,13 +256,13 @@ const SubscriptionScreen: React.FC = () => {
 
           const currentUser = useAuthStore.getState().user;
           if (currentUser) {
-            setLoadingMessage('正在验证购买结果...');
+            setLoadingMessage(t('subscriptionScreen.loading.verifyingPurchase'));
             await verifyVipPurchaseForUser(currentUser._id, receipt);
           }
 
           if (isPurchasing.current) {
             if (navigation.isFocused()) {
-              toast.success('购买成功，已为您开通 VIP');
+              toast.success(t('subscriptionScreen.purchaseSuccess'));
             } else {
               console.log('IAP: 购买成功，但用户已离开订阅页面，静默发放VIP');
             }
@@ -270,7 +272,7 @@ const SubscriptionScreen: React.FC = () => {
           }
 
           console.log('IAP: 开始 finishTransaction...');
-          setLoadingMessage('正在完成订单...');
+          setLoadingMessage(t('subscriptionScreen.loading.finishingOrder'));
           await RNIap.finishTransaction({ purchase, isConsumable: false });
           console.log('IAP: finishTransaction 成功');
         } catch (err) {
@@ -288,29 +290,29 @@ const SubscriptionScreen: React.FC = () => {
       console.error('IAP: purchaseErrorListener 收到错误', error);
 
       const errorCode = String(error.code);
-      let errorMessage = '购买过程中发生未知错误';
+      let errorMessage = t('subscriptionScreen.errors.unknownPurchaseError');
 
       switch (errorCode) {
         case 'user-cancelled':
         case 'E_USER_CANCELLED':
         case 'PROMISE_BUY_ITEM':
-          errorMessage = '您已取消购买';
+          errorMessage = t('subscriptionScreen.errors.cancelled');
           break;
         case 'E_ALREADY_OWNED':
-          errorMessage = '您已经订阅过该商品';
+          errorMessage = t('subscriptionScreen.errors.alreadyOwned');
           break;
         case 'E_ITEM_UNAVAILABLE':
-          errorMessage = '当前商品不可用，请稍后再试';
+          errorMessage = t('subscriptionScreen.errors.itemUnavailable');
           break;
         case 'E_NETWORK_ERROR':
-          errorMessage = '网络连接失败，请检查网络设置';
+          errorMessage = t('subscriptionScreen.errors.networkError');
           break;
         case 'E_SERVICE_ERROR':
-          errorMessage = '苹果支付服务异常，请稍后再试';
+          errorMessage = t('subscriptionScreen.errors.serviceError');
           break;
         case 'E_RECEIPT_FAILED':
         case 'E_RECEIPT_FINISHED_FAILED':
-          errorMessage = '验证购买凭证失败，请联系客服';
+          errorMessage = t('subscriptionScreen.errors.receiptFailed');
           break;
         default:
           errorMessage = error.message || errorMessage;
@@ -328,7 +330,7 @@ const SubscriptionScreen: React.FC = () => {
         errorCode !== 'PROMISE_BUY_ITEM'
       ) {
         if (navigation.isFocused()) {
-          Alert.alert('购买失败', errorMessage);
+          Alert.alert(t('subscriptionScreen.purchaseFailed'), errorMessage);
         } else {
           console.log('IAP: 购买失败，但用户已离开订阅页面，不弹窗打扰', errorMessage);
         }
@@ -355,13 +357,13 @@ const SubscriptionScreen: React.FC = () => {
 
     if (latestVersion && compareVersions(APP_VERSION, latestVersion) < 0) {
       Alert.alert(
-        '建议升级',
-        `当前版本为 ${APP_VERSION}，最新版本为 ${latestVersion}。请升级到最新版本后再开通会员。`
+        t('subscriptionScreen.upgradeSuggestTitle'),
+        t('subscriptionScreen.upgradeSuggestMessage', { current: APP_VERSION, latest: latestVersion })
       );
       return;
     }
 
-    startLoading('正在连接 App Store...');
+    startLoading(t('subscriptionScreen.loading.connectStore'));
     isPurchasing.current = true;
     try {
       console.log('IAP: 准备发起 requestPurchase，SKU:', selectedPlan);
@@ -376,20 +378,20 @@ const SubscriptionScreen: React.FC = () => {
       });
       console.log('IAP: requestPurchase 发起成功，返回信息:', requestResult);
       // 购买结果由 purchaseUpdatedListener / purchaseErrorListener 驱动，在此保持全局 loading
-      setLoadingMessage('请稍候，正在等待苹果返回购买结果...');
+      setLoadingMessage(t('subscriptionScreen.loading.waitingPurchaseResult'));
     } catch (err: any) {
       console.error('IAP: requestPurchase 异常:', err);
       stopLoading();
       isPurchasing.current = false;
       if (err.code !== 'user-cancelled' && err.code !== 'E_USER_CANCELLED') {
-        Alert.alert('请求失败', err.message);
+        Alert.alert(t('subscriptionScreen.requestFailed'), err.message);
       }
     }
   };
 
   const handleRestore = async () => {
     if (loading) return;
-    startLoading('正在恢复购买...');
+    startLoading(t('subscriptionScreen.loading.restoring'));
     console.log('IAP: 开始执行恢复购买流程...');
     // 移除了 Alert.alert('恢复购买...') 避免与结果弹窗重叠显示
     try {
@@ -406,23 +408,23 @@ const SubscriptionScreen: React.FC = () => {
         const receipt = await resolveReceiptForVerification(activePurchase);
 
         if (!currentUser?._id) {
-          throw new Error('请先登录原开通会员的账号');
+          throw new Error(t('subscriptionScreen.loginRequiredForRestore'));
         }
 
         if (!receipt) {
-          throw new Error('未获取到可恢复的购买凭证，请稍后重试');
+          throw new Error(t('subscriptionScreen.restoreReceiptMissing'));
         }
 
-        setLoadingMessage('正在验证恢复结果...');
+        setLoadingMessage(t('subscriptionScreen.loading.verifyingRestore'));
         await verifyVipPurchaseForUser(currentUser._id, receipt);
-        Alert.alert('恢复成功', '您的订阅状态已恢复。');
+        Alert.alert(t('subscriptionScreen.restoreSuccessTitle'), t('subscriptionScreen.restoreSuccessMessage'));
       } else {
         console.log('IAP: 恢复结束，没有找到有效的订阅记录');
-        Alert.alert('恢复结果', '暂无需要恢复的订阅记录。');
+        Alert.alert(t('subscriptionScreen.restoreResultTitle'), t('subscriptionScreen.restoreEmpty'));
       }
     } catch (err: any) {
       console.error('IAP: 恢复购买异常:', err);
-      Alert.alert('恢复失败', getRestoreErrorMessage(err));
+      Alert.alert(t('subscriptionScreen.errors.restoreFailed'), getRestoreErrorMessage(err, t as any));
     } finally {
       console.log('IAP: 恢复购买流程结束');
       stopLoading();
@@ -453,12 +455,12 @@ const SubscriptionScreen: React.FC = () => {
         <Text
           style={[styles.headerTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
         >
-          {isActiveVIP ? '会员中心' : '开通 VIP'}
+          {isActiveVIP ? t('subscriptionScreen.header.active') : t('subscriptionScreen.header.inactive')}
         </Text>
         {!isActiveVIP ? (
           <TouchableOpacity style={styles.headerRight} onPress={handleRestore}>
             <Text style={[styles.restoreText, { color: currentHealingColors.pink[500] }]}>
-              恢复购买
+              {t('subscriptionScreen.header.restore')}
             </Text>
           </TouchableOpacity>
         ) : (
@@ -471,7 +473,7 @@ const SubscriptionScreen: React.FC = () => {
           <View style={[styles.globalLoadingCard, { backgroundColor: isDark ? 'rgba(30,30,30,0.96)' : 'rgba(255,255,255,0.96)' }]}>
             <ActivityIndicator size="large" color={currentHealingColors.pink[500]} />
             <Text style={[styles.globalLoadingTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
-              正在处理订阅
+              {t('subscriptionScreen.loading.overlayTitle')}
             </Text>
             <Text style={[styles.globalLoadingText, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}>
               {loadingMessage}
@@ -496,12 +498,12 @@ const SubscriptionScreen: React.FC = () => {
           >
             <View style={styles.vipCardHeader}>
               <Text style={[styles.vipCardTitle, isActiveVIP && { color: '#FBBF24' }]}>
-                {isActiveVIP ? '毛球日记 尊贵会员' : '毛球日记 高级会员'}
+                {isActiveVIP ? t('subscriptionScreen.vipCard.activeTitle') : t('subscriptionScreen.vipCard.inactiveTitle')}
               </Text>
               <Feather name="award" size={24} color={isActiveVIP ? '#FBBF24' : '#FFF'} />
             </View>
             <Text style={[styles.vipCardSubtitle, isActiveVIP && { color: '#D1D5DB' }]}>
-              {isActiveVIP ? '已解锁所有功能，感谢您的支持' : '解锁所有功能，记录美好生活'}
+              {isActiveVIP ? t('subscriptionScreen.vipCard.activeSubtitle') : t('subscriptionScreen.vipCard.inactiveSubtitle')}
             </Text>
             <View style={styles.vipCardFooter}>
               <Text
@@ -510,11 +512,13 @@ const SubscriptionScreen: React.FC = () => {
                   isActiveVIP && { backgroundColor: 'rgba(251, 191, 36, 0.2)', color: '#FBBF24' },
                 ]}
               >
-                {isActiveVIP ? '当前已开通' : '当前未开通'}
+                {isActiveVIP ? t('subscriptionScreen.vipCard.activeStatus') : t('subscriptionScreen.vipCard.inactiveStatus')}
               </Text>
               {isActiveVIP && user?.isVip?.expiresAt && (
                 <Text style={[styles.vipCardExpire, isActiveVIP && { color: '#9CA3AF' }]}>
-                  {new Date(user.isVip.expiresAt).toLocaleDateString('zh-CN')} 到期
+                  {t('subscriptionScreen.vipCard.expiresAt', {
+                    date: new Date(user.isVip.expiresAt).toLocaleDateString(i18n.language),
+                  })}
                 </Text>
               )}
             </View>
@@ -529,7 +533,7 @@ const SubscriptionScreen: React.FC = () => {
               { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] },
             ]}
           >
-            {isActiveVIP ? '您已解锁以下特权' : '会员专属特权'}
+            {isActiveVIP ? t('subscriptionScreen.featuresTitle.active') : t('subscriptionScreen.featuresTitle.inactive')}
           </Text>
           <View style={styles.featuresGrid}>
             {features.map((feature, index) => (
@@ -576,7 +580,7 @@ const SubscriptionScreen: React.FC = () => {
                 { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] },
               ]}
             >
-              选择订阅方案
+              {t('subscriptionScreen.plansTitle')}
             </Text>
             <View style={styles.plansContainer}>
               {plans.map((plan) => {
@@ -604,7 +608,7 @@ const SubscriptionScreen: React.FC = () => {
                       <View
                         style={[styles.hotTag, { backgroundColor: currentHealingColors.pink[600] }]}
                       >
-                        <Text style={styles.hotTagText}>强烈推荐</Text>
+                        <Text style={styles.hotTagText}>{t('subscriptionScreen.plans.hot')}</Text>
                       </View>
                     )}
                     <Text
@@ -637,7 +641,7 @@ const SubscriptionScreen: React.FC = () => {
                         { color: isDark ? '#6B7280' : currentHealingColors.gray[400] },
                       ]}
                     >
-                      原价 {plan.originalPrice}
+                      {t('subscriptionScreen.plans.originalPrice', { price: plan.originalPrice })}
                     </Text>
                     <View
                       style={[
@@ -682,21 +686,19 @@ const SubscriptionScreen: React.FC = () => {
                 { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500], textAlign: 'left' },
               ]}
             >
-              • 付款：用户确认购买并付款后记入 iTunes 账户。{'\n'}
-              • 续期：苹果 iTunes 账户会在到期前 24 小时内扣款，扣款成功后订阅周期顺延一个订阅周期。{'\n'}
-              • 取消续订：如需取消续订，请在当前扣款周期前至少 24 小时，手动在 iTunes/Apple ID 设置管理中关闭自动续订功能。
+              {t('subscriptionScreen.footerNotes')}
             </Text>
             <View style={styles.footerLinks}>
               <TouchableOpacity
                 onPress={() => {
                   navigation.navigate('Web' as any, {
                     url: APPLE_EULA_URL,
-                    title: '用户协议(EULA)',
+                    title: t('subscriptionScreen.eula'),
                   });
                 }}
               >
                 <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>
-                  用户协议(EULA)
+                  {t('subscriptionScreen.eula')}
                 </Text>
               </TouchableOpacity>
               <Text
@@ -711,12 +713,12 @@ const SubscriptionScreen: React.FC = () => {
                 onPress={() => {
                   navigation.navigate('Web' as any, {
                     url: USER_AGREEMENT_URL,
-                    title: '用户服务协议',
+                    title: t('loginScreen.userAgreement'),
                   });
                 }}
               >
                 <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>
-                  用户服务协议
+                  {t('loginScreen.userAgreement')}
                 </Text>
               </TouchableOpacity>
               <Text
@@ -731,12 +733,12 @@ const SubscriptionScreen: React.FC = () => {
                 onPress={() => {
                   navigation.navigate('Web' as any, {
                     url: PRIVACY_POLICY_URL,
-                    title: '隐私政策',
+                    title: t('loginScreen.privacyPolicy'),
                   });
                 }}
               >
                 <Text style={[styles.linkText, { color: currentHealingColors.pink[500] }]}>
-                  隐私政策
+                  {t('loginScreen.privacyPolicy')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -772,7 +774,7 @@ const SubscriptionScreen: React.FC = () => {
             <ActivityIndicator color={isActiveVIP ? '#FBBF24' : '#FFF'} />
           ) : (
             <Text style={[styles.subscribeButtonText, isActiveVIP && { color: '#FBBF24' }]}>
-              {isActiveVIP ? '管理订阅' : '立即开通'}
+              {isActiveVIP ? t('subscriptionScreen.manage') : t('subscriptionScreen.subscribeNow')}
             </Text>
           )}
         </TouchableOpacity>

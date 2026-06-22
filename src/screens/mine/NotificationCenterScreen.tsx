@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,6 +26,7 @@ const CIRCLE_INTERACTION_TYPES: Notification['type'][] = ['like', 'comment', 'fo
 export default function NotificationCenterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDark } = useAppTheme();
+  const { t, i18n } = useTranslation();
   // 因为消息通知页面还没有引入 currentHealingColors，所以我们使用全局的 HEALING_COLORS.pink[400]
   // 或者是深色模式特有的颜色
   const loadingColor = isDark ? '#FFB6C1' : HEALING_COLORS.pink[400];
@@ -74,7 +76,7 @@ export default function NotificationCenterScreen() {
     setActionLoading(item._id);
     try {
       await respondInvitation(item.relatedId, action, user._id);
-      Alert.alert('提示', action === 'accept' ? '已成功加入日记本' : '已拒绝邀请');
+      Alert.alert(t('common.tip'), action === 'accept' ? t('notificationCenterScreen.alerts.joined') : t('notificationCenterScreen.alerts.declined'));
       // Update local state
       setNotifications(prev => prev.map(n => 
         n._id === item._id 
@@ -87,7 +89,7 @@ export default function NotificationCenterScreen() {
         await fetchNotebooks(user._id);
       }
     } catch (error: any) {
-      Alert.alert('操作失败', error.message || '请稍后重试');
+      Alert.alert(t('notificationCenterScreen.alerts.actionFailed'), error.message || t('notificationCenterScreen.alerts.retry'));
     } finally {
       setActionLoading(null);
     }
@@ -132,7 +134,7 @@ export default function NotificationCenterScreen() {
           <View style={styles.headerTextContainer}>
             <Text style={[styles.title, { color: isDark ? '#FFF' : '#1F2937' }]}>{item.title}</Text>
             <Text style={[styles.time, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-              {new Date(item.createdAt).toLocaleString()}
+              {new Date(item.createdAt).toLocaleString(i18n.language)}
             </Text>
           </View>
         </View>
@@ -143,7 +145,7 @@ export default function NotificationCenterScreen() {
 
         {canOpenReview && (
           <Text style={[styles.jumpHint, { color: isDark ? '#F9A8D4' : HEALING_COLORS.pink[500] }]}>
-            点击查看对应审核记录
+            {t('notificationCenterScreen.reviewHint')}
           </Text>
         )}
 
@@ -158,19 +160,19 @@ export default function NotificationCenterScreen() {
                     style={[styles.actionButton, styles.rejectButton, { backgroundColor: isDark ? '#374151' : '#F3F4F6' }]} 
                     onPress={() => handleRespond(item, 'reject')}
                   >
-                    <Text style={[styles.actionText, { color: isDark ? '#D1D5DB' : '#4B5563' }]}>拒绝</Text>
+                    <Text style={[styles.actionText, { color: isDark ? '#D1D5DB' : '#4B5563' }]}>{t('notificationCenterScreen.reject')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={[styles.actionButton, styles.acceptButton]} 
                     onPress={() => handleRespond(item, 'accept')}
                   >
-                    <Text style={[styles.actionText, { color: '#FFFFFF' }]}>同意</Text>
+                    <Text style={[styles.actionText, { color: '#FFFFFF' }]}>{t('notificationCenterScreen.accept')}</Text>
                   </TouchableOpacity>
                 </>
               )
             ) : (
               <Text style={[styles.statusText, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-                {item.actionStatus === 'accepted' ? '已同意' : '已拒绝'}
+                {item.actionStatus === 'accepted' ? t('notificationCenterScreen.accepted') : t('notificationCenterScreen.rejected')}
               </Text>
             )}
           </View>
@@ -185,7 +187,7 @@ export default function NotificationCenterScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="chevron-left" size={24} color={isDark ? '#FFF' : '#000'} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#000' }]}>消息通知</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#000' }]}>{t('notificationCenterScreen.title')}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -196,7 +198,7 @@ export default function NotificationCenterScreen() {
       ) : notifications.length === 0 ? (
         <View style={styles.centerContainer}>
           <Feather name="bell-off" size={48} color={isDark ? '#374151' : '#D1D5DB'} />
-          <Text style={[styles.emptyText, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>暂无通知</Text>
+          <Text style={[styles.emptyText, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>{t('notificationCenterScreen.empty')}</Text>
         </View>
       ) : (
         <FlatList

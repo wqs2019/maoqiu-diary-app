@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -26,6 +27,7 @@ const BADGE_ITEM_WIDTH = Math.floor((width - 40 - BADGE_GRID_GAP) / 2);
 const BadgesScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const { isDark } = useAppTheme();
   const surfaceColor = isDark ? '#1C1C1E' : '#FFFFFF';
@@ -64,8 +66,12 @@ const BadgesScreen: React.FC = () => {
       return '';
     }
 
-    return date.toLocaleDateString();
+    return date.toLocaleDateString(i18n.language);
   };
+
+  const getBadgeName = (badge: BadgeConfig) => t(`badgesScreen.badges.${badge.id}.name`, { defaultValue: badge.name });
+  const getBadgeDescription = (badge: BadgeConfig) =>
+    t(`badgesScreen.badges.${badge.id}.description`, { defaultValue: badge.description });
 
   const renderBadgeCard = (badge: BadgeConfig, isUnlocked: boolean) => (
     <TouchableOpacity
@@ -89,7 +95,7 @@ const BadgesScreen: React.FC = () => {
         handleBadgePress(badge);
       }}
       accessibilityRole="button"
-      accessibilityLabel={`查看徽章 ${badge.name} 详情`}
+      accessibilityLabel={t('badgesScreen.modalAccessibility', { name: getBadgeName(badge) })}
     >
       <View style={styles.badgeCardTopRow}>
         <View
@@ -130,19 +136,19 @@ const BadgesScreen: React.FC = () => {
               { color: isUnlocked ? badge.color : tertiaryTextColor },
             ]}
           >
-            {isUnlocked ? '已点亮' : '待解锁'}
+            {isUnlocked ? t('badgesScreen.lit') : t('badgesScreen.locked')}
           </Text>
         </View>
       </View>
 
       <Text style={[styles.badgeName, { color: primaryTextColor }]} numberOfLines={2}>
-        {badge.name}
+        {getBadgeName(badge)}
       </Text>
       <Text
         style={[styles.badgeDescription, { color: isUnlocked ? secondaryTextColor : tertiaryTextColor }]}
         numberOfLines={3}
       >
-        {badge.description}
+        {getBadgeDescription(badge)}
       </Text>
 
       <View
@@ -152,7 +158,7 @@ const BadgesScreen: React.FC = () => {
         ]}
       >
         <Text style={[styles.badgeFooterText, { color: secondaryTextColor }]}>
-          {isUnlocked ? formatBadgeDate(badge.id) || '已加入收藏' : '点击查看解锁条件'}
+          {isUnlocked ? formatBadgeDate(badge.id) || t('badgesScreen.added') : t('badgesScreen.unlockHint')}
         </Text>
       </View>
     </TouchableOpacity>
@@ -177,9 +183,9 @@ const BadgesScreen: React.FC = () => {
       >
         <ActivityIndicator size="small" color={HEALING_COLORS.pink[500]} />
       </View>
-      <Text style={[styles.stateTitle, { color: primaryTextColor }]}>正在整理你的徽章墙</Text>
+      <Text style={[styles.stateTitle, { color: primaryTextColor }]}>{t('badgesScreen.loadingTitle')}</Text>
       <Text style={[styles.stateDescription, { color: secondaryTextColor }]}>
-        我们正在统计你的成就记录，马上就好。
+        {t('badgesScreen.loadingDesc')}
       </Text>
     </View>
   );
@@ -211,7 +217,7 @@ const BadgesScreen: React.FC = () => {
               }}
               activeOpacity={0.8}
               accessibilityRole="button"
-              accessibilityLabel="返回上一页"
+              accessibilityLabel={t('badgesScreen.back')}
             >
               <Feather name="chevron-left" size={22} color={primaryTextColor} />
             </TouchableOpacity>
@@ -233,10 +239,12 @@ const BadgesScreen: React.FC = () => {
           </View>
 
           <View style={styles.headerTextBlock}>
-            <Text style={[styles.eyebrow, { color: HEALING_COLORS.pink[500] }]}>Achievement Wall</Text>
-            <Text style={[styles.headerTitle, { color: primaryTextColor }]}>我的徽章</Text>
+            <Text style={[styles.eyebrow, { color: HEALING_COLORS.pink[500] }]}>
+              {t('badgesScreen.eyebrow')}
+            </Text>
+            <Text style={[styles.headerTitle, { color: primaryTextColor }]}>{t('badgesScreen.title')}</Text>
             <Text style={[styles.headerSubtitle, { color: secondaryTextColor }]}>
-              你的每一次记录、坚持与探索，都会慢慢点亮这面属于自己的成就墙。
+              {t('badgesScreen.subtitle')}
             </Text>
           </View>
 
@@ -259,23 +267,23 @@ const BadgesScreen: React.FC = () => {
               >
                 <Feather name="award" size={18} color={HEALING_COLORS.pink[500]} />
               </View>
-              <Text style={[styles.heroTitle, { color: primaryTextColor }]}>成就总览</Text>
+              <Text style={[styles.heroTitle, { color: primaryTextColor }]}>{t('badgesScreen.heroTitle')}</Text>
             </View>
 
             <View style={styles.statsRow}>
               <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
                 <Text style={[styles.statValue, { color: primaryTextColor }]}>{collectedBadgeIds.length}</Text>
-                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>已点亮</Text>
+                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>{t('badgesScreen.stats.lit')}</Text>
               </View>
               <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
                 <Text style={[styles.statValue, { color: primaryTextColor }]}>{lockedBadgeList.length}</Text>
-                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>待解锁</Text>
+                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>{t('badgesScreen.stats.locked')}</Text>
               </View>
               <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
                 <Text style={[styles.statValue, { color: primaryTextColor }]}>
                   {Math.round(progress * 100)}%
                 </Text>
-                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>完成进度</Text>
+                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>{t('badgesScreen.stats.progress')}</Text>
               </View>
             </View>
 
@@ -304,9 +312,9 @@ const BadgesScreen: React.FC = () => {
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeader}>
                 <View>
-                  <Text style={[styles.sectionTitle, { color: primaryTextColor }]}>已点亮徽章</Text>
+                  <Text style={[styles.sectionTitle, { color: primaryTextColor }]}>{t('badgesScreen.sections.unlocked')}</Text>
                   <Text style={[styles.sectionSubtitle, { color: secondaryTextColor }]}>
-                    已经达成的里程碑，会在这里闪闪发光。
+                    {t('badgesScreen.sections.unlockedDesc')}
                   </Text>
                 </View>
                 <View
@@ -316,7 +324,7 @@ const BadgesScreen: React.FC = () => {
                   ]}
                 >
                   <Text style={[styles.sectionCountText, { color: HEALING_COLORS.pink[600] }]}>
-                    {unlockedBadgeList.length} 枚
+                    {t('badgesScreen.sections.count', { count: unlockedBadgeList.length })}
                   </Text>
                 </View>
               </View>
@@ -334,9 +342,9 @@ const BadgesScreen: React.FC = () => {
                   ]}
                 >
                   <Feather name="award" size={20} color={HEALING_COLORS.pink[400]} />
-                  <Text style={[styles.emptySectionTitle, { color: primaryTextColor }]}>还没有点亮的徽章</Text>
+                  <Text style={[styles.emptySectionTitle, { color: primaryTextColor }]}>{t('badgesScreen.sections.emptyTitle')}</Text>
                   <Text style={[styles.emptySectionText, { color: secondaryTextColor }]}>
-                    先写下第一篇日记，你的徽章墙就会开始发光。
+                    {t('badgesScreen.sections.emptyDesc')}
                   </Text>
                 </View>
               )}
@@ -345,9 +353,9 @@ const BadgesScreen: React.FC = () => {
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeader}>
                 <View>
-                  <Text style={[styles.sectionTitle, { color: primaryTextColor }]}>待解锁徽章</Text>
+                  <Text style={[styles.sectionTitle, { color: primaryTextColor }]}>{t('badgesScreen.sections.locked')}</Text>
                   <Text style={[styles.sectionSubtitle, { color: secondaryTextColor }]}>
-                    继续记录生活，这些成就会逐步被你收入囊中。
+                    {t('badgesScreen.sections.lockedDesc')}
                   </Text>
                 </View>
                 <View
@@ -357,7 +365,7 @@ const BadgesScreen: React.FC = () => {
                   ]}
                 >
                   <Text style={[styles.sectionCountText, { color: secondaryTextColor }]}>
-                    {lockedBadgeList.length} 枚
+                    {t('badgesScreen.sections.count', { count: lockedBadgeList.length })}
                   </Text>
                 </View>
               </View>
@@ -411,7 +419,7 @@ const BadgesScreen: React.FC = () => {
                 </View>
 
                 <Text style={[styles.modalBadgeName, { color: primaryTextColor }]}>
-                  {selectedBadge.name}
+                  {getBadgeName(selectedBadge)}
                 </Text>
 
                 <View
@@ -428,17 +436,17 @@ const BadgesScreen: React.FC = () => {
                 >
                   {collectedBadgeIds.includes(selectedBadge.id) ? (
                     <Text style={[styles.modalStatusText, { color: selectedBadge.color }]}>
-                      已获得{formatBadgeDate(selectedBadge.id) ? ` · ${formatBadgeDate(selectedBadge.id)}` : ''}
+                      {t('badgesScreen.modal.obtained')}{formatBadgeDate(selectedBadge.id) ? ` · ${formatBadgeDate(selectedBadge.id)}` : ''}
                     </Text>
                   ) : (
                     <Text style={[styles.modalStatusText, { color: tertiaryTextColor }]}>
-                      尚未获得
+                      {t('badgesScreen.modal.notObtained')}
                     </Text>
                   )}
                 </View>
 
                 <Text style={[styles.modalBadgeDesc, { color: secondaryTextColor }]}>
-                  {selectedBadge.description}
+                  {getBadgeDescription(selectedBadge)}
                 </Text>
               </>
             )}

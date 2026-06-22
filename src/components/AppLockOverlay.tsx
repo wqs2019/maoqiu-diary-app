@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import { useAppStore } from '../store/appStore';
 
 export const AppLockOverlay: React.FC = () => {
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const biometricEnabled = useAppStore((state) => state.biometricEnabled);
   const isUnlocked = useAppStore((state) => state.isUnlocked);
   const setUnlocked = useAppStore((state) => state.setUnlocked);
@@ -36,9 +38,9 @@ export const AppLockOverlay: React.FC = () => {
   const handleBiometricAuth = useCallback(async () => {
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: '解锁毛球日记',
+        promptMessage: t('appLock.prompt'),
         fallbackLabel: '',
-        cancelLabel: '取消',
+        cancelLabel: t('common.cancel'),
         disableDeviceFallback: true,
       });
       if (result.success) {
@@ -86,7 +88,7 @@ export const AppLockOverlay: React.FC = () => {
         <View style={styles.iconContainer}>
           <Ionicons name="lock-closed" size={48} color={HEALING_COLORS.pink[400]} />
         </View>
-        <Text style={[styles.title, { color: textColor }]}>已锁定</Text>
+        <Text style={[styles.title, { color: textColor }]}>{t('appLock.locked')}</Text>
       </View>
 
       <View style={styles.keyboard}>
@@ -101,7 +103,7 @@ export const AppLockOverlay: React.FC = () => {
             color={HEALING_COLORS.pink[400]}
           />
           <Text style={[styles.biometricText, { color: textColor }]}>
-            点击进行面容解锁
+            {t('appLock.unlockWithBiometric')}
           </Text>
         </TouchableOpacity>
       </View>

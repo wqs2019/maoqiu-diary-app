@@ -6,6 +6,7 @@ import * as RNIap from 'react-native-iap';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import './src/i18n';
 import { AppLockOverlay } from './src/components/AppLockOverlay';
 
 import { PortalProvider } from '@/components/common/Portal';
