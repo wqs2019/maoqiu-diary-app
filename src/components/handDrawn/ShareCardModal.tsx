@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import React, { useRef, useState } from 'react';
 import {
@@ -17,6 +18,7 @@ import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'reac
 import ViewShot from 'react-native-view-shot';
 
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
+import { useToast } from '../common/Toast';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { Diary } from '../../types';
@@ -121,8 +123,10 @@ const getShareCardTheme = (scenarioType?: string): ShareCardTheme =>
   (scenarioType && SHARE_CARD_THEMES[scenarioType]) || DEFAULT_SHARE_CARD_THEME;
 
 export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, onClose }) => {
-  const viewShotRef = useRef<ViewShot>(null);
+  const exportViewShotRef = useRef<ViewShot>(null);
+  const toast = useToast();
   const [isSharing, setIsSharing] = useState(false);
+  const [isSavingImage, setIsSavingImage] = useState(false);
 
   const scenario = SCENARIO_TEMPLATES[diary.scenario];
   const mood = getMoodConfig(diary.mood);
@@ -140,23 +144,59 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
     day: 'numeric',
   });
 
+  const exportCardImage = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const uri = await exportViewShotRef.current?.capture?.();
+    if (!uri) {
+      throw new Error('share_card_capture_failed');
+    }
+
+    return uri;
+  };
+
+  const handleSaveImage = async () => {
+    let shouldCloseAfterSave = false;
+
+    try {
+      setIsSavingImage(true);
+      const permission = await MediaLibrary.requestPermissionsAsync(true);
+      if (!permission.granted) {
+        toast.error('请先允许访问相册，才能保存图片');
+        return;
+      }
+
+      const uri = await exportCardImage();
+      await MediaLibrary.saveToLibraryAsync(uri);
+      shouldCloseAfterSave = true;
+    } catch (e) {
+      console.error('Save share card error:', e);
+      toast.error('保存图片失败，请稍后重试');
+    } finally {
+      setIsSavingImage(false);
+      if (shouldCloseAfterSave) {
+        onClose();
+        setTimeout(() => {
+          toast.success('图片已保存到系统相册');
+        }, 250);
+      }
+    }
+  };
+
   const handleShare = async () => {
     try {
       setIsSharing(true);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      if (viewShotRef.current?.capture) {
-        const uri = await viewShotRef.current.capture();
-        const isAvailable = await Sharing.isAvailableAsync();
-        if (isAvailable) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'image/jpeg',
-            dialogTitle: '分享日记卡片',
-          });
-        }
+      const uri = await exportCardImage();
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (isAvailable) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/jpeg',
+          dialogTitle: '分享日记卡片',
+        });
       }
     } catch (e) {
       console.error('Share error:', e);
+      toast.error('打开分享失败，请稍后重试');
     } finally {
       setIsSharing(false);
       onClose();
@@ -243,10 +283,100 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
     );
   };
 
+  const renderShareCard = (withRadius: boolean) => (
+    <View style={[styles.card, !withRadius && styles.exportNoRadius]}>
+      <View style={styles.gradientLayer}>
+        <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <Defs>
+            <SvgLinearGradient id="shareCardGradient" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0%" stopColor={shareTheme.gradient[0]} />
+              <Stop offset="58%" stopColor={shareTheme.gradient[1]} />
+              <Stop offset="100%" stopColor={shareTheme.gradient[2]} />
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100" height="100" fill="url(#shareCardGradient)" />
+        </Svg>
+      </View>
+      <View style={[styles.decorCircleTop, { backgroundColor: withOpacity(accentColor, '22') }]} />
+      <View style={[styles.decorCircleMiddle, { backgroundColor: withOpacity(mood?.primary, '18') }]} />
+      <View style={[styles.decorCircleBottom, { backgroundColor: withOpacity(weather?.primary, '16') }]} />
+
+      <View
+        style={[
+          styles.heroSection,
+          {
+            backgroundColor: withOpacity(accentColor, '14'),
+            borderBottomColor: withOpacity(accentColor, '1E'),
+          },
+        ]}
+      >
+        <View style={styles.heroTopRow}>
+          <View style={styles.brandBadge}>
+            <Text style={styles.brandBadgeText}>MAOQIU DIARY</Text>
+          </View>
+          <Text style={styles.heroScenarioIcon}>{scenario?.icon || '🌷'}</Text>
+        </View>
+
+        <View style={styles.metaRow}>
+          <View style={[styles.metaChip, { backgroundColor: withOpacity(accentColor, '18') }]}>
+            <Text style={[styles.metaChipText, { color: accentColor }]}>{scenario?.name || '日记'}</Text>
+          </View>
+          <View style={[styles.metaChip, styles.metaChipSoft, styles.metaChipSpacing]}>
+            <Text style={styles.metaChipSoftText}>{mood?.emoji} {mood?.label || '心情'}</Text>
+          </View>
+          <View style={[styles.metaChip, styles.metaChipSoft, styles.metaChipSpacing]}>
+            <Text style={styles.metaChipSoftText}>{weather?.emoji} {weather?.label || '天气'}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.heroDate}>{formattedDate}</Text>
+        <Text style={styles.diaryTitle}>{heroTitle}</Text>
+        <Text style={styles.heroLead} numberOfLines={2}>
+          {shareTheme.heroLead}
+        </Text>
+
+        {renderHeroMedia()}
+      </View>
+
+      <View style={styles.cardBody}>
+        <View style={styles.contentCard}>
+          <Text style={styles.contentLabel}>TODAY'S NOTE</Text>
+          <Text style={styles.content} numberOfLines={3}>
+            {contentText}
+          </Text>
+        </View>
+
+        {renderMediaGrid()}
+
+        <View style={styles.footerCard}>
+          <View style={styles.posterFooterTop}>
+            <View style={styles.footerBadge}>
+              <View style={styles.footerDot} />
+              <Text style={styles.footerBrand}>毛球日记</Text>
+            </View>
+            <Text style={styles.posterFooterMeta}>{posterMetaLine || '认真记录每一天'}</Text>
+          </View>
+          <Text style={styles.posterFooterTitle}>{shareTheme.posterTitle}</Text>
+          <Text style={styles.posterFooterSubtitle}>{shareTheme.posterSubtitle}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
   return (
     <Modal visible={visible} animationType="fade" transparent>
       <View style={styles.overlay}>
         <SafeAreaView style={styles.safeArea}>
+          <View pointerEvents="none" style={styles.hiddenCaptureContainer}>
+            <ViewShot
+              ref={exportViewShotRef}
+              options={{ format: 'jpg', quality: 0.9 }}
+              style={[styles.viewShotContainer, styles.hiddenCaptureCard, { width: PREVIEW_CARD_WIDTH }]}
+            >
+              {renderShareCard(false)}
+            </ViewShot>
+          </View>
+
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={24} color="#fff" />
@@ -264,104 +394,44 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.cardWrapper}>
-              <ViewShot
-                ref={viewShotRef}
-                options={{ format: 'jpg', quality: 0.9 }}
-                style={[styles.viewShotContainer, { width: PREVIEW_CARD_WIDTH }]}
-              >
-                <View style={styles.card}>
-                  <View style={styles.gradientLayer}>
-                    <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                      <Defs>
-                        <SvgLinearGradient id="shareCardGradient" x1="0" y1="0" x2="1" y2="1">
-                          <Stop offset="0%" stopColor={shareTheme.gradient[0]} />
-                          <Stop offset="58%" stopColor={shareTheme.gradient[1]} />
-                          <Stop offset="100%" stopColor={shareTheme.gradient[2]} />
-                        </SvgLinearGradient>
-                      </Defs>
-                      <Rect x="0" y="0" width="100" height="100" fill="url(#shareCardGradient)" />
-                    </Svg>
-                  </View>
-                  <View style={[styles.decorCircleTop, { backgroundColor: withOpacity(accentColor, '22') }]} />
-                  <View style={[styles.decorCircleMiddle, { backgroundColor: withOpacity(mood?.primary, '18') }]} />
-                  <View style={[styles.decorCircleBottom, { backgroundColor: withOpacity(weather?.primary, '16') }]} />
-
-                  <View
-                    style={[
-                      styles.heroSection,
-                      {
-                        backgroundColor: withOpacity(accentColor, '14'),
-                        borderBottomColor: withOpacity(accentColor, '1E'),
-                      },
-                    ]}
-                  >
-                    <View style={styles.heroTopRow}>
-                      <View style={styles.brandBadge}>
-                        <Text style={styles.brandBadgeText}>MAOQIU DIARY</Text>
-                      </View>
-                      <Text style={styles.heroScenarioIcon}>{scenario?.icon || '🌷'}</Text>
-                    </View>
-
-                    <View style={styles.metaRow}>
-                      <View style={[styles.metaChip, { backgroundColor: withOpacity(accentColor, '18') }]}>
-                        <Text style={[styles.metaChipText, { color: accentColor }]}>{scenario?.name || '日记'}</Text>
-                      </View>
-                      <View style={[styles.metaChip, styles.metaChipSoft, styles.metaChipSpacing]}>
-                        <Text style={styles.metaChipSoftText}>{mood?.emoji} {mood?.label || '心情'}</Text>
-                      </View>
-                      <View style={[styles.metaChip, styles.metaChipSoft, styles.metaChipSpacing]}>
-                        <Text style={styles.metaChipSoftText}>{weather?.emoji} {weather?.label || '天气'}</Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.heroDate}>{formattedDate}</Text>
-                    <Text style={styles.diaryTitle}>{heroTitle}</Text>
-                    <Text style={styles.heroLead} numberOfLines={2}>
-                      {shareTheme.heroLead}
-                    </Text>
-
-                    {renderHeroMedia()}
-                  </View>
-
-                  <View style={styles.cardBody}>
-                    <View style={styles.contentCard}>
-                      <Text style={styles.contentLabel}>TODAY'S NOTE</Text>
-                      <Text style={styles.content} numberOfLines={3}>
-                        {contentText}
-                      </Text>
-                    </View>
-
-                    {renderMediaGrid()}
-
-                    <View style={styles.footerCard}>
-                      <View style={styles.posterFooterTop}>
-                        <View style={styles.footerBadge}>
-                          <View style={styles.footerDot} />
-                          <Text style={styles.footerBrand}>毛球日记</Text>
-                        </View>
-                        <Text style={styles.posterFooterMeta}>{posterMetaLine || '认真记录每一天'}</Text>
-                      </View>
-                      <Text style={styles.posterFooterTitle}>{shareTheme.posterTitle}</Text>
-                      <Text style={styles.posterFooterSubtitle}>{shareTheme.posterSubtitle}</Text>
-                    </View>
-                  </View>
-                </View>
-              </ViewShot>
+              <View style={[styles.viewShotContainer, { width: PREVIEW_CARD_WIDTH }]}>
+                {renderShareCard(true)}
+              </View>
             </View>
           </ScrollView>
 
           <View style={styles.bottomActionContainer}>
             <Text style={styles.bottomHint}>保存后可以分享到聊天、朋友圈或社交平台</Text>
-            <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={isSharing}>
-              {isSharing ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="paper-plane" size={18} color="#fff" />
-                  <Text style={styles.shareBtnText}>保存并分享</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={[styles.secondaryBtn, (isSavingImage || isSharing) && styles.buttonDisabled]}
+                onPress={handleSaveImage}
+                disabled={isSavingImage || isSharing}
+              >
+                {isSavingImage ? (
+                  <ActivityIndicator color={HEALING_COLORS.pink[500]} />
+                ) : (
+                  <>
+                    <Ionicons name="download-outline" size={18} color={HEALING_COLORS.pink[500]} />
+                    <Text style={styles.secondaryBtnText}>保存图片</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.shareBtn, (isSavingImage || isSharing) && styles.buttonDisabled]}
+                onPress={handleShare}
+                disabled={isSavingImage || isSharing}
+              >
+                {isSharing ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="paper-plane" size={18} color="#fff" />
+                    <Text style={styles.shareBtnText}>分享图片</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </SafeAreaView>
       </View>
@@ -425,6 +495,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
+  hiddenCaptureContainer: {
+    position: 'absolute',
+    left: -10000,
+    top: 0,
+  },
+  hiddenCaptureCard: {
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
   viewShotContainer: {
     backgroundColor: 'transparent',
     borderRadius: 28,
@@ -440,6 +520,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
     position: 'relative',
+  },
+  exportNoRadius: {
+    borderRadius: 0,
   },
   gradientLayer: {
     ...StyleSheet.absoluteFillObject,
@@ -724,7 +807,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 10,
   },
+  actionRow: {
+    flexDirection: 'row',
+    columnGap: 12,
+  },
+  secondaryBtn: {
+    flex: 1,
+    backgroundColor: '#FFF7FA',
+    paddingVertical: 14,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: withOpacity(HEALING_COLORS.pink[500], '55'),
+  },
+  secondaryBtnText: {
+    color: HEALING_COLORS.pink[500],
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
   shareBtn: {
+    flex: 1,
     backgroundColor: HEALING_COLORS.pink[500],
     paddingVertical: 14,
     borderRadius: 30,
@@ -739,8 +844,11 @@ const styles = StyleSheet.create({
   },
   shareBtnText: {
     color: '#fff',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     marginLeft: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.72,
   },
 });

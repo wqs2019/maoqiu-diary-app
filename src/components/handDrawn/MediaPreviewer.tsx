@@ -505,6 +505,70 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     return 'mp4';
   };
 
+  const getSaveErrorDetail = (error: unknown, fallback: string) => {
+    const knownMessages: Record<string, string> = {
+      watermark_capture_failed: '图片水印渲染失败。',
+      live_photo_video_missing: '缺少实况视频资源。',
+      live_photo_not_supported: '当前设备不支持保存实况图片。',
+      invalid_uri: '资源路径无效。',
+      missing_file: '资源文件不存在。',
+      missing_asset_identifier: '未找到 Live Photo 配对标识，无法保留实况效果。',
+      watermark_failed: 'Live Photo 水印渲染失败。',
+      write_image_failed: '写入带水印的 Live Photo 图片失败。',
+      save_failed: '系统相册保存失败。',
+      insert_video_failed: '视频轨道导出准备失败。',
+      export_failed: '视频导出失败。',
+      export_cancelled: '视频导出已取消。',
+      export_unknown: '视频导出失败。',
+    };
+
+    const normalizeMessage = (value: unknown) => {
+      if (typeof value !== 'string') {
+        return undefined;
+      }
+
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return undefined;
+      }
+
+      return knownMessages[trimmed] || trimmed;
+    };
+
+    if (error instanceof Error) {
+      return normalizeMessage(error.message) || fallback;
+    }
+
+    if (typeof error === 'string') {
+      return normalizeMessage(error) || fallback;
+    }
+
+    if (error && typeof error === 'object') {
+      const record = error as Record<string, unknown>;
+      const userInfo = (record.userInfo && typeof record.userInfo === 'object'
+        ? (record.userInfo as Record<string, unknown>)
+        : undefined);
+      const underlyingError = (userInfo?.NSUnderlyingError && typeof userInfo.NSUnderlyingError === 'object'
+        ? (userInfo.NSUnderlyingError as Record<string, unknown>)
+        : undefined);
+
+      const message =
+        normalizeMessage(record.message) ||
+        normalizeMessage(record.localizedDescription) ||
+        normalizeMessage(userInfo?.NSLocalizedDescription) ||
+        normalizeMessage(underlyingError?.localizedDescription);
+      const code = typeof record.code === 'string' ? record.code : undefined;
+
+      if (message && code && !message.includes(code)) {
+        return `${message}（${code}）`;
+      }
+
+      return message || fallback;
+    }
+
+    return fallback;
+  };
+
   const getRemoteImageSize = async (uri: string) =>
     new Promise<{ width: number; height: number }>((resolve, reject) => {
       Image.getSize(
@@ -639,13 +703,13 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
         await saveRegularImageToLibrary(currentItem);
         Alert.alert('保存成功', '图片已保存到系统相册。');
       }
-    } catch {
+    } catch (error) {
       if (currentItem.type === 'video') {
-        Alert.alert('保存失败', '下载视频失败，请稍后重试。');
+        Alert.alert('保存失败', getSaveErrorDetail(error, '下载视频失败，请稍后重试。'));
       } else if (currentItem.type === 'livePhoto') {
-        Alert.alert('保存失败', '保存实况图片失败，请稍后重试。');
+        Alert.alert('保存失败', getSaveErrorDetail(error, '保存实况图片失败，请稍后重试。'));
       } else {
-        Alert.alert('保存失败', '下载图片失败，请稍后重试。');
+        Alert.alert('保存失败', getSaveErrorDetail(error, '下载图片失败，请稍后重试。'));
       }
     } finally {
       setIsSavingMedia(false);
