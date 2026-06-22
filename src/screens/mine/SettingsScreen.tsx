@@ -47,13 +47,19 @@ const SettingsScreen: React.FC = () => {
     reminderTime,
     setReminderTime,
   } = useAppStore();
-  const { user } = useAuthStore();
+  const { user, updateProfile } = useAuthStore();
   const [cacheSize, setCacheSize] = useState('计算中...');
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const [hideCircleTab, setHideCircleTab] = useState(user?.hideCircleTab === true);
+  const [isUpdatingCirclePreference, setIsUpdatingCirclePreference] = useState(false);
 
   useEffect(() => {
     calculateCacheSize();
   }, []);
+
+  useEffect(() => {
+    setHideCircleTab(user?.hideCircleTab === true);
+  }, [user?.hideCircleTab]);
 
   const handleToggleNotifications = async (enabled: boolean) => {
     if (enabled) {
@@ -192,6 +198,25 @@ const SettingsScreen: React.FC = () => {
         },
       },
     ]);
+  };
+
+  const handleToggleHideCircleTab = async (enabled: boolean) => {
+    if (!user?._id || isUpdatingCirclePreference) {
+      return;
+    }
+
+    const previousValue = hideCircleTab;
+    setHideCircleTab(enabled);
+    setIsUpdatingCirclePreference(true);
+
+    try {
+      await updateProfile(user._id, { hideCircleTab: enabled });
+    } catch (error: any) {
+      setHideCircleTab(previousValue);
+      Alert.alert('提示', error?.message || '圈子显示设置保存失败，请稍后重试');
+    } finally {
+      setIsUpdatingCirclePreference(false);
+    }
   };
 
   const renderSettingItem = (
@@ -422,6 +447,40 @@ const SettingsScreen: React.FC = () => {
               }
               navigation.navigate('ThemeSetting' as never);
             }
+          )}
+        </View>
+
+        {/* 不看圈子 */}
+        <View
+          style={[
+            styles.menuSection,
+            {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+              borderRadius: themeStyle.borderRadius,
+              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity * 0.5,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 4,
+            },
+          ]}
+        >
+          {renderSettingItem(
+            'eye-off',
+            '隐藏圈子入口',
+            currentHealingColors.purple[500],
+            <Switch
+              value={hideCircleTab}
+              onValueChange={handleToggleHideCircleTab}
+              disabled={isUpdatingCirclePreference}
+              trackColor={{
+                false: isDark ? '#333' : currentHealingColors.gray[200],
+                true: currentHealingColors.pink[400],
+              }}
+              thumbColor={isDark && !hideCircleTab ? '#888' : '#FFFFFF'}
+            />,
+            true
           )}
         </View>
 

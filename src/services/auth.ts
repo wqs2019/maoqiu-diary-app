@@ -31,6 +31,7 @@ export interface UserInfo {
   aiChatUsage?: { date: string; count: number };
   createdAt?: string | number;
   biometricEnabled?: boolean;
+  hideCircleTab?: boolean;
   profileBackground?: string;
   blockedUsers?: Array<{
     userId: string;

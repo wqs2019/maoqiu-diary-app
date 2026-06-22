@@ -131,6 +131,7 @@ const MainNavigator = () => {
   const { HEALING_COLORS, DARK_HEALING_COLORS } = require('@/config/handDrawnTheme');
   const currentHealingColors = themeName === 'dark' ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
   const circleInteractionTypes = ['like', 'comment', 'follow'] as const;
+  const shouldShowCircleTab = appConfig?.show_circle !== false && user?.hideCircleTab !== true;
 
   React.useEffect(() => {
     if (!user?._id) {
@@ -202,7 +203,7 @@ const MainNavigator = () => {
       })}
     >
       <MainTab.Screen name="Home" component={HomeScreen} options={{ title: '足迹' }} />
-      {appConfig?.show_circle !== false && (
+      {shouldShowCircleTab && (
         <MainTab.Screen name="Circle" component={CircleScreen} options={{ title: '圈子' }} />
       )}
       <MainTab.Screen name="Category" component={CategoryScreen} options={{ title: '分类' }} />
