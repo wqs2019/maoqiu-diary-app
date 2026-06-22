@@ -77,10 +77,12 @@ const MediaItem = ({
   item,
   isFocused,
   onZoomStateChange,
+  onLoadStateChange,
 }: {
   item: MediaResource;
   isFocused: boolean;
   onZoomStateChange?: (isZoomed: boolean) => void;
+  onLoadStateChange?: (isLoaded: boolean) => void;
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMediaLoading, setIsMediaLoading] = useState(
@@ -124,6 +126,12 @@ const MediaItem = ({
     translateX,
     translateY,
   ]);
+
+  useEffect(() => {
+    if (isFocused) {
+      onLoadStateChange?.(!isMediaLoading);
+    }
+  }, [isFocused, isMediaLoading, onLoadStateChange]);
 
   const handlePressIn = () => {
     if (item.type === 'livePhoto') {
@@ -320,6 +328,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isSavingMedia, setIsSavingMedia] = useState(false);
+  const [isCurrentMediaReady, setIsCurrentMediaReady] = useState(false);
   const [watermarkTask, setWatermarkTask] = useState<WatermarkCaptureTask | null>(null);
   const isZoomedRef = useRef(false);
   const watermarkViewShotRef = useRef<ViewShot>(null);
@@ -409,6 +418,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     if (visible) {
       setCurrentIndex(initialIndex);
       setIsZoomed(false);
+      setIsCurrentMediaReady(false);
     }
   }, [visible, initialIndex]);
 
@@ -428,6 +438,10 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   const canDownloadCurrentMedia =
     currentItem?.type === 'image' || currentItem?.type === 'livePhoto' || currentItem?.type === 'video';
   const watermarkUserName = watermarkOwnerName || user?.nickname || user?.phone || '毛球用户';
+
+  useEffect(() => {
+    setIsCurrentMediaReady(false);
+  }, [currentIndex, currentItem?.uri, currentItem?.livePhotoVideoUri, visible]);
 
   const getExtensionFromUri = (uri?: string) => {
     if (!uri) {
@@ -663,6 +677,11 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
                     setIsZoomed(zoomed);
                   }
                 }}
+                onLoadStateChange={(loaded) => {
+                  if (currentIndex === index) {
+                    setIsCurrentMediaReady(loaded);
+                  }
+                }}
               />
             )}
             horizontal
@@ -686,7 +705,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
           </View>
         ) : null}
 
-        {canDownloadCurrentMedia ? (
+        {canDownloadCurrentMedia && isCurrentMediaReady ? (
           <Pressable onPress={handleDownloadMedia} style={styles.floatingDownloadButton} disabled={isSavingMedia}>
             {isSavingMedia ? (
               <ActivityIndicator size="small" color="#FFF" />
