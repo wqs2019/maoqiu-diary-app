@@ -314,7 +314,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
     paddingBottom: 18,
     zIndex: 1,
   },
@@ -417,7 +416,6 @@ const styles = StyleSheet.create({
   },
   stateContainer: {
     flex: 1,
-    paddingHorizontal: 20,
     paddingBottom: 24,
     justifyContent: 'center',
   },
