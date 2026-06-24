@@ -2,7 +2,7 @@
   "expo": {
     "name": "毛球日记",
     "slug": "maoqiu-diary",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "scheme": "maoqiudiary",

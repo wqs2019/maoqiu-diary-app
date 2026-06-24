@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -28,6 +29,7 @@ const EditProfileScreen: React.FC = () => {
   const { user, updateProfile } = useAuthStore();
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   const [nickname, setNickname] = useState(user?.nickname || '');
@@ -58,7 +60,7 @@ const EditProfileScreen: React.FC = () => {
 
       if (!result.canceled && result.assets[0]) {
         if (!user?._id) {
-          Alert.alert('提示', '请先登录后再上传头像');
+          Alert.alert(t('common.tip'), t('editProfileScreen.alerts.loginUploadRequired'));
           return;
         }
 
@@ -81,11 +83,11 @@ const EditProfileScreen: React.FC = () => {
         if (uploadResult.success && uploadResult.data?.url) {
           setAvatar(uploadResult.data.url);
         } else {
-          throw new Error(uploadResult.message || '上传头像失败');
+          throw new Error(uploadResult.message || t('editProfileScreen.alerts.uploadAvatarFailed'));
         }
       }
     } catch (error: any) {
-      Alert.alert('提示', error.message || '更换头像失败，请重试');
+      Alert.alert(t('common.tip'), error.message || t('editProfileScreen.alerts.changeAvatarFailed'));
     } finally {
       setIsUploading(false);
     }
@@ -94,7 +96,7 @@ const EditProfileScreen: React.FC = () => {
   const handleSave = async () => {
     if (!user?._id) return;
     if (!nickname.trim()) {
-      Alert.alert('提示', '昵称不能为空哦～');
+      Alert.alert(t('common.tip'), t('editProfileScreen.alerts.nicknameRequired'));
       return;
     }
 
@@ -106,9 +108,9 @@ const EditProfileScreen: React.FC = () => {
         gender,
         age: age ? parseInt(age, 10) : undefined,
       });
-      Alert.alert('✨ 太棒了！', '个人信息更新成功', [
+      Alert.alert(t('editProfileScreen.alerts.successTitle'), t('editProfileScreen.alerts.successMessage'), [
         {
-          text: '好的',
+          text: t('common.ok'),
           onPress: () => {
             // 返回上一个页面（通常是“我的”页面）
             navigation.goBack();
@@ -116,7 +118,7 @@ const EditProfileScreen: React.FC = () => {
         },
       ]);
     } catch (error: any) {
-      Alert.alert('保存失败', error.message || '请检查网络连接后重试');
+      Alert.alert(t('editProfileScreen.alerts.saveFailed'), error.message || t('editProfileScreen.alerts.networkRetry'));
     } finally {
       setIsSaving(false);
     }
@@ -194,7 +196,7 @@ const EditProfileScreen: React.FC = () => {
           />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}>
-          编辑个人资料
+          {t('editProfileScreen.title')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -235,7 +237,7 @@ const EditProfileScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
           <Text style={[styles.avatarHint, { color: isDark ? '#AAA' : currentHealingColors.gray[500] }]}>
-            点击更换头像
+            {t('editProfileScreen.changeAvatar')}
           </Text>
         </View>
 
@@ -243,7 +245,7 @@ const EditProfileScreen: React.FC = () => {
         <View style={styles.formSection}>
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: isDark ? '#FFF' : currentHealingColors.gray[700] }]}>
-              昵称
+              {t('editProfileScreen.nickname')}
             </Text>
             <TextInput
               style={[
@@ -257,7 +259,7 @@ const EditProfileScreen: React.FC = () => {
               ]}
               value={nickname}
               onChangeText={setNickname}
-              placeholder="请输入可爱的昵称"
+              placeholder={t('editProfileScreen.nicknamePlaceholder')}
               placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
               maxLength={16}
               keyboardAppearance={isDark ? 'dark' : 'light'}
@@ -266,18 +268,18 @@ const EditProfileScreen: React.FC = () => {
 
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: isDark ? '#FFF' : currentHealingColors.gray[700] }]}>
-              性别
+              {t('editProfileScreen.gender')}
             </Text>
             <View style={styles.genderContainer}>
-              {renderGenderOption('female', '女生', 'user')}
-              {renderGenderOption('male', '男生', 'user')}
-              {renderGenderOption('secret', '保密', 'eye-off')}
+              {renderGenderOption('female', t('editProfileScreen.female'), 'user')}
+              {renderGenderOption('male', t('editProfileScreen.male'), 'user')}
+              {renderGenderOption('secret', t('editProfileScreen.secret'), 'eye-off')}
             </View>
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: isDark ? '#FFF' : currentHealingColors.gray[700] }]}>
-              年龄
+              {t('editProfileScreen.age')}
             </Text>
             <TextInput
               style={[
@@ -291,7 +293,7 @@ const EditProfileScreen: React.FC = () => {
               ]}
               value={age}
               onChangeText={setAge}
-              placeholder="你今年多大啦？"
+              placeholder={t('editProfileScreen.agePlaceholder')}
               placeholderTextColor={isDark ? '#888' : currentHealingColors.gray[400]}
               keyboardType="number-pad"
               maxLength={3}
@@ -317,7 +319,7 @@ const EditProfileScreen: React.FC = () => {
           {isSaving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.saveButtonText}>保存修改</Text>
+            <Text style={styles.saveButtonText}>{t('editProfileScreen.save')}</Text>
           )}
         </TouchableOpacity>
 

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StatusBar } from 'expo-status-bar';
 import {
   View,
@@ -120,6 +121,7 @@ const LoginScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { isDark, colors } = useAppTheme();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const loadAgreementState = async () => {
@@ -165,7 +167,7 @@ const LoginScreen: React.FC = () => {
       await Linking.openURL(url);
     } catch (error) {
       console.error('Open policy link failed:', error);
-      toast.error('打开协议失败，请稍后重试');
+      toast.error(t('loginScreen.openPolicyFailed'));
     }
   };
 
@@ -201,7 +203,7 @@ const LoginScreen: React.FC = () => {
     }
 
     setAgreementModalVisible(true);
-    toast.error('请先阅读并同意协议');
+    toast.error(t('loginScreen.agreementRequired'));
     return false;
   };
 
@@ -212,13 +214,13 @@ const LoginScreen: React.FC = () => {
     }
 
     if (phone?.length !== 11) {
-      toast.error('请输入正确的手机号');
+      toast.error(t('loginScreen.invalidPhone'));
       return;
     }
     const success = await sendCode(phone);
     if (success) {
       setCountdown(60);
-      toast.success('验证码已发送');
+      toast.success(t('auth.sendCodeSuccess'));
     } else {
       const currentError = useAuthStore.getState().error;
       if (currentError) toast.error(currentError);
@@ -232,11 +234,11 @@ const LoginScreen: React.FC = () => {
     }
 
     if (phone?.length !== 11) {
-      toast.error('请输入正确的手机号');
+      toast.error(t('loginScreen.invalidPhone'));
       return;
     }
     if (code?.length !== 6) {
-      toast.error('请输入6位验证码');
+      toast.error(t('loginScreen.invalidCode'));
       return;
     }
     await login(phone, code);
@@ -307,8 +309,8 @@ const LoginScreen: React.FC = () => {
           {/* 标题部分 */}
           <View style={styles.header}>
             <Image source={require('../../../assets/logo.png')} style={styles.logo} />
-            <Text style={[styles.title, { color: colors.primary, textShadowColor: isDark ? 'rgba(255, 133, 162, 0.2)' : 'rgba(255, 160, 122, 0.3)' }]}>欢迎回来！</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>登录后开始记录你的美好生活</Text>
+            <Text style={[styles.title, { color: colors.primary, textShadowColor: isDark ? 'rgba(255, 133, 162, 0.2)' : 'rgba(255, 160, 122, 0.3)' }]}>{t('loginScreen.title')}</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('loginScreen.subtitle')}</Text>
           </View>
 
           {/* 输入框部分 */}
@@ -318,7 +320,7 @@ const LoginScreen: React.FC = () => {
                 <Ionicons name="call" size={20} color={colors.primary} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
-                  placeholder="请输入手机号"
+                  placeholder={t('loginScreen.phonePlaceholder')}
                   placeholderTextColor={colors.textSecondary}
                   keyboardType="phone-pad"
                   value={phone}
@@ -338,7 +340,7 @@ const LoginScreen: React.FC = () => {
                 />
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
-                  placeholder="请输入验证码"
+                  placeholder={t('loginScreen.codePlaceholder')}
                   placeholderTextColor={colors.textSecondary}
                   keyboardType="number-pad"
                   value={code}
@@ -361,12 +363,12 @@ const LoginScreen: React.FC = () => {
                       (countdown > 0 || sendingCode) && [styles.codeButtonTextDisabled, { color: colors.textSecondary }]
                     ]}
                   >
-                    {sendingCode ? '发送中' : countdown > 0 ? `${countdown}s` : '获取'}
+                    {sendingCode ? t('loginScreen.sendCodeLoading') : countdown > 0 ? `${countdown}s` : t('loginScreen.sendCodeShort')}
                   </Text>
                 </TouchableOpacity>
               </View>
               <Text style={[styles.smsServiceHint, { color: colors.textSecondary }]}>
-                短信服务采用“速通互联平台”
+                {t('loginScreen.smsServiceHint')}
               </Text>
             </View>
 
@@ -381,7 +383,7 @@ const LoginScreen: React.FC = () => {
               disabled={loading}
             >
               <Text style={[styles.loginButtonText, { color: isDark ? '#000' : '#FFF' }]}>
-                {loading ? '登录中...' : '登录'}
+                {loading ? t('loginScreen.loginLoading') : t('auth.login')}
               </Text>
               <Ionicons name="arrow-forward" size={20} color={isDark ? '#000' : '#FFF'} />
             </TouchableOpacity>
@@ -403,23 +405,23 @@ const LoginScreen: React.FC = () => {
                 ) : null}
               </TouchableOpacity>
               <Text style={[styles.agreementText, { color: colors.textSecondary }]}>
-                我已阅读并同意
+                {t('loginScreen.readAndAgree')}
                 <Text
                   style={[styles.agreementLink, { color: colors.primary }]}
                   onPress={() => {
                     openPolicyLink(USER_AGREEMENT_URL);
                   }}
                 >
-                  《用户服务协议》
+                  {t('loginScreen.userAgreement')}
                 </Text>
-                和
+                {t('loginScreen.and')}
                 <Text
                   style={[styles.agreementLink, { color: colors.primary }]}
                   onPress={() => {
                     openPolicyLink(PRIVACY_POLICY_URL);
                   }}
                 >
-                  《隐私政策》
+                  {t('loginScreen.privacyPolicy')}
                 </Text>
               </Text>
             </View>
@@ -429,7 +431,7 @@ const LoginScreen: React.FC = () => {
               <>
                 <View style={styles.dividerContainer}>
                   <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                  <Text style={[styles.dividerText, { color: colors.textSecondary }]}>或</Text>
+                  <Text style={[styles.dividerText, { color: colors.textSecondary }]}>{t('loginScreen.or')}</Text>
                   <View style={[styles.divider, { backgroundColor: colors.border }]} />
                 </View>
 
@@ -447,7 +449,7 @@ const LoginScreen: React.FC = () => {
                   disabled={loading}
                 >
                   <Ionicons name="logo-wechat" size={24} color="#07C160" />
-                  <Text style={styles.wechatButtonText}>微信一键登录</Text>
+                  <Text style={styles.wechatButtonText}>{t('loginScreen.wechatLogin')}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -466,9 +468,9 @@ const LoginScreen: React.FC = () => {
               },
             ]}
           >
-            <Text style={[styles.agreementModalTitle, { color: colors.text }]}>登录前请先同意协议</Text>
+            <Text style={[styles.agreementModalTitle, { color: colors.text }]}>{t('loginScreen.agreementModalTitle')}</Text>
             <Text style={[styles.agreementModalDesc, { color: colors.textSecondary }]}>
-              为了正常使用登录、验证码和后续社区功能，请先阅读并同意用户服务协议和隐私政策。毛球日记对骚扰、诈骗、色情低俗等不良内容和违规用户实行零容忍。
+              {t('loginScreen.agreementModalDesc')}
             </Text>
             <View style={styles.agreementModalLinks}>
               <TouchableOpacity
@@ -478,7 +480,7 @@ const LoginScreen: React.FC = () => {
                 }}
               >
                 <Text style={[styles.agreementModalLinkText, { color: colors.primary }]}>
-                  用户服务协议
+                  {t('loginScreen.userAgreement')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -488,7 +490,7 @@ const LoginScreen: React.FC = () => {
                 }}
               >
                 <Text style={[styles.agreementModalLinkText, { color: colors.primary }]}>
-                  隐私政策
+                  {t('loginScreen.privacyPolicy')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -498,7 +500,7 @@ const LoginScreen: React.FC = () => {
                 onPress={() => setAgreementModalVisible(false)}
               >
                 <Text style={[styles.modalSecondaryButtonText, { color: colors.textSecondary }]}>
-                  暂不同意
+                  {t('loginScreen.decline')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -506,7 +508,7 @@ const LoginScreen: React.FC = () => {
                 onPress={acceptAgreementFromModal}
               >
                 <Text style={[styles.modalPrimaryButtonText, { color: isDark ? '#000' : '#FFF' }]}>
-                  同意并继续
+                  {t('loginScreen.acceptAndContinue')}
                 </Text>
               </TouchableOpacity>
             </View>

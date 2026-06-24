@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Paths } from 'expo-file-system';
 import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -23,7 +24,7 @@ import {
   DARK_HEALING_COLORS,
 } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { useAppStore } from '../../store/appStore';
+import { I18nLangType, useAppStore } from '../../store/appStore';
 import { useAuthStore } from '../../store/authStore';
 import { scheduleDailyReminder, cancelDailyReminder } from '../../utils/notifications';
 
@@ -31,6 +32,7 @@ const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
 
   // 补全 DARK_HEALING_COLORS 中缺失的颜色，防止报错
   const currentHealingColors = isDark
@@ -42,18 +44,26 @@ const SettingsScreen: React.FC = () => {
   const {
     theme,
     setTheme,
+    language,
+    setLanguage,
     notificationsEnabled,
     setNotificationsEnabled,
     reminderTime,
     setReminderTime,
   } = useAppStore();
-  const { user } = useAuthStore();
-  const [cacheSize, setCacheSize] = useState('计算中...');
+  const { user, updateProfile } = useAuthStore();
+  const [cacheSize, setCacheSize] = useState(t('settingsScreen.cacheCalculating'));
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const [hideCircleTab, setHideCircleTab] = useState(user?.hideCircleTab === true);
+  const [isUpdatingCirclePreference, setIsUpdatingCirclePreference] = useState(false);
 
   useEffect(() => {
     calculateCacheSize();
   }, []);
+
+  useEffect(() => {
+    setHideCircleTab(user?.hideCircleTab === true);
+  }, [user?.hideCircleTab]);
 
   const handleToggleNotifications = async (enabled: boolean) => {
     if (enabled) {
@@ -61,11 +71,13 @@ const SettingsScreen: React.FC = () => {
       if (success) {
         await setNotificationsEnabled(true);
         Alert.alert(
-          '提示',
-          `已开启每日 ${formatTime(reminderTime.hour, reminderTime.minute)} 提醒写日记功能`
+          t('common.tip'),
+          t('settingsScreen.notificationsEnabled', {
+            time: formatTime(reminderTime.hour, reminderTime.minute),
+          })
         );
       } else {
-        Alert.alert('提示', '请在系统设置中允许应用发送通知');
+        Alert.alert(t('common.tip'), t('settingsScreen.notificationsPermission'));
       }
     } else {
       await cancelDailyReminder();
@@ -83,9 +95,9 @@ const SettingsScreen: React.FC = () => {
     if (notificationsEnabled) {
       const success = await scheduleDailyReminder(hour, minute);
       if (success) {
-        Alert.alert('提示', `已将提醒时间修改为 ${formatTime(hour, minute)}`);
+        Alert.alert(t('common.tip'), t('settingsScreen.reminderUpdated', { time: formatTime(hour, minute) }));
       } else {
-        Alert.alert('提示', '请在系统设置中允许应用发送通知');
+        Alert.alert(t('common.tip'), t('settingsScreen.notificationsPermission'));
       }
     }
   };
@@ -98,7 +110,12 @@ const SettingsScreen: React.FC = () => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['跟随系统', '浅色模式', '深色模式', '取消'],
+          options: [
+            t('settingsScreen.themeOptions.system'),
+            t('settingsScreen.themeOptions.light'),
+            t('settingsScreen.themeOptions.dark'),
+            t('common.cancel'),
+          ],
           cancelButtonIndex: 3,
         },
         (buttonIndex) => {
@@ -112,34 +129,87 @@ const SettingsScreen: React.FC = () => {
         }
       );
     } else {
-      Alert.alert('选择主题', '', [
+      Alert.alert(t('settingsScreen.chooseTheme'), '', [
         {
-          text: '跟随系统',
+          text: t('settingsScreen.themeOptions.system'),
           onPress: () => {
             setTheme('system');
           },
         },
         {
-          text: '浅色模式',
+          text: t('settingsScreen.themeOptions.light'),
           onPress: () => {
             setTheme('light');
           },
         },
         {
-          text: '深色模式',
+          text: t('settingsScreen.themeOptions.dark'),
           onPress: () => {
             setTheme('dark');
           },
         },
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
       ]);
     }
   };
 
   const getThemeText = () => {
-    if (theme === 'system') return '跟随系统';
-    if (theme === 'dark') return '深色模式';
-    return '浅色模式';
+    if (theme === 'system') return t('settingsScreen.themeOptions.system');
+    if (theme === 'dark') return t('settingsScreen.themeOptions.dark');
+    return t('settingsScreen.themeOptions.light');
+  };
+
+  const getLanguageText = () => {
+    if (language === 'en-US') return t('setting.english');
+    return t('setting.chinese');
+  };
+
+  const handleLanguageChange = async (nextLanguage: I18nLangType) => {
+    if (nextLanguage === language) {
+      return;
+    }
+
+    try {
+      await setLanguage(nextLanguage);
+    } catch (error) {
+      console.error('Set language error:', error);
+      Alert.alert(t('common.tip'), t('settingsScreen.setLanguageFailed'));
+    }
+  };
+
+  const handleLanguagePress = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [t('setting.chinese'), t('setting.english'), t('common.cancel')],
+          cancelButtonIndex: 2,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 0) {
+            handleLanguageChange('zh-CN');
+          } else if (buttonIndex === 1) {
+            handleLanguageChange('en-US');
+          }
+        }
+      );
+      return;
+    }
+
+    Alert.alert(t('settingsScreen.chooseLanguage'), '', [
+      {
+        text: t('setting.chinese'),
+        onPress: () => {
+          handleLanguageChange('zh-CN');
+        },
+      },
+      {
+        text: t('setting.english'),
+        onPress: () => {
+          handleLanguageChange('en-US');
+        },
+      },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
   };
 
   const calculateCacheSize = () => {
@@ -161,10 +231,10 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleClearCache = () => {
-    Alert.alert('清除缓存', '确定要清除应用缓存吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('settingsScreen.clearCacheTitle'), t('settingsScreen.clearCacheMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '确定',
+        text: t('common.confirm'),
         onPress: async () => {
           try {
             // clear expo-image cache
@@ -184,14 +254,33 @@ const SettingsScreen: React.FC = () => {
             }
 
             calculateCacheSize();
-            Alert.alert('提示', '缓存已清除');
+            Alert.alert(t('common.tip'), t('common.clearSuccess'));
           } catch (e) {
             console.log('Clear cache error:', e);
-            Alert.alert('提示', '清除缓存失败');
+            Alert.alert(t('common.tip'), t('common.clearFailed'));
           }
         },
       },
     ]);
+  };
+
+  const handleToggleHideCircleTab = async (enabled: boolean) => {
+    if (!user?._id || isUpdatingCirclePreference) {
+      return;
+    }
+
+    const previousValue = hideCircleTab;
+    setHideCircleTab(enabled);
+    setIsUpdatingCirclePreference(true);
+
+    try {
+      await updateProfile(user._id, { hideCircleTab: enabled });
+    } catch (error: any) {
+      setHideCircleTab(previousValue);
+      Alert.alert(t('common.tip'), error?.message || t('settingsScreen.hideCircleSaveFailed'));
+    } finally {
+      setIsUpdatingCirclePreference(false);
+    }
   };
 
   const renderSettingItem = (
@@ -256,7 +345,7 @@ const SettingsScreen: React.FC = () => {
             { color: isDark ? '#E5E7EB' : currentHealingColors.gray[800] },
           ]}
         >
-          应用设置
+          {t('settingsScreen.title')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -280,7 +369,7 @@ const SettingsScreen: React.FC = () => {
         >
           {renderSettingItem(
             'shield',
-            '账号与安全',
+            t('settingsScreen.sections.accountSecurity'),
             currentHealingColors.blue[500],
             <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
             false,
@@ -288,9 +377,34 @@ const SettingsScreen: React.FC = () => {
               navigation.navigate('AccountSecurity' as never);
             }
           )}
+          {/* 多语言 */}
+          
+          {renderSettingItem(
+            'globe',
+            t('settingsScreen.sections.multiLanguage'),
+            currentHealingColors.green[500],
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text
+                style={[
+                  styles.valueText,
+                  { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                ]}
+              >
+                {getLanguageText()}
+              </Text>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
+                style={{ marginLeft: 4 }}
+              />
+            </View>,
+            false,
+            handleLanguagePress
+          )}
           {renderSettingItem(
             'slash',
-            '黑名单用户',
+            t('settingsScreen.sections.blockedUsers'),
             currentHealingColors.pink[500],
             <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
             true,
@@ -337,7 +451,7 @@ const SettingsScreen: React.FC = () => {
         >
           {renderSettingItem(
             'bell',
-            '每日提醒',
+            t('settingsScreen.sections.dailyReminder'),
             currentHealingColors.yellow[500],
             <Switch
               value={notificationsEnabled}
@@ -353,7 +467,7 @@ const SettingsScreen: React.FC = () => {
           {notificationsEnabled &&
             renderSettingItem(
               'clock',
-              '提醒时间',
+              t('settingsScreen.sections.reminderTime'),
               currentHealingColors.yellow[500],
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text
@@ -378,7 +492,7 @@ const SettingsScreen: React.FC = () => {
             )}
           {renderSettingItem(
             'moon',
-            '主题模式',
+            t('settingsScreen.sections.themeMode'),
             currentHealingColors.blue[400],
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text
@@ -401,7 +515,7 @@ const SettingsScreen: React.FC = () => {
           )}
           {renderSettingItem(
             'aperture',
-            '自定义主题',
+            t('settingsScreen.sections.customTheme'),
             currentHealingColors.purple[400],
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Feather
@@ -414,14 +528,48 @@ const SettingsScreen: React.FC = () => {
             true,
             () => {
               if (!user?.isVip?.value) {
-                Alert.alert('提示', '开通 VIP 即可解锁自定义主题功能', [
-                  { text: '取消', style: 'cancel' },
-                  { text: '去开通', onPress: () => navigation.navigate('Subscription' as never) }
+                Alert.alert(t('common.tip'), t('settingsScreen.vipThemeTip'), [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  { text: t('settingsScreen.goSubscribe'), onPress: () => navigation.navigate('Subscription' as never) }
                 ]);
                 return;
               }
               navigation.navigate('ThemeSetting' as never);
             }
+          )}
+        </View>
+
+        {/* 不看圈子 */}
+        <View
+          style={[
+            styles.menuSection,
+            {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+              borderRadius: themeStyle.borderRadius,
+              shadowColor: isDark ? '#000' : themeStyle.shadowColor,
+              shadowOpacity: isDark ? 0.3 : themeStyle.shadowOpacity * 0.5,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 4,
+            },
+          ]}
+        >
+          {renderSettingItem(
+            'eye-off',
+            t('settingsScreen.sections.hideCircleTab'),
+            currentHealingColors.purple[500],
+            <Switch
+              value={hideCircleTab}
+              onValueChange={handleToggleHideCircleTab}
+              disabled={isUpdatingCirclePreference}
+              trackColor={{
+                false: isDark ? '#333' : currentHealingColors.gray[200],
+                true: currentHealingColors.pink[400],
+              }}
+              thumbColor={isDark && !hideCircleTab ? '#888' : '#FFFFFF'}
+            />,
+            true
           )}
         </View>
 
@@ -443,7 +591,7 @@ const SettingsScreen: React.FC = () => {
         >
           {renderSettingItem(
             'trash-2',
-            '清除缓存',
+            t('settingsScreen.sections.clearCache'),
             currentHealingColors.gray[600],
             <Text
               style={[

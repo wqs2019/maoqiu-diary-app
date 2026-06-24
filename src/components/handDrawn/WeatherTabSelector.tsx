@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 import { WEATHERS } from '../../config/statusConfig';
@@ -14,9 +15,10 @@ interface WeatherTabSelectorProps {
 export const WeatherTabSelector: React.FC<WeatherTabSelectorProps> = ({
   selectedWeather,
   onSelectWeather,
-  label = '天气',
+  label,
 }) => {
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const scrollRef = React.useRef<ScrollView>(null);
   const itemLayoutsRef = React.useRef<Record<string, { x: number; width: number }>>({});
   const [viewportWidth, setViewportWidth] = React.useState(0);
@@ -62,7 +64,7 @@ export const WeatherTabSelector: React.FC<WeatherTabSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: isDark ? '#AAA' : '#666' }]}>{label}</Text>
+      <Text style={[styles.label, { color: isDark ? '#AAA' : '#666' }]}>{label || t('setting.weather')}</Text>
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -107,7 +109,7 @@ export const WeatherTabSelector: React.FC<WeatherTabSelectorProps> = ({
                   : { color: isDark ? '#AAA' : weather.primary },
               ]}
             >
-              {weather.label}
+              {t(`weather.${weather.type}`)}
             </Text>
           </TouchableOpacity>
         ))}

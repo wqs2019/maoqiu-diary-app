@@ -1085,6 +1085,12 @@ const getDiaryList = async (data) => {
     console.log('Query List finalQuery:', JSON.stringify(finalQuery));
 
     const shouldSortByPublicPublishedAt = isPublic === true;
+    const shouldSortByCreatedAtForInteraction = !!likedByUserId || !!commentedByUserId;
+    const sortField = shouldSortByPublicPublishedAt
+      ? 'publicPublishedAt'
+      : shouldSortByCreatedAtForInteraction
+        ? 'createdAt'
+        : 'date';
     if (shouldSortByPublicPublishedAt) {
       await backfillPublicPublishedAtForLegacyDiaries();
     }
@@ -1093,7 +1099,7 @@ const getDiaryList = async (data) => {
     const result = await db
       .collection('diaries')
       .where(finalQuery)
-      .orderBy(shouldSortByPublicPublishedAt ? 'publicPublishedAt' : 'date', 'desc')
+      .orderBy(sortField, 'desc')
       .skip(skip)
       .limit(pageSize)
       .get();

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   StyleSheet,
@@ -22,6 +23,7 @@ import { TimelineItem, Diary } from '../../types';
 const FavoritesScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const userId = user?._id;
   const { isDark } = useAppTheme();
@@ -51,7 +53,7 @@ const FavoritesScreen: React.FC = () => {
     return {
       _id: diary._id,
       type: 'diary',
-      title: diary.title || '无标题',
+      title: diary.title || t('favoritesScreen.untitled'),
       description: diary.content || '',
       date: diary.date || diary.createdAt || new Date().toISOString(),
       scenario: diary.scenario,
@@ -75,15 +77,14 @@ const FavoritesScreen: React.FC = () => {
 
   const formatSummaryDate = (dateString?: string) => {
     if (!dateString) {
-      return '暂无记录';
+      return t('favoritesScreen.noRecord');
     }
 
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) {
-      return '最近更新';
+      return t('favoritesScreen.recentUpdate');
     }
-
-    return `${date.getMonth() + 1}月${date.getDate()}日`;
+    return new Intl.DateTimeFormat(i18n.language, { month: 'numeric', day: 'numeric' }).format(date);
   };
 
   const renderStateCard = ({
@@ -166,7 +167,7 @@ const FavoritesScreen: React.FC = () => {
               onPress={() => navigation.goBack()}
               activeOpacity={0.8}
               accessibilityRole="button"
-              accessibilityLabel="返回上一页"
+              accessibilityLabel={t('favoritesScreen.back')}
             >
               <Ionicons name="arrow-back" size={20} color={primaryTextColor} />
             </TouchableOpacity>
@@ -182,16 +183,18 @@ const FavoritesScreen: React.FC = () => {
             >
               <Ionicons name="heart" size={14} color={HEALING_COLORS.pink[500]} />
               <Text style={[styles.countPillText, { color: primaryTextColor }]}>
-                {favoriteCount} 篇收藏
+                {t('favoritesScreen.count', { count: favoriteCount })}
               </Text>
             </View>
           </View>
 
           <View style={styles.headerTextBlock}>
-            <Text style={[styles.eyebrow, { color: HEALING_COLORS.pink[500] }]}>Favorites</Text>
-            <Text style={[styles.title, { color: primaryTextColor }]}>收藏夹</Text>
+            <Text style={[styles.eyebrow, { color: HEALING_COLORS.pink[500] }]}>
+              {t('favoritesScreen.eyebrow')}
+            </Text>
+            <Text style={[styles.title, { color: primaryTextColor }]}>{t('favoritesScreen.title')}</Text>
             <Text style={[styles.subtitle, { color: secondaryTextColor }]}>
-              把想反复回看的日记整理在一起，随时重温那些让你心动的片刻。
+              {t('favoritesScreen.subtitle')}
             </Text>
           </View>
 
@@ -214,23 +217,23 @@ const FavoritesScreen: React.FC = () => {
               >
                 <Ionicons name="sparkles" size={18} color={HEALING_COLORS.pink[500]} />
               </View>
-              <Text style={[styles.heroCardTitle, { color: primaryTextColor }]}>你的珍藏回忆</Text>
+              <Text style={[styles.heroCardTitle, { color: primaryTextColor }]}>{t('favoritesScreen.heroTitle')}</Text>
             </View>
 
             <View style={styles.statsRow}>
               <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
                 <Text style={[styles.statValue, { color: primaryTextColor }]}>{favoriteCount}</Text>
-                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>已收藏日记</Text>
+                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>{t('favoritesScreen.stats.favoriteCount')}</Text>
               </View>
               <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
                 <Text style={[styles.statValue, { color: primaryTextColor }]}>{coveredMonths}</Text>
-                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>覆盖月份</Text>
+                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>{t('favoritesScreen.stats.coveredMonths')}</Text>
               </View>
               <View style={[styles.statItem, { backgroundColor: isDark ? '#232326' : '#FFF6FA' }]}>
                 <Text style={[styles.statValue, { color: primaryTextColor }]}>
                   {formatSummaryDate(latestFavorite?.date)}
                 </Text>
-                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>最近收藏</Text>
+                <Text style={[styles.statLabel, { color: secondaryTextColor }]}>{t('favoritesScreen.stats.latestFavorite')}</Text>
               </View>
             </View>
           </View>
@@ -241,8 +244,8 @@ const FavoritesScreen: React.FC = () => {
             {renderStateCard({
               icon: 'heart-outline',
               iconColor: HEALING_COLORS.pink[500],
-              title: '正在整理你的收藏',
-              description: '我们正在加载那些被你标记为特别的日记，请稍候。',
+              title: t('favoritesScreen.states.loadingTitle'),
+              description: t('favoritesScreen.states.loadingDesc'),
               loading: true,
             })}
           </View>
@@ -251,9 +254,9 @@ const FavoritesScreen: React.FC = () => {
             {renderStateCard({
               icon: 'cloud-offline-outline',
               iconColor: HEALING_COLORS.pink[500],
-              title: '收藏加载失败',
-              description: '网络可能有点不稳定，重新试一次通常就能恢复。',
-              actionText: '重新加载',
+              title: t('favoritesScreen.states.errorTitle'),
+              description: t('favoritesScreen.states.errorDesc'),
+              actionText: t('favoritesScreen.states.reload'),
               onAction: () => {
                 void refetch();
               },
@@ -264,9 +267,9 @@ const FavoritesScreen: React.FC = () => {
             {renderStateCard({
               icon: 'bookmark-outline',
               iconColor: HEALING_COLORS.pink[500],
-              title: '这里还没有收藏',
-              description: '去日记详情页点亮右上角星标，把值得反复回看的内容留在这里。',
-              actionText: '返回看看',
+              title: t('favoritesScreen.states.emptyTitle'),
+              description: t('favoritesScreen.states.emptyDesc'),
+              actionText: t('favoritesScreen.states.backLook'),
               onAction: () => navigation.goBack(),
             })}
           </View>
@@ -283,9 +286,9 @@ const FavoritesScreen: React.FC = () => {
           >
             <View style={styles.sectionHeader}>
               <View>
-                <Text style={[styles.sectionTitle, { color: primaryTextColor }]}>最近收藏</Text>
+                <Text style={[styles.sectionTitle, { color: primaryTextColor }]}>{t('favoritesScreen.section.title')}</Text>
                 <Text style={[styles.sectionSubtitle, { color: secondaryTextColor }]}>
-                  按时间归档展示，方便你快速回看过去的片段。
+                  {t('favoritesScreen.section.subtitle')}
                 </Text>
               </View>
               <View
@@ -296,7 +299,7 @@ const FavoritesScreen: React.FC = () => {
               >
                 <Ionicons name="albums-outline" size={14} color={HEALING_COLORS.pink[500]} />
                 <Text style={[styles.sectionBadgeText, { color: HEALING_COLORS.pink[600] }]}>
-                  时间轴
+                  {t('favoritesScreen.section.timeline')}
                 </Text>
               </View>
             </View>
@@ -314,7 +317,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
     paddingBottom: 18,
     zIndex: 1,
   },
@@ -417,7 +419,6 @@ const styles = StyleSheet.create({
   },
   stateContainer: {
     flex: 1,
-    paddingHorizontal: 20,
     paddingBottom: 24,
     justifyContent: 'center',
   },

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -34,16 +35,6 @@ import { getReplyTargetAfterDelete, removeCommentFromList } from '@/utils/commen
 import { FormatUtil } from '@/utils/format';
 
 const { width } = Dimensions.get('window');
-const REPORT_REASON_OPTIONS: Array<{ value: ReportReason; label: string }> = [
-  { value: 'spam', label: '垃圾营销' },
-  { value: 'abuse', label: '辱骂攻击' },
-  { value: 'harassment', label: '骚扰他人' },
-  { value: 'pornography', label: '色情低俗' },
-  { value: 'violence', label: '暴力血腥' },
-  { value: 'fraud', label: '诈骗欺诈' },
-  { value: 'other', label: '其他原因' },
-];
-
 type CircleDetailRouteProp = RouteProp<{ params: { _id: string } }, 'params'>;
 
 const CircleDetailScreen: React.FC = () => {
@@ -51,9 +42,19 @@ const CircleDetailScreen: React.FC = () => {
   const route = useRoute<CircleDetailRouteProp>();
   const { _id } = route.params;
   const toast = useToast();
+  const { t } = useTranslation();
 
   const { isDark } = useAppTheme();
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
+  const REPORT_REASON_OPTIONS: Array<{ value: ReportReason; label: string }> = [
+    { value: 'spam', label: t('circleDetailScreen.reportReasons.spam') },
+    { value: 'abuse', label: t('circleDetailScreen.reportReasons.abuse') },
+    { value: 'harassment', label: t('circleDetailScreen.reportReasons.harassment') },
+    { value: 'pornography', label: t('circleDetailScreen.reportReasons.pornography') },
+    { value: 'violence', label: t('circleDetailScreen.reportReasons.violence') },
+    { value: 'fraud', label: t('circleDetailScreen.reportReasons.fraud') },
+    { value: 'other', label: t('circleDetailScreen.reportReasons.other') },
+  ];
 
   const { data: diary, isLoading, error, refetch } = useDiaryDetail(_id);
   const user = useAuthStore((state) => state.user);
@@ -123,7 +124,7 @@ const CircleDetailScreen: React.FC = () => {
 
     await Clipboard.setStringAsync(selectedComment.content);
     closeCommentActions();
-    toast.success('评论内容已复制');
+    toast.success(t('circleDetailScreen.copyCommentSuccess'));
   };
 
   const handleDeleteComment = async () => {
@@ -139,10 +140,10 @@ const CircleDetailScreen: React.FC = () => {
       setReplyToComment((prevComment) => getReplyTargetAfterDelete(prevComment, selectedComment));
 
       closeCommentActions();
-      toast.success('评论已删除');
+      toast.success(t('circleDetailScreen.commentDeleted'));
       refetch();
     } catch (error: any) {
-      Alert.alert('删除失败', error?.message || '删除评论失败，请稍后重试');
+      Alert.alert(t('circleDetailScreen.deleteFailedTitle'), error?.message || t('circleDetailScreen.deleteCommentFailed'));
     } finally {
       setCommentDeleting(false);
     }
@@ -183,20 +184,20 @@ const CircleDetailScreen: React.FC = () => {
     } else {
       const shareUrl = `maoqiudiary://circle/${_id}`;
       await Clipboard.setStringAsync(shareUrl);
-      Alert.alert('分享链接已复制', `可以把链接发给朋友，他们点击后就能直接打开这条内容啦！`, [
-        { text: '好的', style: 'default' },
+      Alert.alert(t('circleDetailScreen.shareLinkCopiedTitle'), t('circleDetailScreen.shareLinkCopiedMessage'), [
+        { text: t('common.ok'), style: 'default' },
       ]);
     }
   };
 
   const handleSubmitReport = async () => {
     if (!user?._id || !diary?.userId) {
-      Alert.alert('提示', '请先登录后再举报');
+      Alert.alert(t('common.tip'), t('circleDetailScreen.reportLoginRequired'));
       return;
     }
 
     if (!reportDescription.trim()) {
-      Alert.alert('提示', '请补充举报说明');
+      Alert.alert(t('common.tip'), t('circleDetailScreen.reportDescriptionRequired'));
       return;
     }
 
@@ -222,10 +223,10 @@ const CircleDetailScreen: React.FC = () => {
       setReportModalVisible(false);
       setReportDescription('');
       setSelectedReportReason('spam');
-      toast.success('举报已提交，我们会尽快处理');
+      toast.success(t('circleDetailScreen.reportSubmitted'));
     } catch (error: any) {
       console.error('Submit diary report failed:', error);
-      Alert.alert('提交失败', error.message || '举报提交失败，请稍后再试');
+      Alert.alert(t('circleDetailScreen.reportSubmitFailedTitle'), error.message || t('circleDetailScreen.reportSubmitFailed'));
     } finally {
       setReportSubmitting(false);
     }
@@ -253,7 +254,7 @@ const CircleDetailScreen: React.FC = () => {
   if (error || !diary) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>内容加载失败</Text>
+        <Text style={styles.errorText}>{t('circleDetailScreen.loadFailed')}</Text>
       </View>
     );
   }
@@ -262,9 +263,9 @@ const CircleDetailScreen: React.FC = () => {
   const canDeleteSelectedComment = !!(user?._id && selectedComment?.userId && selectedComment.userId === user._id);
   const moderationBadgeText =
     diary.moderationStatus === 'pending_recheck'
-      ? '整改复审中'
+      ? t('circleDetailScreen.moderation.pendingRecheck')
       : diary.moderationStatus === 'violation'
-        ? '笔记违规'
+        ? t('circleDetailScreen.moderation.violation')
         : '';
 
   return (
@@ -305,7 +306,7 @@ const CircleDetailScreen: React.FC = () => {
             )}
           </View>
           <View style={styles.authorInfo}>
-            <Text style={styles.nickname}>{diary.authorInfo?.nickname || '毛球用户'}</Text>
+            <Text style={styles.nickname}>{diary.authorInfo?.nickname || t('circleDetailScreen.defaultAuthor')}</Text>
             <View style={[styles.timeLocationRow, { justifyContent: 'space-between' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.time}>{formattedDate}</Text>
@@ -363,6 +364,7 @@ const CircleDetailScreen: React.FC = () => {
             <NineGridMedia
               media={diary.media}
               containerWidth={width - 32} // 左右各 16 的 padding
+              watermarkOwnerName={diary.authorInfo?.nickname}
             />
           </View>
         )}
@@ -386,7 +388,11 @@ const CircleDetailScreen: React.FC = () => {
             <TextInput
               ref={inputRef}
               style={styles.commentInput}
-              placeholder={replyToComment ? `回复 @${replyToComment.user}` : '说点什么吧...'}
+              placeholder={
+                replyToComment
+                  ? t('circleDetailScreen.replyPlaceholder', { user: replyToComment.user })
+                  : t('circleDetailScreen.commentPlaceholder')
+              }
               placeholderTextColor="#9CA3AF"
               value={commentText}
               onChangeText={setCommentText}
@@ -433,14 +439,14 @@ const CircleDetailScreen: React.FC = () => {
               },
             ]}
           >
-            <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>更多操作</Text>
+            <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>{t('circleDetailScreen.moreActions')}</Text>
             <TouchableOpacity
               style={styles.popupAction}
               onPress={handleOpenReportModal}
             >
               <Ionicons name="flag-outline" size={18} color="#F59E0B" />
               <Text style={[styles.popupActionText, { color: isDark ? '#FFF' : '#111827' }]}>
-                举报笔记
+                {t('circleDetailScreen.reportDiary')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -448,7 +454,7 @@ const CircleDetailScreen: React.FC = () => {
               onPress={() => setMoreActionsVisible(false)}
             >
               <Text style={[styles.popupCancelText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                取消
+                {t('common.cancel')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -478,9 +484,9 @@ const CircleDetailScreen: React.FC = () => {
               },
             ]}
           >
-            <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>举报笔记</Text>
+            <Text style={[styles.popupTitle, { color: isDark ? '#FFF' : '#111827' }]}>{t('circleDetailScreen.reportDiary')}</Text>
             <Text style={[styles.reportHint, { color: isDark ? '#AAA' : '#6B7280' }]}>
-              请选择举报原因，并补充说明，帮助管理员更快判断是否需要下架这篇笔记。
+              {t('circleDetailScreen.reportHint')}
             </Text>
             <View style={styles.reasonList}>
               {REPORT_REASON_OPTIONS.map((option) => {
@@ -515,7 +521,7 @@ const CircleDetailScreen: React.FC = () => {
               ]}
               defaultValue={reportDescription}
               onChangeText={setReportDescription}
-              placeholder="请补充违规内容描述，管理员会结合这段说明审核"
+              placeholder={t('circleDetailScreen.reportInputPlaceholder')}
               placeholderTextColor={isDark ? '#777' : '#9CA3AF'}
               multiline
               textAlignVertical="top"
@@ -530,14 +536,16 @@ const CircleDetailScreen: React.FC = () => {
                 onPress={() => setReportModalVisible(false)}
                 disabled={reportSubmitting}
               >
-                <Text style={[styles.reportSecondaryText, { color: isDark ? '#DDD' : '#374151' }]}>取消</Text>
+                <Text style={[styles.reportSecondaryText, { color: isDark ? '#DDD' : '#374151' }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.reportPrimaryBtn}
                 onPress={handleSubmitReport}
                 disabled={reportSubmitting}
               >
-                <Text style={styles.reportPrimaryText}>{reportSubmitting ? '提交中...' : '提交举报'}</Text>
+                <Text style={styles.reportPrimaryText}>
+                  {reportSubmitting ? t('circleDetailScreen.reportSubmitting') : t('circleDetailScreen.submitReport')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

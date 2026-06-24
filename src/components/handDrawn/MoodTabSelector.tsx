@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 import { MOODS } from '../../config/statusConfig';
@@ -14,9 +15,10 @@ interface MoodTabSelectorProps {
 export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
   selectedMood,
   onSelectMood,
-  label = '心情',
+  label,
 }) => {
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const scrollRef = React.useRef<ScrollView>(null);
   const itemLayoutsRef = React.useRef<Record<string, { x: number; width: number }>>({});
   const [viewportWidth, setViewportWidth] = React.useState(0);
@@ -62,7 +64,7 @@ export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: isDark ? '#AAA' : '#666' }]}>{label}</Text>
+      <Text style={[styles.label, { color: isDark ? '#AAA' : '#666' }]}>{label || t('mood.selectMood')}</Text>
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -107,7 +109,7 @@ export const MoodTabSelector: React.FC<MoodTabSelectorProps> = ({
                   : { color: isDark ? '#AAA' : mood.primary },
               ]}
             >
-              {mood.label}
+              {t(`mood.${mood.type}`)}
             </Text>
           </TouchableOpacity>
         ))}

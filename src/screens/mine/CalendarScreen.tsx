@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -25,6 +26,7 @@ const CalendarScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const { isDark } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
 
   // 当前日历查看的年月
@@ -129,7 +131,8 @@ const CalendarScreen: React.FC = () => {
     return { totalCheckIns, currentStreak, maxStreak };
   }, [diariesByDate, diaryData, currentStreak, maxStreak]);
 
-  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+  const weekDays = t('calendarScreen.weekdays', { returnObjects: true }) as string[];
+  const monthTitle = new Intl.DateTimeFormat(i18n.language, { year: 'numeric', month: 'long' }).format(currentDate);
 
   return (
     <View
@@ -160,7 +163,7 @@ const CalendarScreen: React.FC = () => {
           />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
-          打卡日历
+          {t('calendarScreen.title')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -198,7 +201,7 @@ const CalendarScreen: React.FC = () => {
             <Text
               style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}
             >
-              最高连续(天)
+              {t('calendarScreen.maxStreak')}
             </Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: isDark ? '#333' : currentHealingColors.pink[50] }]} />
@@ -214,7 +217,7 @@ const CalendarScreen: React.FC = () => {
             <Text
               style={[styles.statLabel, { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] }]}
             >
-              本月打卡(次)
+              {t('calendarScreen.monthlyCheckIns')}
             </Text>
           </View>
         </View>
@@ -250,7 +253,7 @@ const CalendarScreen: React.FC = () => {
             <Text
               style={[styles.monthTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
             >
-              {currentDate.getFullYear()}年{currentDate.getMonth() + 1}月
+              {monthTitle}
             </Text>
             <TouchableOpacity
               onPress={handleNextMonth}
@@ -376,7 +379,7 @@ const CalendarScreen: React.FC = () => {
 
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: isDark ? '#666' : currentHealingColors.gray[400] }]}>
-            🐾 每天都要记得来看毛球哦
+            {t('calendarScreen.footer')}
           </Text>
         </View>
       </ScrollView>
@@ -394,7 +397,7 @@ const CalendarScreen: React.FC = () => {
               <Text
                 style={[styles.modalTitle, { color: isDark ? '#FFF' : currentHealingColors.gray[800] }]}
               >
-                请选择要查看的日记
+                {t('calendarScreen.selectDiary')}
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -406,9 +409,14 @@ const CalendarScreen: React.FC = () => {
             </View>
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               {selectedDiaries.map((diary) => {
-                const moodConfig = getMoodConfig(diary.mood);
-                const d = new Date(diary.createdAt);
-                const formattedTime = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+                const formattedTime = new Intl.DateTimeFormat(i18n.language, {
+                  year: 'numeric',
+                  month: 'numeric',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                }).format(new Date(diary.createdAt));
                 return (
                   <TouchableOpacity
                     key={diary._id}

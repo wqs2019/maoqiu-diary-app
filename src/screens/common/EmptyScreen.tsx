@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
 
@@ -11,19 +12,24 @@ interface EmptyScreenProps {
 }
 
 const EmptyScreen: React.FC<EmptyScreenProps> = ({
-  message = '暂无数据',
-  subMessage = '这里还没有内容',
+  message,
+  subMessage,
   onAction,
-  actionText = '添加',
+  actionText,
 }) => {
+  const { t } = useTranslation();
+  const displayMessage = message || t('emptyScreen.defaultMessage');
+  const displaySubMessage = subMessage || t('emptyScreen.defaultSubMessage');
+  const displayActionText = actionText || t('emptyScreen.defaultActionText');
+
   return (
     <View style={styles.container}>
       <Text style={styles.icon}>📭</Text>
-      <Text style={styles.message}>{message}</Text>
-      <Text style={styles.subMessage}>{subMessage}</Text>
+      <Text style={styles.message}>{displayMessage}</Text>
+      <Text style={styles.subMessage}>{displaySubMessage}</Text>
       {onAction && (
         <TouchableOpacity style={styles.actionButton} onPress={onAction}>
-          <Text style={styles.actionButtonText}>{actionText}</Text>
+          <Text style={styles.actionButtonText}>{displayActionText}</Text>
         </TouchableOpacity>
       )}
     </View>

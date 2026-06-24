@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -32,37 +33,6 @@ interface Slide {
   image: any;
   color: string;
 }
-
-const SLIDES: Slide[] = [
-  {
-    id: '1',
-    title: '记录柔软时光',
-    description: '每一个摇尾巴的瞬间\n都值得被温柔珍藏',
-    image: require('../../../assets/mimi/1.png'),
-    color: HEALING_COLORS.pink[50],
-  },
-  {
-    id: '2',
-    title: '专属记忆角落',
-    description: '搭建你们的专属回忆墙\n让爱有迹可循',
-    image: require('../../../assets/mimi/2.png'),
-    color: HEALING_COLORS.blue[50],
-  },
-  {
-    id: '3',
-    title: '毛球智能陪伴',
-    description: '遇到小麻烦？\n毛球AI随时为你答疑解惑',
-    image: require('../../../assets/mimi/3.png'),
-    color: HEALING_COLORS.yellow[50],
-  },
-  {
-    id: '4',
-    title: '毛球圈子',
-    description: '加入毛球圈子\n与其他用户分享记忆',
-    image: require('../../../assets/mimi/4.png'),
-    color: HEALING_COLORS.green[50],
-  },
-];
 
 const SlideItem: React.FC<{ item: Slide; index: number; scrollX: any; isDark: boolean }> = ({ item, index, scrollX, isDark }) => {
   const animatedImageStyle = useAnimatedStyle(() => {
@@ -103,36 +73,44 @@ const SlideItem: React.FC<{ item: Slide; index: number; scrollX: any; isDark: bo
   );
 };
 
-const PaginationDot: React.FC<{ index: number; scrollX: any; isDark: boolean }> = ({ index, scrollX, isDark }) => {
-  const animatedDotStyle = useAnimatedStyle(() => {
-    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-    const dotWidth = interpolate(scrollX.value, inputRange, [8, 24, 8], Extrapolation.CLAMP);
-    const opacity = interpolate(scrollX.value, inputRange, [0.4, 1, 0.4], Extrapolation.CLAMP);
-    
-    return {
-      width: dotWidth,
-      opacity,
-    };
-  });
-
-  return (
-    <Animated.View
-      style={[
-        styles.dot,
-        animatedDotStyle,
-        { backgroundColor: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[500] }
-      ]}
-    />
-  );
-};
-
 const OnboardingScreen: React.FC = () => {
   const { setFirstLaunch } = useAppStore();
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const slidesRef = useRef<FlatList>(null);
   
   const scrollX = useSharedValue(0);
+  const slides: Slide[] = [
+    {
+      id: '1',
+      title: t('onboarding.slides.first.title'),
+      description: t('onboarding.slides.first.description'),
+      image: require('../../../assets/mimi/1.png'),
+      color: HEALING_COLORS.pink[50],
+    },
+    {
+      id: '2',
+      title: t('onboarding.slides.second.title'),
+      description: t('onboarding.slides.second.description'),
+      image: require('../../../assets/mimi/2.png'),
+      color: HEALING_COLORS.blue[50],
+    },
+    {
+      id: '3',
+      title: t('onboarding.slides.third.title'),
+      description: t('onboarding.slides.third.description'),
+      image: require('../../../assets/mimi/3.png'),
+      color: HEALING_COLORS.yellow[50],
+    },
+    {
+      id: '4',
+      title: t('onboarding.slides.fourth.title'),
+      description: t('onboarding.slides.fourth.description'),
+      image: require('../../../assets/mimi/4.png'),
+      color: HEALING_COLORS.green[50],
+    },
+  ];
 
   const viewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems[0] && viewableItems[0].index !== null) {
@@ -143,7 +121,7 @@ const OnboardingScreen: React.FC = () => {
   const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
   const scrollToNext = () => {
-    if (currentIndex < SLIDES.length - 1) {
+    if (currentIndex < slides.length - 1) {
       slidesRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
       handleStart();
@@ -161,12 +139,12 @@ const OnboardingScreen: React.FC = () => {
   // 背景颜色渐变动画
   const animatedBackgroundStyle = useAnimatedStyle(() => {
     const isDarkColors = ['#121212', '#1E1E1E', '#121212'];
-    const lightColors = SLIDES.map(s => s.color);
+    const lightColors = slides.map(s => s.color);
     const colorsToUse = isDark ? isDarkColors : lightColors;
 
     const backgroundColor = interpolateColor(
       scrollX.value,
-      SLIDES.map((_, i) => i * width),
+      slides.map((_, i) => i * width),
       colorsToUse
     );
 
@@ -178,7 +156,7 @@ const OnboardingScreen: React.FC = () => {
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.flatListContainer}>
           <Animated.FlatList
-            data={SLIDES}
+            data={slides}
             renderItem={renderItem}
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -197,7 +175,7 @@ const OnboardingScreen: React.FC = () => {
 
         <View style={styles.footer}>
           <View style={styles.paginator}>
-            {SLIDES.map((_, index) => {
+            {slides.map((_, index) => {
               const animatedDotStyle = useAnimatedStyle(() => {
                 const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
                 const dotWidth = interpolate(scrollX.value, inputRange, [8, 24, 8], Extrapolation.CLAMP);
@@ -224,9 +202,9 @@ const OnboardingScreen: React.FC = () => {
 
           <TouchableOpacity style={[styles.button, { backgroundColor: isDark ? HEALING_COLORS.pink[500] : HEALING_COLORS.pink[400] }]} onPress={scrollToNext} activeOpacity={0.8}>
             <Text style={styles.buttonText}>
-              {currentIndex === SLIDES.length - 1 ? '开启毛球日记' : '继续'}
+              {currentIndex === slides.length - 1 ? t('onboarding.start') : t('onboarding.continue')}
             </Text>
-            {currentIndex === SLIDES.length - 1 && (
+            {currentIndex === slides.length - 1 && (
               <Ionicons name="paw" size={20} color="#FFF" style={styles.buttonIcon} />
             )}
           </TouchableOpacity>

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -44,6 +45,7 @@ const DiaryDetailScreen: React.FC = () => {
   const route = useRoute<DiaryDetailRouteProp>();
   const { _id } = route.params;
   const toast = useToast();
+  const { t } = useTranslation();
 
   const { data: diary, isLoading, error, refetch } = useDiaryDetail(_id);
   const deleteMutation = useDeleteDiary();
@@ -102,12 +104,12 @@ const DiaryDetailScreen: React.FC = () => {
       await toggleFavorite(_id, !!diary.isFavorite);
 
       if (isNowFavorite) {
-        toast.success('已加入收藏');
+        toast.success(t('diaryDetailScreen.addedToFavorites'));
       } else {
-        toast.info('已取消收藏');
+        toast.info(t('diaryDetailScreen.removedFromFavorites'));
       }
     } catch (e) {
-      toast.error('操作失败，请重试');
+      toast.error(t('diaryDetailScreen.actionFailed'));
     }
   };
 
@@ -137,7 +139,7 @@ const DiaryDetailScreen: React.FC = () => {
 
     await Clipboard.setStringAsync(selectedComment.content);
     closeCommentActions();
-    toast.success('评论内容已复制');
+    toast.success(t('diaryDetailScreen.copyCommentSuccess'));
   };
 
   const handleDeleteComment = async () => {
@@ -151,10 +153,10 @@ const DiaryDetailScreen: React.FC = () => {
       setComments((prevComments) => removeCommentFromList(prevComments, selectedComment));
       setReplyToComment((prevComment) => getReplyTargetAfterDelete(prevComment, selectedComment));
       closeCommentActions();
-      toast.success('评论已删除');
+      toast.success(t('diaryDetailScreen.commentDeleted'));
       refetch();
     } catch (error: any) {
-      Alert.alert('删除失败', error?.message || '删除评论失败，请稍后重试');
+      Alert.alert(t('diaryDetailScreen.deleteFailedTitle'), error?.message || t('diaryDetailScreen.deleteCommentFailed'));
     } finally {
       setCommentDeleting(false);
     }
@@ -164,19 +166,19 @@ const DiaryDetailScreen: React.FC = () => {
     if (!checkVipPermission('writeDiary')) {
       return;
     }
-    Alert.alert('确认删除', '删除后无法恢复，是否继续？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('diaryDetailScreen.confirmDeleteTitle'), t('diaryDetailScreen.confirmDeleteMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '删除',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
           deleteMutation.mutate(_id, {
             onSuccess: () => {
-              toast.success('删除成功');
+              toast.success(t('diaryDetailScreen.deleteSuccess'));
               navigation.goBack();
             },
             onError: () => {
-              toast.error('删除失败，请稍后重试');
+              toast.error(t('diaryDetailScreen.deleteFailed'));
             },
           });
         },
@@ -187,7 +189,7 @@ const DiaryDetailScreen: React.FC = () => {
   if (isLoading) {
     return (
       <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
-        <Text style={styles.loadingText}>加载中...</Text>
+        <Text style={styles.loadingText}>{t('diaryDetailScreen.loading')}</Text>
       </View>
     );
   }
@@ -195,7 +197,7 @@ const DiaryDetailScreen: React.FC = () => {
   if (error || !diary) {
     return (
       <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
-        <Text style={styles.errorText}>日记加载失败</Text>
+        <Text style={styles.errorText}>{t('diaryDetailScreen.loadFailed')}</Text>
       </View>
     );
   }
@@ -208,7 +210,7 @@ const DiaryDetailScreen: React.FC = () => {
   if (!scenario || !mood || !weather) {
     return (
       <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
-        <Text style={styles.errorText}>数据格式错误</Text>
+        <Text style={styles.errorText}>{t('diaryDetailScreen.invalidData')}</Text>
       </View>
     );
   }
@@ -217,9 +219,9 @@ const DiaryDetailScreen: React.FC = () => {
   const formattedIpLocation = FormatUtil.formatIpLocation(ipLocation);
   const moderationBadgeText =
     diary.moderationStatus === 'pending_recheck'
-      ? '整改复审中'
+      ? t('diaryDetailScreen.moderation.pendingRecheck')
       : diary.moderationStatus === 'violation'
-        ? '笔记违规'
+        ? t('diaryDetailScreen.moderation.violation')
         : '';
   const canDeleteSelectedComment = !!(
     user?._id &&
@@ -248,7 +250,7 @@ const DiaryDetailScreen: React.FC = () => {
           <View style={styles.topRow}>
             <View style={[styles.scenarioBadge, { backgroundColor: scenario.color + '15' }]}>
               <Text style={styles.scenarioIcon}>{scenario.icon}</Text>
-              <Text style={[styles.scenarioName, { color: scenario.color }]}>{scenario.name}</Text>
+              <Text style={[styles.scenarioName, { color: scenario.color }]}>{t(`scenario.${diary.scenario}`)}</Text>
             </View>
             <TouchableOpacity
               onPress={handleToggleFavorite}
@@ -286,7 +288,7 @@ const DiaryDetailScreen: React.FC = () => {
             </View>
           ) : null}
           <Text style={styles.title} selectable>
-            {diary.title || '无标题'}
+            {diary.title || t('diaryDetailScreen.untitled')}
           </Text>
 
           {/* Meta Info (Mood, Weather, Date, Location) */}
@@ -329,6 +331,7 @@ const DiaryDetailScreen: React.FC = () => {
               <NineGridMedia
                 media={diary.media}
                 containerWidth={width - 40}
+                watermarkOwnerName={diary.authorInfo?.nickname}
               />
             </View>
           )}
@@ -347,7 +350,7 @@ const DiaryDetailScreen: React.FC = () => {
         <View style={styles.commentsSection}>
           <CommentList
             comments={comments}
-            emptyText="还没有评论哦，快去圈子里和大家互动吧~"
+            emptyText={t('diaryDetailScreen.emptyComments')}
             authorId={diary.userId}
             onReplyPress={handleReplyPress}
             onCommentLongPress={handleCommentLongPress}
@@ -365,7 +368,11 @@ const DiaryDetailScreen: React.FC = () => {
               <TextInput
                 ref={inputRef}
                 style={styles.commentInput}
-                placeholder={replyToComment ? `回复 @${replyToComment.user}` : '说点什么吧...'}
+                placeholder={
+                  replyToComment
+                    ? t('diaryDetailScreen.replyPlaceholder', { user: replyToComment.user })
+                    : t('diaryDetailScreen.commentPlaceholder')
+                }
                 placeholderTextColor="#9CA3AF"
                 value={commentText}
                 onChangeText={setCommentText}
@@ -386,7 +393,7 @@ const DiaryDetailScreen: React.FC = () => {
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.bottomBarAction} onPress={handleShare}>
               <Ionicons name="share-social-outline" size={24} color="#4B5563" />
-              <Text style={styles.bottomBarActionText}>分享</Text>
+              <Text style={styles.bottomBarActionText}>{t('common.share')}</Text>
             </TouchableOpacity>
             {diary.userId === user?._id && (
               <>
@@ -399,11 +406,11 @@ const DiaryDetailScreen: React.FC = () => {
                   }}
                 >
                   <Ionicons name="create-outline" size={24} color="#4B5563" />
-                  <Text style={styles.bottomBarActionText}>编辑</Text>
+                  <Text style={styles.bottomBarActionText}>{t('diaryDetailScreen.edit')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.bottomBarAction} onPress={handleDelete}>
                   <Ionicons name="trash-outline" size={24} color="#EF4444" />
-                  <Text style={[styles.bottomBarActionText, { color: '#EF4444' }]}>删除</Text>
+                  <Text style={[styles.bottomBarActionText, { color: '#EF4444' }]}>{t('diaryDetailScreen.delete')}</Text>
                 </TouchableOpacity>
               </>
             )}

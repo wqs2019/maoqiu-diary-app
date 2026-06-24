@@ -1,5 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Modal } from 'react-native';
 
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
@@ -14,9 +15,10 @@ interface DatePickerProps {
 export const DatePicker: React.FC<DatePickerProps> = ({
   selectedDate,
   onDateChange,
-  label = '选择日期',
+  label,
 }) => {
   const { isDark } = useAppTheme();
+  const { t, i18n } = useTranslation();
   const [showPicker, setShowPicker] = useState(false);
   // 默认定位到今天
   const date = selectedDate || new Date();
@@ -31,7 +33,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   };
 
   const formatMonth = (date: Date): string => {
-    return `${date.getMonth() + 1}月`;
+    return new Intl.DateTimeFormat(i18n.language, { month: 'short' }).format(date);
   };
 
   const handleChange = (_event: any, selectedDate?: Date) => {
@@ -65,7 +67,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: isDark ? '#AAA' : '#666' }]}>{label}</Text>
+      <Text style={[styles.label, { color: isDark ? '#AAA' : '#666' }]}>{label || t('editDiaryScreen.dateLabel')}</Text>
       <TouchableOpacity
         style={[
           styles.dateButton,
@@ -104,7 +106,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
             <View style={[styles.modalHeader, { borderBottomColor: isDark ? '#333' : '#F0F0F0' }]}>
-              <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>选择日期</Text>
+              <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>{label || t('editDiaryScreen.dateLabel')}</Text>
             </View>
 
             <DateTimePicker
@@ -115,7 +117,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               onDismiss={handleDismiss}
               textColor={isDark ? '#FFF' : '#333'}
               themeVariant={isDark ? 'dark' : 'light'}
-              locale="zh-CN"
+              locale={i18n.language}
             />
 
             <View style={[styles.modalButtons, { borderTopColor: isDark ? '#333' : '#F0F0F0' }]}>
@@ -128,14 +130,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 onPress={handleCancel}
               >
                 <Text style={[styles.cancelButtonText, { color: isDark ? '#AAA' : '#666' }]}>
-                  取消
+                  {t('common.cancel')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={handleConfirm}
               >
-                <Text style={styles.confirmButtonText}>确定</Text>
+                <Text style={styles.confirmButtonText}>{t('common.confirm')}</Text>
               </TouchableOpacity>
             </View>
           </View>

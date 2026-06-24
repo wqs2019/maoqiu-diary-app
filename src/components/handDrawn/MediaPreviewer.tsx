@@ -54,6 +54,7 @@ interface MediaPreviewerProps {
   media: MediaResource[];
   initialIndex: number;
   onClose: () => void;
+  watermarkOwnerName?: string;
 }
 
 interface WatermarkCaptureTask {
@@ -76,10 +77,12 @@ const MediaItem = ({
   item,
   isFocused,
   onZoomStateChange,
+  onLoadStateChange,
 }: {
   item: MediaResource;
   isFocused: boolean;
   onZoomStateChange?: (isZoomed: boolean) => void;
+  onLoadStateChange?: (isLoaded: boolean) => void;
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMediaLoading, setIsMediaLoading] = useState(
@@ -123,6 +126,12 @@ const MediaItem = ({
     translateX,
     translateY,
   ]);
+
+  useEffect(() => {
+    if (isFocused) {
+      onLoadStateChange?.(!isMediaLoading);
+    }
+  }, [isFocused, isMediaLoading, onLoadStateChange]);
 
   const handlePressIn = () => {
     if (item.type === 'livePhoto') {
@@ -313,11 +322,13 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   media,
   initialIndex,
   onClose,
+  watermarkOwnerName,
 }) => {
   const user = useAuthStore((state) => state.user);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isSavingMedia, setIsSavingMedia] = useState(false);
+  const [isCurrentMediaReady, setIsCurrentMediaReady] = useState(false);
   const [watermarkTask, setWatermarkTask] = useState<WatermarkCaptureTask | null>(null);
   const isZoomedRef = useRef(false);
   const watermarkViewShotRef = useRef<ViewShot>(null);
@@ -407,6 +418,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     if (visible) {
       setCurrentIndex(initialIndex);
       setIsZoomed(false);
+      setIsCurrentMediaReady(false);
     }
   }, [visible, initialIndex]);
 
@@ -425,7 +437,11 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   const showZoomHint = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
   const canDownloadCurrentMedia =
     currentItem?.type === 'image' || currentItem?.type === 'livePhoto' || currentItem?.type === 'video';
-  const watermarkUserName = user?.nickname || user?.phone || '毛球用户';
+  const watermarkUserName = watermarkOwnerName || user?.nickname || user?.phone || '毛球用户';
+
+  useEffect(() => {
+    setIsCurrentMediaReady(false);
+  }, [currentIndex, currentItem?.uri, currentItem?.livePhotoVideoUri, visible]);
 
   const getExtensionFromUri = (uri?: string) => {
     if (!uri) {
@@ -487,6 +503,70 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     }
 
     return 'mp4';
+  };
+
+  const getSaveErrorDetail = (error: unknown, fallback: string) => {
+    const knownMessages: Record<string, string> = {
+      watermark_capture_failed: '图片水印渲染失败。',
+      live_photo_video_missing: '缺少实况视频资源。',
+      live_photo_not_supported: '当前设备不支持保存实况图片。',
+      invalid_uri: '资源路径无效。',
+      missing_file: '资源文件不存在。',
+      missing_asset_identifier: '未找到 Live Photo 配对标识，无法保留实况效果。',
+      watermark_failed: 'Live Photo 水印渲染失败。',
+      write_image_failed: '写入带水印的 Live Photo 图片失败。',
+      save_failed: '系统相册保存失败。',
+      insert_video_failed: '视频轨道导出准备失败。',
+      export_failed: '视频导出失败。',
+      export_cancelled: '视频导出已取消。',
+      export_unknown: '视频导出失败。',
+    };
+
+    const normalizeMessage = (value: unknown) => {
+      if (typeof value !== 'string') {
+        return undefined;
+      }
+
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return undefined;
+      }
+
+      return knownMessages[trimmed] || trimmed;
+    };
+
+    if (error instanceof Error) {
+      return normalizeMessage(error.message) || fallback;
+    }
+
+    if (typeof error === 'string') {
+      return normalizeMessage(error) || fallback;
+    }
+
+    if (error && typeof error === 'object') {
+      const record = error as Record<string, unknown>;
+      const userInfo = (record.userInfo && typeof record.userInfo === 'object'
+        ? (record.userInfo as Record<string, unknown>)
+        : undefined);
+      const underlyingError = (userInfo?.NSUnderlyingError && typeof userInfo.NSUnderlyingError === 'object'
+        ? (userInfo.NSUnderlyingError as Record<string, unknown>)
+        : undefined);
+
+      const message =
+        normalizeMessage(record.message) ||
+        normalizeMessage(record.localizedDescription) ||
+        normalizeMessage(userInfo?.NSLocalizedDescription) ||
+        normalizeMessage(underlyingError?.localizedDescription);
+      const code = typeof record.code === 'string' ? record.code : undefined;
+
+      if (message && code && !message.includes(code)) {
+        return `${message}（${code}）`;
+      }
+
+      return message || fallback;
+    }
+
+    return fallback;
   };
 
   const getRemoteImageSize = async (uri: string) =>
@@ -623,13 +703,13 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
         await saveRegularImageToLibrary(currentItem);
         Alert.alert('保存成功', '图片已保存到系统相册。');
       }
-    } catch {
+    } catch (error) {
       if (currentItem.type === 'video') {
-        Alert.alert('保存失败', '下载视频失败，请稍后重试。');
+        Alert.alert('保存失败', getSaveErrorDetail(error, '下载视频失败，请稍后重试。'));
       } else if (currentItem.type === 'livePhoto') {
-        Alert.alert('保存失败', '保存实况图片失败，请稍后重试。');
+        Alert.alert('保存失败', getSaveErrorDetail(error, '保存实况图片失败，请稍后重试。'));
       } else {
-        Alert.alert('保存失败', '下载图片失败，请稍后重试。');
+        Alert.alert('保存失败', getSaveErrorDetail(error, '下载图片失败，请稍后重试。'));
       }
     } finally {
       setIsSavingMedia(false);
@@ -661,6 +741,11 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
                     setIsZoomed(zoomed);
                   }
                 }}
+                onLoadStateChange={(loaded) => {
+                  if (currentIndex === index) {
+                    setIsCurrentMediaReady(loaded);
+                  }
+                }}
               />
             )}
             horizontal
@@ -684,7 +769,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
           </View>
         ) : null}
 
-        {canDownloadCurrentMedia ? (
+        {canDownloadCurrentMedia && isCurrentMediaReady ? (
           <Pressable onPress={handleDownloadMedia} style={styles.floatingDownloadButton} disabled={isSavingMedia}>
             {isSavingMedia ? (
               <ActivityIndicator size="small" color="#FFF" />
@@ -709,12 +794,15 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
                   onLoadEnd={() => watermarkReadyResolverRef.current?.()}
                   onError={() => watermarkReadyResolverRef.current?.()}
                 />
-                <View style={styles.watermarkOverlay}>
-                  <View style={styles.watermarkBadge}>
-                    <View style={styles.watermarkBadgeDot} />
-                    <Text style={styles.watermarkBadgeText}>毛球日记</Text>
-                  </View>
-
+                <View
+                  style={[
+                    styles.watermarkOverlay,
+                    {
+                      maxWidth: Math.min(Math.max(watermarkTask.width * 0.72, 160), 280),
+                    },
+                  ]}
+                >
+                  <Text style={styles.watermarkTitle}>毛球日记</Text>
                   <Text style={styles.watermarkUser}>用户：{watermarkUserName}</Text>
                 </View>
               </View>
@@ -836,47 +924,28 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 24,
     bottom: 24,
-    minWidth: 148,
-    maxWidth: 220,
-    backgroundColor: 'rgba(17,17,17,0.48)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    minWidth: 120,
+    alignItems: 'flex-start',
   },
-  watermarkBadge: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginBottom: 8,
-  },
-  watermarkBadgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#F8D26A',
-    marginRight: 6,
-  },
-  watermarkBadgeText: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.6,
+  watermarkTitle: {
+    color: '#FFF',
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '800',
+    width: '100%',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   watermarkUser: {
     color: 'rgba(255,255,255,0.82)',
     fontSize: 12,
     lineHeight: 16,
-    marginTop: 4,
+    marginTop: 6,
+    width: '100%',
+    flexShrink: 1,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
   },
 });

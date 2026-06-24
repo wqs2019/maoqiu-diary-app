@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -29,7 +30,7 @@ const USER_AGREEMENT_URL = 'https://wqs2019.github.io/maoqiu-diary-app/terms.htm
 const PRIVACY_POLICY_URL = 'https://wqs2019.github.io/maoqiu-diary-app/privacy.html';
 const APP_STORE_URL = 'https://apps.apple.com/cn/app/%E6%AF%9B%E7%90%83%E6%97%A5%E8%AE%B0/id6759290118';
 const APP_STORE_LOOKUP_URL = 'https://itunes.apple.com/lookup?id=6759290118&country=cn';
-const APP_VERSION = Constants.expoConfig?.version || Constants.nativeAppVersion || '未知版本';
+const APP_VERSION = Constants.expoConfig?.version || Constants.nativeAppVersion || '';
 
 const compareVersions = (currentVersion: string, targetVersion: string) => {
   const currentParts = String(currentVersion || '0')
@@ -56,58 +57,59 @@ const compareVersions = (currentVersion: string, targetVersion: string) => {
   return 0;
 };
 
-const FEATURE_CARDS = [
-  {
-    key: 'diary',
-    icon: 'edit-3' as const,
-    eyebrow: '记录此刻',
-    title: '写日记',
-    description: '把开心、委屈、灵感和那些说不出口的情绪，都安静地留在自己的时光手账里。',
-    highlights: ['图文混排', '心情天气', '分类整理'],
-    accent: HEALING_COLORS.pink[500],
-    background: HEALING_COLORS.pink[50],
-  },
-  {
-    key: 'circle',
-    icon: 'globe' as const,
-    eyebrow: '看看世界',
-    title: '逛圈子',
-    description: '遇见更多真实的生活切片，在别人的故事里得到共鸣，也把自己的温柔分享出去。',
-    highlights: ['公开日记', '互动点赞', '发现同频'],
-    accent: '#8B5CF6',
-    background: '#F5F3FF',
-  },
-  {
-    key: 'ai',
-    icon: 'message-circle' as const,
-    eyebrow: '随时陪伴',
-    title: 'AI问答',
-    description: '当你想倾诉、想被理解，或只是想有人陪你聊聊，AI 会温柔地接住你的情绪。',
-    highlights: ['情绪陪伴', '灵感启发', '即时回应'],
-    accent: '#14B8A6',
-    background: '#F0FDFA',
-  },
-  {
-    key: 'shared',
-    icon: 'heart' as const,
-    eyebrow: '共同书写',
-    title: '共享日记本',
-    description: '邀请恋人、家人或好友一起记录生活，把那些双向奔赴的日常，写成只属于你们的回忆。',
-    highlights: ['双人记录', '专属空间', '共同回忆'],
-    accent: '#F59E0B',
-    background: '#FFFBEB',
-  },
-];
-
 const AboutScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const themeStyle = HAND_DRAWN_STYLES.soft;
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const currentHealingColors = isDark ? { ...HEALING_COLORS, ...DARK_HEALING_COLORS } : HEALING_COLORS;
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
   const [isFeatureAutoPlayPaused, setIsFeatureAutoPlayPaused] = useState(false);
   const featureScrollRef = useRef<RNScrollView>(null);
+  const appVersion = APP_VERSION || t('aboutScreen.unknownVersion');
+  const FEATURE_CARDS = [
+    {
+      key: 'diary',
+      icon: 'edit-3' as const,
+      eyebrow: t('aboutScreen.cards.diary.eyebrow'),
+      title: t('aboutScreen.cards.diary.title'),
+      description: t('aboutScreen.cards.diary.description'),
+      highlights: t('aboutScreen.cards.diary.highlights', { returnObjects: true }) as string[],
+      accent: HEALING_COLORS.pink[500],
+      background: HEALING_COLORS.pink[50],
+    },
+    {
+      key: 'circle',
+      icon: 'globe' as const,
+      eyebrow: t('aboutScreen.cards.circle.eyebrow'),
+      title: t('aboutScreen.cards.circle.title'),
+      description: t('aboutScreen.cards.circle.description'),
+      highlights: t('aboutScreen.cards.circle.highlights', { returnObjects: true }) as string[],
+      accent: '#8B5CF6',
+      background: '#F5F3FF',
+    },
+    {
+      key: 'ai',
+      icon: 'message-circle' as const,
+      eyebrow: t('aboutScreen.cards.ai.eyebrow'),
+      title: t('aboutScreen.cards.ai.title'),
+      description: t('aboutScreen.cards.ai.description'),
+      highlights: t('aboutScreen.cards.ai.highlights', { returnObjects: true }) as string[],
+      accent: '#14B8A6',
+      background: '#F0FDFA',
+    },
+    {
+      key: 'shared',
+      icon: 'heart' as const,
+      eyebrow: t('aboutScreen.cards.shared.eyebrow'),
+      title: t('aboutScreen.cards.shared.title'),
+      description: t('aboutScreen.cards.shared.description'),
+      highlights: t('aboutScreen.cards.shared.highlights', { returnObjects: true }) as string[],
+      accent: '#F59E0B',
+      background: '#FFFBEB',
+    },
+  ];
 
   const handleFeatureScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const nextIndex = Math.round(event.nativeEvent.contentOffset.x / FEATURE_SNAP_INTERVAL);
@@ -136,32 +138,32 @@ const AboutScreen: React.FC = () => {
       const response = await fetch(APP_STORE_LOOKUP_URL);
 
       if (!response.ok) {
-        throw new Error('无法连接应用商店，请稍后再试');
+        throw new Error(t('aboutScreen.updateErrors.appStoreUnavailable'));
       }
 
       const result = await response.json();
       const latestVersion = result?.results?.[0]?.version?.trim();
 
       if (!latestVersion) {
-        Alert.alert('检查更新', '暂未查询到应用商店版本信息，请稍后再试。');
+        Alert.alert(t('aboutScreen.updateErrors.checkTitle'), t('aboutScreen.updateErrors.noStoreInfo'));
         return;
       }
 
-      if (compareVersions(APP_VERSION, latestVersion) < 0) {
+      if (compareVersions(appVersion, latestVersion) < 0) {
         Alert.alert(
-          '发现新版本',
-          `当前版本 ${APP_VERSION}，应用商店最新版本 ${latestVersion}。`,
+          t('aboutScreen.updateErrors.newVersionTitle'),
+          t('aboutScreen.updateErrors.newVersionMessage', { current: appVersion, latest: latestVersion }),
           [
-            { text: '稍后再说', style: 'cancel' },
-            { text: '前往更新', onPress: () => Linking.openURL(APP_STORE_URL) },
+            { text: t('aboutScreen.updateErrors.later'), style: 'cancel' },
+            { text: t('aboutScreen.updateErrors.updateNow'), onPress: () => Linking.openURL(APP_STORE_URL) },
           ]
         );
         return;
       }
 
-      Alert.alert('检查更新', `当前版本 ${APP_VERSION}，已经是最新版本。`);
+      Alert.alert(t('aboutScreen.updateErrors.checkTitle'), t('aboutScreen.updateErrors.latestVersion', { current: appVersion }));
     } catch (error: any) {
-      Alert.alert('检查更新失败', error?.message || '暂时无法获取版本信息，请稍后再试');
+      Alert.alert(t('aboutScreen.updateErrors.checkFailed'), error?.message || t('aboutScreen.updateErrors.checkFailedFallback'));
     }
   };
 
@@ -186,7 +188,7 @@ const AboutScreen: React.FC = () => {
           />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
-          关于毛球
+          {t('aboutScreen.headerTitle')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -210,10 +212,10 @@ const AboutScreen: React.FC = () => {
             <Image source={require('../../../assets/logo.png')} style={styles.logo} />
           </View>
           <Text style={[styles.appName, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
-            毛球日记
+            {t('aboutScreen.appName')}
           </Text>
           <Text style={[styles.versionText, { color: isDark ? '#888' : HEALING_COLORS.gray[400] }]}>
-            Version {APP_VERSION}
+            {`Version ${appVersion}`}
           </Text>
 
           <View
@@ -231,24 +233,24 @@ const AboutScreen: React.FC = () => {
                 { color: isDark ? currentHealingColors.pink[400] : currentHealingColors.pink[600] },
               ]}
             >
-              「收集日常里微小而确定的幸福」
+              {t('aboutScreen.sloganTitle')}
             </Text>
             <Text
               style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}
             >
-              毛球日记是一个温暖的树洞，也是你专属的时光手账。你可以记录情绪、保存灵感，也能把日常片段认真珍藏起来。
+              {t('aboutScreen.sloganDesc1')}
             </Text>
             <Text
               style={[styles.sloganSubText, { color: isDark ? '#AAA' : HEALING_COLORS.gray[600] }]}
             >
-              你也可以逛圈子、和 AI 聊天，或邀请恋人、家人一起写共享日记，让陪伴和回忆都有地方安放。🐾✨
+              {t('aboutScreen.sloganDesc2')}
             </Text>
           </View>
 
           <View style={styles.featureSection}>
             <View style={styles.featureSectionHeader}>
               <Text style={[styles.featureTitle, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}>
-                功能亮点
+                {t('aboutScreen.featureTitle')}
               </Text>
               <Text
                 style={[
@@ -256,7 +258,7 @@ const AboutScreen: React.FC = () => {
                   { color: isDark ? '#9CA3AF' : HEALING_COLORS.gray[500] },
                 ]}
               >
-                4 个核心功能，轻轻一滑就能了解
+                {t('aboutScreen.featureSubtitle')}
               </Text>
             </View>
 
@@ -399,7 +401,7 @@ const AboutScreen: React.FC = () => {
             <Text
               style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
             >
-              ✨ 去应用市场给毛球好评
+              {t('aboutScreen.rateApp')}
             </Text>
             <Feather
               name="chevron-right"
@@ -418,7 +420,7 @@ const AboutScreen: React.FC = () => {
             <Text
               style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
             >
-              🚀 检查更新
+              {t('aboutScreen.checkUpdate')}
             </Text>
             <Feather
               name="chevron-right"
@@ -435,14 +437,14 @@ const AboutScreen: React.FC = () => {
             onPress={() =>
               (navigation as any).navigate('Web', {
                 url: USER_AGREEMENT_URL,
-                title: '用户服务协议',
+                title: t('aboutScreen.userAgreement'),
               })
             }
           >
             <Text
               style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
             >
-              📄 用户服务协议
+              {t('aboutScreen.userAgreement')}
             </Text>
             <Feather
               name="chevron-right"
@@ -455,14 +457,14 @@ const AboutScreen: React.FC = () => {
             onPress={() =>
               (navigation as any).navigate('Web', {
                 url: PRIVACY_POLICY_URL,
-                title: '隐私保护政策',
+                title: t('aboutScreen.privacyPolicy'),
               })
             }
           >
             <Text
               style={[styles.menuItemText, { color: isDark ? '#FFF' : HEALING_COLORS.gray[800] }]}
             >
-              🔒 隐私保护政策
+              {t('aboutScreen.privacyPolicy')}
             </Text>
             <Feather
               name="chevron-right"
@@ -474,7 +476,7 @@ const AboutScreen: React.FC = () => {
 
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>
-            毛球工作室 版权所有
+            {t('aboutScreen.copyright')}
           </Text>
           <Text style={[styles.footerText, { color: isDark ? '#666' : HEALING_COLORS.gray[400] }]}>
             Copyright © 2026 Maoqiu Studio.

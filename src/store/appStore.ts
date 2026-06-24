@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import i18n from '../i18n';
 import { ThemeType } from '../config/theme';
 import StorageUtil from '../utils/storage';
 import { useAuthStore } from './authStore';
@@ -25,7 +26,7 @@ export interface AppState {
     notification?: string;
   };
   setTheme: (theme: ThemeType) => void;
-  setLanguage: (language: I18nLangType) => void;
+  setLanguage: (language: I18nLangType) => Promise<void>;
   setLoading: (loading: boolean) => void;
   setNotificationsEnabled: (enabled: boolean) => Promise<void>;
   setReminderTime: (time: { hour: number; minute: number }) => Promise<void>;
@@ -63,7 +64,9 @@ export const useAppStore = create<AppState>((set) => ({
     await StorageUtil.set('themeColor', color);
     set({ themeColor: color });
   },
-  setLanguage: (language) => {
+  setLanguage: async (language) => {
+    await StorageUtil.set('language', language);
+    await i18n.changeLanguage(language);
     set({ language });
   },
   setLoading: (loading) => {
@@ -112,6 +115,13 @@ export const useAppStore = create<AppState>((set) => ({
     const savedThemeColor = await StorageUtil.get<ThemeColorType>('themeColor');
     if (savedThemeColor) {
       set({ themeColor: savedThemeColor });
+    }
+    const savedLanguage = await StorageUtil.get<I18nLangType>('language');
+    if (savedLanguage) {
+      await i18n.changeLanguage(savedLanguage);
+      set({ language: savedLanguage });
+    } else {
+      set({ language: i18n.language as I18nLangType });
     }
   },
   initNotifications: async () => {
