@@ -730,6 +730,7 @@ export default {
     appearance: '外观',
     darkMode: '深色模式',
     language: '语言',
+    weather: '天气',
     chinese: '简体中文',
     english: 'English',
     about: '关于',

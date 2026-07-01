@@ -727,6 +727,7 @@ export default {
     appearance: 'Appearance',
     darkMode: 'Dark Mode',
     language: 'Language',
+    weather: 'Weather',
     chinese: '简体中文',
     english: 'English',
     about: 'About',

@@ -68,6 +68,7 @@ const UserProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const targetUserId = route.params?.userId;
+  const listRef = React.useRef<FlatList<Diary>>(null);
 
   const currentUser = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
@@ -187,6 +188,11 @@ const UserProfileScreen: React.FC = () => {
   const handleDiaryPress = (item: Diary) => {
     navigation.navigate('CircleDetail', { _id: item._id });
   };
+
+  const handleTabPress = useCallback((tab: 'public' | 'commented' | 'liked') => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    setActiveTab(tab);
+  }, []);
 
   const handleLike = (item: Diary) => {
     if (likeMutation.isGlobalMutating) return;
@@ -428,7 +434,7 @@ const UserProfileScreen: React.FC = () => {
 
     return (
       <View style={{ backgroundColor: 'transparent' }}>
-        <View style={[styles.profileHeader, { backgroundColor: profileHeaderBg, paddingTop: insets.top, marginBottom: 0 }]}>
+        <View style={[styles.profileHeader, { backgroundColor: profileHeaderBg, paddingTop: insets.top + 4, marginBottom: 0 }]}>
           {/* 返回按钮放在 Header 内部 */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={handleBackPress}>
@@ -534,10 +540,10 @@ const UserProfileScreen: React.FC = () => {
 
         {/* Tab 栏（仅自己可见） */}
         {isSelf && (
-          <View style={styles.tabContainer}>
+          <View style={[styles.tabContainer, { backgroundColor, marginTop: hasBackground ? 10 : 6 }]}>
             <TouchableOpacity
               style={styles.tabItem}
-              onPress={() => setActiveTab('public')}
+              onPress={() => handleTabPress('public')}
             >
               <Text style={[styles.tabText, { color: isDark ? '#E5E7EB' : '#374151' }, activeTab === 'public' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
                 {t('userProfileScreen.tabs.public')}
@@ -546,7 +552,7 @@ const UserProfileScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.tabItem}
-              onPress={() => setActiveTab('commented')}
+              onPress={() => handleTabPress('commented')}
             >
               <Text style={[styles.tabText, { color: isDark ? '#E5E7EB' : '#374151' }, activeTab === 'commented' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
                 {t('userProfileScreen.tabs.commented')}
@@ -555,7 +561,7 @@ const UserProfileScreen: React.FC = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.tabItem}
-              onPress={() => setActiveTab('liked')}
+              onPress={() => handleTabPress('liked')}
             >
               <Text style={[styles.tabText, { color: isDark ? '#E5E7EB' : '#374151' }, activeTab === 'liked' && { color: isDark ? '#FFF' : '#111827', fontWeight: 'bold' }]}>
                 {t('userProfileScreen.tabs.liked')}
@@ -565,7 +571,6 @@ const UserProfileScreen: React.FC = () => {
           </View>
         )}
 
-        <View style={{ height: 2, backgroundColor }} />
       </View>
     );
   };
@@ -585,16 +590,27 @@ const UserProfileScreen: React.FC = () => {
             }}
           >
             <View style={styles.feedHeader}>
-              <View style={[styles.headerInfo, { flexDirection: 'row', alignItems: 'center' }]}>
-                <Text style={[styles.time, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                  {FormatUtil.formatRelativeTime(item.createdAt || item.date)}
-                </Text>
-                {/* ip location */}
-                {item.ipLocation && (
-                  <Text style={[styles.ipLocation, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                    {FormatUtil.formatIpLocation(item.ipLocation)}
-                  </Text>
+              <View style={[styles.itemAvatarContainer, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
+                {item.authorInfo?.avatar ? (
+                  <Image source={{ uri: item.authorInfo.avatar }} style={styles.itemAvatar} />
+                ) : (
+                  <Image source={require('../../../assets/logo_bg.png')} style={styles.itemAvatar} />
                 )}
+              </View>
+              <View style={styles.headerInfo}>
+                <Text style={[styles.itemAuthorName, { color: isDark ? '#FFF' : '#111827' }]} numberOfLines={1}>
+                  {item.authorInfo?.nickname || t('userProfileScreen.defaultName')}
+                </Text>
+                <View style={styles.itemMetaRow}>
+                  <Text style={[styles.time, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                    {FormatUtil.formatRelativeTime(item.createdAt || item.date)}
+                  </Text>
+                  {item.ipLocation && (
+                    <Text style={[styles.ipLocation, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                      {FormatUtil.formatIpLocation(item.ipLocation)}
+                    </Text>
+                  )}
+                </View>
               </View>
             </View>
 
@@ -693,7 +709,7 @@ const UserProfileScreen: React.FC = () => {
     >
       {/* 顶部背景装饰 */}
       {hasBackground && (
-        <View style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}>
+        <View style={[styles.headerBackgroundContainer, { height: 220 + insets.top }]}>
           <Image
             source={{ uri: profile.profileBackground }}
             style={styles.headerBackgroundImage}
@@ -726,31 +742,42 @@ const UserProfileScreen: React.FC = () => {
           <Text style={[styles.errorText, { color: isDark ? '#AAA' : '#6B7280' }]}>{errorMsg}</Text>
         </View>
       ) : (
-        <FlatList
-          data={displayedDiaries}
-          renderItem={renderItem}
-          keyExtractor={(item) => item._id}
-          ListHeaderComponent={renderHeader()}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={isManualRefreshing}
-              onRefresh={onRefresh}
-              tintColor={HEALING_COLORS.pink[400]}
-            />
-          }
-          ListEmptyComponent={
-            !diaryLoading && !profileLoading ? (
-              <View style={[styles.emptyContainer, { backgroundColor }]}>
-                <Ionicons name="globe-outline" size={48} color={isDark ? '#555' : '#D1D5DB'} />
-                <Text style={[styles.emptyText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                  {emptyMessage}
-                </Text>
-              </View>
-            ) : null
-          }
-        />
+        <>
+          {renderHeader()}
+          <FlatList
+            ref={listRef}
+            style={[styles.list, { backgroundColor }]}
+            data={displayedDiaries}
+            renderItem={renderItem}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={[
+              styles.listContent,
+              (diaryLoading || displayedDiaries.length === 0) && styles.listContentWhenEmpty,
+            ]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={isManualRefreshing}
+                onRefresh={onRefresh}
+                tintColor={HEALING_COLORS.pink[400]}
+              />
+            }
+            ListEmptyComponent={
+              diaryLoading ? (
+                <View style={[styles.emptyContainer, { backgroundColor }]}>
+                  <ActivityIndicator size="small" color={HEALING_COLORS.pink[400]} />
+                </View>
+              ) : !profileLoading ? (
+                <View style={[styles.emptyContainer, { backgroundColor }]}>
+                  <Ionicons name="globe-outline" size={48} color={isDark ? '#555' : '#D1D5DB'} />
+                  <Text style={[styles.emptyText, { color: isDark ? '#AAA' : '#6B7280' }]}>
+                    {emptyMessage}
+                  </Text>
+                </View>
+              ) : null
+            }
+          />
+        </>
       )}
 
       <CommonModal visible={moreActionsVisible} onClose={() => setMoreActionsVisible(false)}>
@@ -1241,14 +1268,15 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   profileHeader: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
     backgroundColor: '#fff',
     marginBottom: 8,
   },
   profileTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 6,
   },
   avatarContainer: {
     width: 80,
@@ -1296,8 +1324,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 4,
+    paddingVertical: 8,
+    marginTop: 2,
   },
   relationNoticeText: {
     flex: 1,
@@ -1320,7 +1348,11 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 12,
+    marginTop: 6,
+    paddingTop: 4,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
   },
   tabItem: {
     paddingVertical: 12,
@@ -1339,8 +1371,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: HEALING_COLORS.pink[500],
   },
+  list: {
+    flex: 1,
+  },
   listContent: {
+    paddingTop: 8,
     paddingBottom: 40,
+  },
+  listContentWhenEmpty: {
+    flexGrow: 1,
   },
   diaryWrapper: {
     marginBottom: 8,
@@ -1357,8 +1396,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  itemAvatarContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
+    marginRight: 10,
+  },
+  itemAvatar: {
+    width: '100%',
+    height: '100%',
+  },
   headerInfo: {
     flex: 1,
+  },
+  itemAuthorName: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  itemMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   time: {
     fontSize: 12,
@@ -1415,6 +1474,7 @@ const styles = StyleSheet.create({
     padding: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 220,
   },
   emptyText: {
     marginTop: 16,
