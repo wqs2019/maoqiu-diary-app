@@ -86,6 +86,38 @@ export class AuthService {
     }
   }
 
+  async appleLogin(data: {
+    userId: string;
+    email: string | null;
+    fullName: string | null;
+    identityToken: string | null;
+    authorizationCode: string | null;
+  }): Promise<{ token: string; user: UserInfo }> {
+    try {
+      const response = await CloudService.callFunction('login', {
+        action: 'appleLogin',
+        data,
+      });
+
+      console.log('Apple Login response:', response);
+
+      const result = response;
+      if (result?.code !== 0) {
+        throw new Error(result?.message || 'Apple 登录失败');
+      }
+
+      const { token, user } = result.data || {};
+      if (!token || !user) {
+        throw new Error(result.data?.message || '返回数据格式错误，登录失败');
+      }
+
+      return { token, user };
+    } catch (error) {
+      console.error('Apple Login error:', error);
+      throw error;
+    }
+  }
+
   async sendVerificationCode(phone: string): Promise<boolean> {
     try {
       // 使用阿里云短信服务发送验证码

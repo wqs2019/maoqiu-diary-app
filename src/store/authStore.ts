@@ -12,6 +12,13 @@ export interface AuthState {
   error: string | null;
   login: (phone: string, code: string) => Promise<void>;
   loginWithWechat: () => Promise<void>;
+  loginWithApple: (data: {
+    userId: string;
+    email: string | null;
+    fullName: string | null;
+    identityToken: string | null;
+    authorizationCode: string | null;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   sendCode: (phone: string) => Promise<boolean>;
   checkAuth: () => Promise<boolean>;
@@ -39,6 +46,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error: any) {
       console.error('Login failed in store:', error);
       set({ error: error.message || '登录失败', loading: false });
+    }
+  },
+  loginWithApple: async (data) => {
+    set({ loading: true, error: null });
+    try {
+      const { token, user } = await authService.appleLogin(data);
+      await authService.saveToken(token);
+      await authService.saveUserInfo(user);
+      set({ isLoggedIn: true, user, loading: false });
+
+      if (user.biometricEnabled !== undefined) {
+        await useAppStore.getState().syncAppLockFromUser(user.biometricEnabled);
+      }
+    } catch (error: any) {
+      console.error('Apple Login failed in store:', error);
+      set({ error: error.message || 'Apple 登录失败', loading: false });
+      throw error;
     }
   },
   loginWithWechat: async () => {

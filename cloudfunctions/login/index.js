@@ -33,6 +33,8 @@ exports.main = async (event, context) => {
   switch (action) {
     case 'login':
       return await loginHandler(data);
+    case 'appleLogin':
+      return await appleLoginHandler(data);
     case 'validateToken':
       return await validateTokenHandler(data);
     default:
@@ -131,6 +133,75 @@ function generateToken(userId) {
     .update(`${userId}${timestamp}${randomStr}`)
     .digest('hex');
   return `${userId}.${timestamp}.${signature}`;
+}
+
+async function appleLoginHandler(data) {
+  try {
+    const { userId, email, fullName } = data || {};
+
+    if (!userId) {
+      return { code: -1, message: 'Apple userId 不能为空' };
+    }
+
+    // 查找用户
+    let user = await usersCollection.where({ appleId: userId }).get();
+
+    if (user.data.length === 0) {
+      // 用户不存在，创建新用户
+      const newUser = {
+        appleId: userId,
+        email: email || '',
+        nickname: fullName || `Apple用户${userId.slice(-4)}`,
+        avatar: '',
+        accountStatus: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const result = await usersCollection.add(newUser);
+      user = {
+        data: [
+          {
+            ...newUser,
+            _id: result.id || result._id,
+          },
+        ],
+      };
+    } else {
+      if (user.data[0] && user.data[0].accountStatus === 'frozen') {
+        return buildUserFrozenError('该账号已被冻结，暂时无法登录');
+      }
+
+      // 用户存在，更新最后登录时间
+      const docId = user.data[0]._id || user.data[0].id;
+      await usersCollection.doc(docId).update({
+        updatedAt: new Date(),
+      });
+    }
+
+    const docId = user.data[0]._id || user.data[0].id;
+    const isAdmin = false; // Apple 登录暂不处理管理员
+    const token = generateToken(docId);
+
+    return {
+      code: 0,
+      message: '登录成功',
+      data: {
+        token,
+        user: {
+          ...user.data[0],
+          _id: docId,
+          isAdmin,
+        },
+      },
+    };
+  } catch (error) {
+    console.error('Apple Login error:', error);
+    return {
+      code: -1,
+      message: 'Apple 登录失败',
+    };
+  }
 }
 
 async function validateTokenHandler(data) {

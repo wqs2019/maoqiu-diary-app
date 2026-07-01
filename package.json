@@ -37,6 +37,7 @@
     "cos-js-sdk-v5": "^1.10.1",
     "crypto-js": "^4.2.0",
     "expo": "~54.0.33",
+    "expo-apple-authentication": "~8.0.8",
     "expo-av": "~16.0.8",
     "expo-blur": "~15.0.8",
     "expo-camera": "~17.0.10",
