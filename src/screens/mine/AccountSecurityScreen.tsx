@@ -1,7 +1,8 @@
-import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -27,6 +28,28 @@ const AccountSecurityScreen: React.FC = () => {
   const toast = useToast();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCountdown, setDeleteCountdown] = useState(0);
+  const [isAppleAvailable, setIsAppleAvailable] = useState(Platform.OS === 'ios');
+  const [isBindingApple, setIsBindingApple] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const checkAvailability = async () => {
+      if (Platform.OS !== 'ios') {
+        setIsAppleAvailable(false);
+        return;
+      }
+      const available = await AppleAuthentication.isAvailableAsync();
+      if (mounted) {
+        setIsAppleAvailable(available);
+      }
+    };
+    checkAvailability().catch(() => {
+      if (mounted) setIsAppleAvailable(false);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -92,6 +115,46 @@ const AccountSecurityScreen: React.FC = () => {
       console.error('Delete account error:', error);
       toast.hide();
       toast.error('注销账号失败，请稍后重试');
+    }
+  };
+
+  const handleBindApple = async () => {
+    if (!user?._id || isBindingApple) return;
+
+    try {
+      setIsBindingApple(true);
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      toast.loading('正在绑定...');
+      const res: any = await CloudService.callFunction('user', {
+        action: 'bindAppleId',
+        data: {
+          userId: user._id,
+          appleId: credential.user,
+        },
+      });
+
+      toast.hide();
+      if (res.code === 0 && res.data?.success) {
+        toast.success('绑定成功');
+        // 更新本地状态
+        useAuthStore.getState().updateProfile(user._id, { appleId: credential.user });
+      } else {
+        toast.error(res.data?.message || '绑定失败');
+      }
+    } catch (error: any) {
+      toast.hide();
+      if (error?.code === 'ERR_REQUEST_CANCELED') {
+        return;
+      }
+      toast.error(error?.message || '绑定失败，请稍后重试');
+    } finally {
+      setIsBindingApple(false);
     }
   };
 
@@ -226,24 +289,52 @@ const AccountSecurityScreen: React.FC = () => {
           )}
         </View>
 
-        {/* 第三方绑定
-        <View
-          style={[
-            styles.menuSection,
-            {
-              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
-              borderRadius: themeStyle.borderRadius,
-              shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
-              shadowOpacity: themeStyle.shadowOpacity * 0.5,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 4,
-            },
-          ]}
-        >
-        </View>
-        */}
+        {/* 第三方绑定 */}
+        {isAppleAvailable && (
+          <View
+            style={[
+              styles.menuSection,
+              {
+                backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+                borderRadius: themeStyle.borderRadius,
+                shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
+                shadowOpacity: themeStyle.shadowOpacity * 0.5,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 4,
+              },
+            ]}
+          >
+            {renderSettingItem(
+              'apple',
+              'Apple 账号',
+              isDark ? '#FFFFFF' : '#000000',
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  style={[
+                    styles.valueText,
+                    { color: user?.appleId ? (isDark ? '#9CA3AF' : currentHealingColors.gray[500]) : currentHealingColors.pink[500] },
+                  ]}
+                >
+                  {user?.appleId ? '已绑定' : '去绑定'}
+                </Text>
+                {!user?.appleId && (
+                  <Feather
+                    name="chevron-right"
+                    size={20}
+                    color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
+                    style={{ marginLeft: 4 }}
+                  />
+                )}
+              </View>,
+              true,
+              user?.appleId ? undefined : handleBindApple,
+              'FontAwesome5'
+            )}
+          </View>
+        )}
+
         {/* 危险操作 */}
         <View
           style={[

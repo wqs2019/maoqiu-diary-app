@@ -16,6 +16,7 @@ export interface VipInfo {
 export interface UserInfo {
   _id: string;
   phone: string;
+  appleId?: string;
   isAdmin?: boolean;
   accountStatus?: 'active' | 'frozen';
   freezeReason?: string;

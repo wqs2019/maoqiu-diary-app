@@ -1625,6 +1625,8 @@ exports.main = async (event, context) => {
       return await getBlockedUserIds(data);
     case 'getBlockedUsersList':
       return await getBlockedUsersList(data);
+    case 'bindAppleId':
+      return await bindAppleId(data);
     default:
       return {
         success: false,
@@ -1632,3 +1634,36 @@ exports.main = async (event, context) => {
       };
   }
 };
+
+async function bindAppleId(data) {
+  try {
+    const { userId, appleId } = data || {};
+
+    if (!userId || !appleId) {
+      return { success: false, message: '缺少必要参数' };
+    }
+
+    // 检查这个 appleId 是否已经被其他账号绑定
+    const existingUser = await db.collection('users').where({ appleId }).get();
+    if (existingUser.data && existingUser.data.length > 0) {
+      // 如果找到的账号不是当前账号，说明已经被别人绑定了
+      const foundId = existingUser.data[0]._id || existingUser.data[0].id;
+      if (foundId !== userId) {
+        return { success: false, message: '该 Apple 账号已被其他用户绑定' };
+      }
+      // 如果就是当前账号，直接返回成功
+      return { success: true, message: '已绑定' };
+    }
+
+    // 更新当前用户的 appleId
+    await db.collection('users').doc(userId).update({
+      appleId,
+      updatedAt: db.serverDate(),
+    });
+
+    return { success: true, message: '绑定成功' };
+  } catch (error) {
+    console.error('Bind Apple ID error:', error);
+    return { success: false, message: '绑定失败', error: error.message };
+  }
+}
