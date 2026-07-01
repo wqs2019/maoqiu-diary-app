@@ -38,6 +38,9 @@ import { useAppStore, I18nLangType } from '../../store/appStore';
 import { Modal as CommonModal } from '@/components/common/Modal';
 import { useToast } from '@/components/common/Toast';
 
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
 const { width } = Dimensions.get('window');
 const AGREEMENT_ACCEPTED_KEY = 'login_agreement_accepted';
 const USER_AGREEMENT_URL = 'https://wqs2019.github.io/maoqiu-diary-app/terms.html';
@@ -124,6 +127,7 @@ const LoginScreen: React.FC = () => {
   const [isAppleAvailable, setIsAppleAvailable] = useState(Platform.OS === 'ios');
   const { login, loginWithWechat, loginWithApple, sendCode, loading, sendingCode } = useAuthStore();
   const { language, setLanguage } = useAppStore();
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { isDark, colors } = useAppTheme();
@@ -343,7 +347,7 @@ const LoginScreen: React.FC = () => {
         .filter(Boolean)
         .join('');
       
-      await loginWithApple({
+      const result = await loginWithApple({
         userId: credential.user,
         email: credential.email ?? null,
         fullName: fullName || null,
@@ -351,9 +355,13 @@ const LoginScreen: React.FC = () => {
         authorizationCode: credential.authorizationCode ?? null,
       });
       
-      const currentError = useAuthStore.getState().error;
-      if (currentError) {
-        toast.error(currentError);
+      if (result.needsBind) {
+        navigation.navigate('BindPhone', { token: result.token, user: result.user });
+      } else {
+        const currentError = useAuthStore.getState().error;
+        if (currentError) {
+          toast.error(currentError);
+        }
       }
     } catch (error: any) {
       if (error?.code === 'ERR_REQUEST_CANCELED') {

@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import AIScreen from '@/screens/ai/AIScreen';
 import LoginScreen from '@/screens/auth/LoginScreen';
+import BindPhoneScreen from '@/screens/auth/BindPhoneScreen';
 import CategoryScreen from '@/screens/category/CategoryScreen';
 import PhotoWallScreen from '@/screens/category/PhotoWallScreen';
 import CircleDetailScreen from '@/screens/circle/CircleDetailScreen';
@@ -100,6 +101,7 @@ export type RootStackParamList = {
 
 export type AuthStackParamList = {
   Login: undefined;
+  BindPhone: { token: string; user: any };
 };
 
 export type MainTabParamList = {
@@ -117,6 +119,7 @@ const MainTab = createBottomTabNavigator<MainTabParamList>();
 const AuthNavigator = () => (
   <AuthStack.Navigator screenOptions={{ headerShown: false }}>
     <AuthStack.Screen name="Login" component={LoginScreen} />
+    <AuthStack.Screen name="BindPhone" component={BindPhoneScreen} />
   </AuthStack.Navigator>
 );
 

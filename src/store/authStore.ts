@@ -18,7 +18,7 @@ export interface AuthState {
     fullName: string | null;
     identityToken: string | null;
     authorizationCode: string | null;
-  }) => Promise<void>;
+  }) => Promise<{ token: string; user: UserInfo; needsBind: boolean }>;
   logout: () => Promise<void>;
   sendCode: (phone: string) => Promise<boolean>;
   checkAuth: () => Promise<boolean>;
@@ -52,6 +52,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true, error: null });
     try {
       const { token, user } = await authService.appleLogin(data);
+      
+      if (!user.phone) {
+        set({ loading: false });
+        return { token, user, needsBind: true };
+      }
+
       await authService.saveToken(token);
       await authService.saveUserInfo(user);
       set({ isLoggedIn: true, user, loading: false });
@@ -59,6 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (user.biometricEnabled !== undefined) {
         await useAppStore.getState().syncAppLockFromUser(user.biometricEnabled);
       }
+      return { token, user, needsBind: false };
     } catch (error: any) {
       console.error('Apple Login failed in store:', error);
       set({ error: error.message || 'Apple 登录失败', loading: false });

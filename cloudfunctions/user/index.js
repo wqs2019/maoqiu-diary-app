@@ -1649,10 +1649,17 @@ async function bindAppleId(data) {
       // 如果找到的账号不是当前账号，说明已经被别人绑定了
       const foundId = existingUser.data[0]._id || existingUser.data[0].id;
       if (foundId !== userId) {
-        return { success: false, message: '该 Apple 账号已被其他用户绑定' };
+        // 如果这个 appleId 对应的账号是一个没有绑定手机号的“空壳”账号（即刚才 Apple 登录自动创建的）
+        // 我们可以允许合并：删除那个空壳账号，把 appleId 绑到当前老账号上
+        if (!existingUser.data[0].phone) {
+          await db.collection('users').doc(foundId).remove();
+        } else {
+          return { success: false, message: '该 Apple 账号已被其他用户绑定' };
+        }
+      } else {
+        // 如果就是当前账号，直接返回成功
+        return { success: true, message: '已绑定' };
       }
-      // 如果就是当前账号，直接返回成功
-      return { success: true, message: '已绑定' };
     }
 
     // 更新当前用户的 appleId
