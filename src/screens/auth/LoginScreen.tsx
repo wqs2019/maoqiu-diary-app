@@ -16,6 +16,8 @@ import {
   Image,
   ScrollView,
   Dimensions,
+  ActionSheetIOS,
+  Alert,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -30,6 +32,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useAuthStore } from '../../store/authStore';
+import { useAppStore, I18nLangType } from '../../store/appStore';
 
 import { Modal as CommonModal } from '@/components/common/Modal';
 import { useToast } from '@/components/common/Toast';
@@ -118,10 +121,58 @@ const LoginScreen: React.FC = () => {
   const [agreementModalVisible, setAgreementModalVisible] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const { login, loginWithWechat, sendCode, loading, sendingCode } = useAuthStore();
+  const { language, setLanguage } = useAppStore();
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { isDark, colors } = useAppTheme();
   const { t } = useTranslation();
+
+  const handleLanguageChange = async (nextLanguage: I18nLangType) => {
+    if (nextLanguage === language) {
+      return;
+    }
+    try {
+      await setLanguage(nextLanguage);
+    } catch (error) {
+      console.error('Set language error:', error);
+      toast.error(t('settingsScreen.setLanguageFailed') || 'Failed to set language');
+    }
+  };
+
+  const handleLanguagePress = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [t('setting.chinese') || '简体中文', t('setting.english') || 'English', t('common.cancel') || 'Cancel'],
+          cancelButtonIndex: 2,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 0) {
+            handleLanguageChange('zh-CN');
+          } else if (buttonIndex === 1) {
+            handleLanguageChange('en-US');
+          }
+        }
+      );
+      return;
+    }
+
+    Alert.alert(t('settingsScreen.chooseLanguage') || 'Choose Language', '', [
+      {
+        text: t('setting.chinese') || '简体中文',
+        onPress: () => {
+          handleLanguageChange('zh-CN');
+        },
+      },
+      {
+        text: t('setting.english') || 'English',
+        onPress: () => {
+          handleLanguageChange('en-US');
+        },
+      },
+      { text: t('common.cancel') || 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   useEffect(() => {
     const loadAgreementState = async () => {
@@ -255,6 +306,15 @@ const LoginScreen: React.FC = () => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : insets.top}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} translucent={true} backgroundColor="transparent" />
+      
+      {/* 语言切换按钮 */}
+      <TouchableOpacity
+        style={[styles.languageButton, { top: insets.top + SPACING.small }]}
+        onPress={handleLanguagePress}
+      >
+        <Ionicons name="language" size={24} color={isDark ? colors.text : COLORS.primary} />
+      </TouchableOpacity>
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -523,6 +583,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF5F8',
+  },
+  languageButton: {
+    position: 'absolute',
+    right: SPACING.large,
+    zIndex: 10,
+    padding: SPACING.small,
   },
   scrollContent: {
     flexGrow: 1,
