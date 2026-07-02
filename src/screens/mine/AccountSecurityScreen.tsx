@@ -1,5 +1,6 @@
 import { Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
@@ -17,9 +18,10 @@ import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import { Modal } from '../../components/common/Modal';
 import { useState, useEffect } from 'react';
+import { RootStackParamList } from '../../navigation/RootNavigator';
 
 const AccountSecurityScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const { checkVipPermission } = useVipGuard();
@@ -252,13 +254,25 @@ const AccountSecurityScreen: React.FC = () => {
               <Text
                 style={[
                   styles.valueText,
-                  { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                  { color: user?.phone ? (isDark ? '#9CA3AF' : currentHealingColors.gray[500]) : currentHealingColors.pink[500] },
                 ]}
               >
-                {formatPhone(user?.phone)}
+                {user?.phone ? formatPhone(user.phone) : '去绑定'}
               </Text>
+              {!user?.phone && (
+                <Feather
+                  name="chevron-right"
+                  size={20}
+                  color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
+                  style={{ marginLeft: 4 }}
+                />
+              )}
             </View>,
-            false
+            false,
+            user?.phone ? undefined : () => {
+              // 传递一个明确的标识，表示是从设置页进入的
+              navigation.navigate('BindPhone', { scene: 'account' });
+            }
           )}
           {renderSettingItem(
             'lock',

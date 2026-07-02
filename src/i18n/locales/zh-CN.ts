@@ -71,6 +71,21 @@ export default {
     or: '或',
     wechatLogin: '微信一键登录',
   },
+  bindPhoneScreen: {
+    title: '绑定手机号',
+    subtitle: '绑定手机号后，您可以找回之前的日记数据，并支持多端登录。',
+    binding: '绑定中...',
+    bindNow: '立即绑定',
+    skip: '暂不绑定，直接进入',
+    bindFailed: '绑定失败',
+    bindFailedRetry: '绑定失败，请稍后重试',
+  },
+  mediaSelector: {
+    title: '媒体附件',
+    maxCount: '（最多{{maxCount}}个）',
+    maxCountWithDrag: '（最多{{maxCount}}个，长按可拖动排序）',
+    addMedia: '添加媒体',
+  },
   home: {
     greeting: '你好，{{name}}',
     welcomeBack: '欢迎回来',

@@ -71,6 +71,21 @@ export default {
     or: 'or',
     wechatLogin: 'WeChat Login',
   },
+  bindPhoneScreen: {
+    title: 'Bind Phone',
+    subtitle: 'Bind your phone number to recover previous diary data and support multi-device login.',
+    binding: 'Binding...',
+    bindNow: 'Bind Now',
+    skip: 'Skip for now',
+    bindFailed: 'Binding failed',
+    bindFailedRetry: 'Binding failed, please try again later',
+  },
+  mediaSelector: {
+    title: 'Media Attachments',
+    maxCount: '(Max {{maxCount}})',
+    maxCountWithDrag: '(Max {{maxCount}}, long press to reorder)',
+    addMedia: 'Add Media',
+  },
   home: {
     greeting: 'Hello, {{name}}',
     welcomeBack: 'Welcome back',

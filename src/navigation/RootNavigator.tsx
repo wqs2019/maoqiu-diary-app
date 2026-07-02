@@ -51,7 +51,7 @@ import { useNotificationStore } from '@/store/notificationStore';
 // Types
 export type RootStackParamList = {
   Onboarding: undefined;
-  Auth: undefined;
+  Auth: { screen?: string; params?: any } | undefined;
   Main: undefined;
   EditDiary: { scenario?: string; diaryId?: string };
   DiaryDetail: { _id: string };
@@ -97,6 +97,8 @@ export type RootStackParamList = {
         initialStatus?: 'pending' | 'processing' | 'resolved' | 'rejected' | 'all';
       }
     | undefined;
+  BindPhone: { scene: 'login' | 'account' };
+  ForceBindPhone: { scene: 'login' };
 };
 
 export type AuthStackParamList = {
@@ -230,6 +232,7 @@ const MainNavigator = () => {
 export const RootNavigator = () => {
   const { t } = useTranslation();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const needsBind = useAuthStore((state) => state.needsBind);
   const isFirstLaunch = useAppStore((state) => state.isFirstLaunch);
   const { colors } = useAppTheme();
 
@@ -238,8 +241,18 @@ export const RootNavigator = () => {
       {isFirstLaunch ? (
         <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
       ) : isLoggedIn ? (
-        <>
-          <RootStack.Screen name="Main" component={MainNavigator} />
+        needsBind ? (
+          <RootStack.Screen
+            name="ForceBindPhone"
+            component={BindPhoneScreen}
+            initialParams={{ scene: 'login' }}
+            options={{
+              headerShown: false,
+            }}
+          />
+        ) : (
+          <>
+            <RootStack.Screen name="Main" component={MainNavigator} />
           <RootStack.Screen
             name="EditDiary"
             component={EditDiaryScreen}
@@ -485,9 +498,26 @@ export const RootNavigator = () => {
               headerShown: false,
             }}
           />
+          <RootStack.Screen
+            name="BindPhone"
+            component={BindPhoneScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
         </>
+        )
       ) : (
-        <RootStack.Screen name="Auth" component={AuthNavigator} />
+        <>
+          <RootStack.Screen name="Auth" component={AuthNavigator} />
+          <RootStack.Screen
+            name="BindPhone"
+            component={BindPhoneScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+        </>
       )}
     </RootStack.Navigator>
   );

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -19,20 +19,21 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { useAuthStore } from '../../store/authStore';
 import authService from '../../services/auth';
 import { useToast } from '@/components/common/Toast';
-import { AuthStackParamList } from '../../navigation/RootNavigator';
-
-type BindPhoneScreenRouteProp = RouteProp<AuthStackParamList, 'BindPhone'>;
+import { RootStackParamList } from '../../navigation/RootNavigator';
 
 const BindPhoneScreen: React.FC = () => {
-  const route = useRoute<BindPhoneScreenRouteProp>();
-  const { token, user } = route.params;
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
+  const { scene } = route.params || {};
+  
+  const isFromSettings = scene === 'account';
   
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { sendCode } = useAuthStore();
+  const { sendCode, user, setNeedsBind } = useAuthStore();
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { isDark, colors } = useAppTheme();
@@ -86,37 +87,40 @@ const BindPhoneScreen: React.FC = () => {
         action: 'bindAppleId',
         data: {
           userId: loginResult.user._id,
-          appleId: user.appleId,
+          appleId: user?.appleId,
         },
       });
 
       if (bindRes.code !== 0 || !bindRes.data?.success) {
-        throw new Error(bindRes.data?.message || '绑定失败');
+        throw new Error(bindRes.data?.message || t('bindPhoneScreen.bindFailed') || '绑定失败');
       }
 
       // 3. 绑定成功后，保存老账号的 token 和 user，并更新全局状态
       // 更新本地 user 对象的 appleId
-      const updatedUser = { ...loginResult.user, appleId: user.appleId };
+      const updatedUser = { ...loginResult.user, appleId: user?.appleId };
       await authService.saveToken(loginResult.token);
       await authService.saveUserInfo(updatedUser);
-      useAuthStore.setState({ isLoggedIn: true, user: updatedUser, loading: false });
+      useAuthStore.setState({ isLoggedIn: true, user: updatedUser, needsBind: false, loading: false });
+      
+      if (isFromSettings) {
+        // 如果是从设置页进来的，绑定成功后返回上一页
+        navigation.goBack();
+      } else {
+        // 如果是从登录页进来的，绑定成功后直接进入首页
+        // 由于我们设置了 needsBind: false，RootNavigator 会自动切换到 MainStack
+      }
       
     } catch (error: any) {
-      toast.error(error.message || '绑定失败，请稍后重试');
+      toast.error(error.message || t('bindPhoneScreen.bindFailedRetry') || '绑定失败，请稍后重试');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSkip = async () => {
-    // 用户选择暂不绑定，直接使用 Apple 账号登录
-    try {
-      await authService.saveToken(token);
-      await authService.saveUserInfo(user);
-      useAuthStore.setState({ isLoggedIn: true, user, loading: false });
-    } catch (error) {
-      toast.error('登录失败，请稍后重试');
-    }
+    // 用户选择暂不绑定，直接进入首页
+    // 将 needsBind 设置为 false，RootNavigator 会自动切换到 MainStack
+    setNeedsBind(false);
   };
 
   return (
@@ -125,11 +129,26 @@ const BindPhoneScreen: React.FC = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : insets.top}
     >
+      <TouchableOpacity
+        style={[styles.backButton, { top: insets.top + SPACING.small }]}
+        onPress={() => {
+          if (isFromSettings) {
+            navigation.goBack();
+          } else {
+            // 如果是从登录页过来的，点击返回相当于跳过绑定，直接进入首页
+            handleSkip();
+          }
+        }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="arrow-back" size={24} color={colors.text} />
+      </TouchableOpacity>
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + 40,
+            paddingTop: insets.top + 80,
             paddingBottom: insets.bottom + SPACING.xlarge,
           },
         ]}
@@ -137,9 +156,9 @@ const BindPhoneScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>绑定手机号</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t('bindPhoneScreen.title') || '绑定手机号'}</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            绑定手机号后，您可以找回之前的日记数据，并支持多端登录。
+            {t('bindPhoneScreen.subtitle') || '绑定手机号后，您可以找回之前的日记数据，并支持多端登录。'}
           </Text>
         </View>
 
@@ -208,19 +227,21 @@ const BindPhoneScreen: React.FC = () => {
             disabled={isSubmitting}
           >
             <Text style={[styles.bindButtonText, { color: isDark ? '#000' : '#FFF' }]}>
-              {isSubmitting ? '绑定中...' : '立即绑定'}
+              {isSubmitting ? (t('bindPhoneScreen.binding') || '绑定中...') : (t('bindPhoneScreen.bindNow') || '立即绑定')}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-            disabled={isSubmitting}
-          >
-            <Text style={[styles.skipButtonText, { color: colors.textSecondary }]}>
-              暂不绑定，直接进入
-            </Text>
-          </TouchableOpacity>
+          {!isFromSettings && (
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={handleSkip}
+              disabled={isSubmitting}
+            >
+              <Text style={[styles.skipButtonText, { color: colors.textSecondary }]}>
+                {t('bindPhoneScreen.skip') || '暂不绑定，直接进入'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -230,6 +251,12 @@ const BindPhoneScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  backButton: {
+    position: 'absolute',
+    left: SPACING.large - SPACING.small,
+    zIndex: 10,
+    padding: SPACING.small,
   },
   scrollContent: {
     flexGrow: 1,

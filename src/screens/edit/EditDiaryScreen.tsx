@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   metadataLabel: {
     fontSize: 15,
     fontWeight: '600',
-    width: 60,
+    width: 70,
   },
   locationRow: {
     flexDirection: 'row',

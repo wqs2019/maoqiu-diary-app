@@ -14,6 +14,7 @@ import {
   trackPageView,
 } from '@/services/monitorService';
 import { RootNavigator, RootStackParamList } from './RootNavigator';
+import { navigationRef } from './navigationRef';
 import { useAppTheme } from '../hooks/useAppTheme';
 
 const linking: LinkingOptions<RootStackParamList> = {
@@ -38,7 +39,6 @@ const linking: LinkingOptions<RootStackParamList> = {
 
 export const Navigation = () => {
   const { isDark, colors } = useAppTheme();
-  const navigationRef = React.useRef<any>(null);
   const routeSignatureRef = React.useRef('');
 
   const appTheme = {

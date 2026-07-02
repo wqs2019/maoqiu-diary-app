@@ -6,6 +6,8 @@ import userService from '../services/userService';
 
 export interface AuthState {
   isLoggedIn: boolean;
+  needsBind: boolean;
+  setNeedsBind: (needsBind: boolean) => void;
   user: UserInfo | null;
   loading: boolean;
   sendingCode: boolean;
@@ -28,6 +30,8 @@ export interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   isLoggedIn: false,
+  needsBind: false,
+  setNeedsBind: (needsBind) => set({ needsBind }),
   user: null,
   loading: false,
   sendingCode: false,
@@ -52,15 +56,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true, error: null });
     try {
       const { token, user } = await authService.appleLogin(data);
-      
+
+      // 无论是否需要绑定手机号，都先将 token 和 user 保存到本地
+      await authService.saveToken(token);
+      await authService.saveUserInfo(user);
+
       if (!user.phone) {
-        set({ loading: false });
+        // 如果没有手机号，设置 needsBind 为 true，让 RootNavigator 渲染绑定页面
+        set({ isLoggedIn: true, user, needsBind: true, loading: false });
         return { token, user, needsBind: true };
       }
 
-      await authService.saveToken(token);
-      await authService.saveUserInfo(user);
-      set({ isLoggedIn: true, user, loading: false });
+      set({ isLoggedIn: true, user, needsBind: false, loading: false });
 
       if (user.biometricEnabled !== undefined) {
         await useAppStore.getState().syncAppLockFromUser(user.biometricEnabled);

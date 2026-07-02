@@ -232,6 +232,8 @@ const MineScreen: React.FC = () => {
               >
                 {user?.phone
                   ? user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+                  : user?.appleId
+                  ? 'Apple 账号登录'
                   : t('mineScreen.guestPhone')}
               </Text>
               {user && (

@@ -355,9 +355,7 @@ const LoginScreen: React.FC = () => {
         authorizationCode: credential.authorizationCode ?? null,
       });
       
-      if (result.needsBind) {
-        navigation.navigate('BindPhone', { token: result.token, user: result.user });
-      } else {
+      if (!result.needsBind) {
         const currentError = useAuthStore.getState().error;
         if (currentError) {
           toast.error(currentError);
