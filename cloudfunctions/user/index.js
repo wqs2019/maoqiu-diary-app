@@ -1627,6 +1627,8 @@ exports.main = async (event, context) => {
       return await getBlockedUsersList(data);
     case 'bindAppleId':
       return await bindAppleId(data);
+    case 'unbindAppleId':
+      return await unbindAppleId(data);
     default:
       return {
         success: false,
@@ -1672,5 +1674,38 @@ async function bindAppleId(data) {
   } catch (error) {
     console.error('Bind Apple ID error:', error);
     return { success: false, message: '绑定失败', error: error.message };
+  }
+}
+
+async function unbindAppleId(data) {
+  try {
+    const { userId } = data || {};
+
+    if (!userId) {
+      return { success: false, message: '缺少必要参数' };
+    }
+
+    // 检查用户是否绑定了手机号，如果没有手机号，不允许解绑 Apple ID
+    const userRecord = await db.collection('users').doc(userId).get();
+    const user = getDocData(userRecord);
+    
+    if (!user) {
+      return { success: false, message: '用户不存在' };
+    }
+    
+    if (!user.phone) {
+      return { success: false, message: '未绑定手机号，无法解绑 Apple 账号' };
+    }
+
+    // 更新当前用户的 appleId 为空
+    await db.collection('users').doc(userId).update({
+      appleId: _.remove(),
+      updatedAt: db.serverDate(),
+    });
+
+    return { success: true, message: '解绑成功' };
+  } catch (error) {
+    console.error('Unbind Apple ID error:', error);
+    return { success: false, message: '解绑失败', error: error.message };
   }
 }

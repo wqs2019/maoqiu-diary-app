@@ -160,6 +160,48 @@ const AccountSecurityScreen: React.FC = () => {
     }
   };
 
+  const handleUnbindApple = () => {
+    if (!user?._id) return;
+
+    if (!user.phone) {
+      Alert.alert('提示', '请先绑定手机号，再解除绑定 Apple 账号，以免丢失账号。');
+      return;
+    }
+
+    Alert.alert(
+      '解除绑定',
+      '确定要解除绑定 Apple 账号吗？',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '解除绑定',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              toast.loading('正在解绑...');
+              const res: any = await CloudService.callFunction('user', {
+                action: 'unbindAppleId',
+                data: { userId: user._id },
+              });
+
+              toast.hide();
+              if (res.code === 0 && res.data?.success) {
+                toast.success('解绑成功');
+                // 更新本地状态，将 appleId 设为 undefined
+                useAuthStore.getState().updateProfile(user._id, { appleId: undefined });
+              } else {
+                toast.error(res.data?.message || '解绑失败');
+              }
+            } catch (error: any) {
+              toast.hide();
+              toast.error(error?.message || '解绑失败，请稍后重试');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderSettingItem = (
     iconName: string,
     title: string,
@@ -343,7 +385,7 @@ const AccountSecurityScreen: React.FC = () => {
                 )}
               </View>,
               true,
-              user?.appleId ? undefined : handleBindApple,
+              user?.appleId ? handleUnbindApple : handleBindApple,
               'FontAwesome5'
             )}
           </View>
