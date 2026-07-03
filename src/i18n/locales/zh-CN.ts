@@ -1021,4 +1021,12 @@ export default {
     saveImage: '保存图片',
     shareImage: '分享图片',
   },
+  followersScreen: {
+    title: '粉丝列表',
+    empty: '还没有粉丝哦',
+    defaultName: '某只毛球',
+    followedYou: '关注了你',
+    followedThisYear: '{{month}}月{{day}}日',
+    followedOtherYear: '{{year}}年{{month}}月{{day}}日',
+  },
 };

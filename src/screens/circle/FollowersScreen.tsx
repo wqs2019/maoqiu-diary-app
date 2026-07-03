@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -22,6 +23,7 @@ const FollowersScreen: React.FC = () => {
   const route = useRoute<any>();
   const { userId } = route.params;
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
 
   const [followers, setFollowers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,9 +78,9 @@ const FollowersScreen: React.FC = () => {
     const isThisYear = date.getFullYear() === now.getFullYear();
     
     if (isThisYear) {
-      return `${date.getMonth() + 1}月${date.getDate()}日`;
+      return t('followersScreen.followedThisYear', { month: date.getMonth() + 1, day: date.getDate() });
     }
-    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+    return t('followersScreen.followedOtherYear', { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() });
   };
 
   const renderItem = ({ item }: { item: any }) => {
@@ -96,11 +98,11 @@ const FollowersScreen: React.FC = () => {
         </View>
         <View style={styles.userInfo}>
           <Text style={[styles.nickname, { color: isDark ? '#FFF' : '#111827' }]}>
-            {item.nickname || '某只毛球'}
+            {item.nickname || t('followersScreen.defaultName')}
           </Text>
           {item.followedAt && (
             <Text style={[styles.followTime, { color: isDark ? '#AAA' : '#9CA3AF' }]}>
-              {formatTime(item.followedAt)} 关注了你
+              {formatTime(item.followedAt)} {t('followersScreen.followedYou')}
             </Text>
           )}
         </View>
@@ -119,7 +121,7 @@ const FollowersScreen: React.FC = () => {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={isDark ? '#FFF' : '#111827'} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>粉丝列表</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>{t('followersScreen.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -141,7 +143,7 @@ const FollowersScreen: React.FC = () => {
             <View style={styles.emptyContainer}>
               <Ionicons name="people-outline" size={48} color={isDark ? '#555' : '#D1D5DB'} />
               <Text style={[styles.emptyText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                还没有粉丝哦
+                {t('followersScreen.empty')}
               </Text>
             </View>
           }

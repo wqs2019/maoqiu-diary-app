@@ -1002,4 +1002,12 @@ export default {
     saveImage: 'Save Image',
     shareImage: 'Share Image',
   },
+  followersScreen: {
+    title: 'Followers',
+    empty: 'No followers yet',
+    defaultName: 'A Maoqiu',
+    followedYou: 'followed you',
+    followedThisYear: '{{month}}/{{day}}',
+    followedOtherYear: '{{month}}/{{day}}/{{year}}',
+  },
 };
