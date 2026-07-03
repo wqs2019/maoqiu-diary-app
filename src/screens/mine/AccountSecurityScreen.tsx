@@ -18,9 +18,11 @@ import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import { Modal } from '../../components/common/Modal';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 
 const AccountSecurityScreen: React.FC = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
@@ -81,14 +83,14 @@ const AccountSecurityScreen: React.FC = () => {
 
   // Mask phone number
   const formatPhone = (phone?: string) => {
-    if (!phone || phone.length < 11) return '未绑定手机号';
+    if (!phone || phone.length < 11) return t('accountSecurity.unboundPhone');
     return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
   };
 
   const handleDeleteAccount = async () => {
     if (!user?._id) return;
     
-    toast.loading('正在注销账号...');
+    toast.loading(t('accountSecurity.deletingAccount'));
     
     try {
       // 1. 标记用户的日记本为已注销
@@ -97,7 +99,7 @@ const AccountSecurityScreen: React.FC = () => {
         data: { userId: user._id },
       });
       if (notebookRes.code !== 0 && notebookRes.data?.success === false) {
-        throw new Error(notebookRes.data?.message || '注销日记本失败');
+        throw new Error(notebookRes.data?.message || t('accountSecurity.deleteNotebookFailed'));
       }
 
       // 2. 标记用户账户为已注销
@@ -106,17 +108,17 @@ const AccountSecurityScreen: React.FC = () => {
         data: { _id: user._id },
       });
       if (userRes.code !== 0 && userRes.data?.success === false) {
-        throw new Error(userRes.data?.message || '注销账户失败');
+        throw new Error(userRes.data?.message || t('accountSecurity.deleteAccountFailed'));
       }
 
       // 3. 退出登录
       toast.hide();
-      toast.success('账号已成功注销');
+      toast.success(t('accountSecurity.deleteAccountSuccess'));
       await logout();
     } catch (error) {
       console.error('Delete account error:', error);
       toast.hide();
-      toast.error('注销账号失败，请稍后重试');
+      toast.error(t('accountSecurity.deleteAccountError'));
     }
   };
 
@@ -132,7 +134,7 @@ const AccountSecurityScreen: React.FC = () => {
         ],
       });
 
-      toast.loading('正在绑定...');
+      toast.loading(t('accountSecurity.binding'));
       const res: any = await CloudService.callFunction('user', {
         action: 'bindAppleId',
         data: {
@@ -143,18 +145,18 @@ const AccountSecurityScreen: React.FC = () => {
 
       toast.hide();
       if (res.code === 0 && res.data?.success) {
-        toast.success('绑定成功');
+        toast.success(t('accountSecurity.bindSuccess'));
         // 更新本地状态
         useAuthStore.getState().updateProfile(user._id, { appleId: credential.user });
       } else {
-        toast.error(res.data?.message || '绑定失败');
+        toast.error(res.data?.message || t('accountSecurity.bindFailed'));
       }
     } catch (error: any) {
       toast.hide();
       if (error?.code === 'ERR_REQUEST_CANCELED') {
         return;
       }
-      toast.error(error?.message || '绑定失败，请稍后重试');
+      toast.error(error?.message || t('accountSecurity.bindError'));
     } finally {
       setIsBindingApple(false);
     }
@@ -164,21 +166,21 @@ const AccountSecurityScreen: React.FC = () => {
     if (!user?._id) return;
 
     if (!user.phone) {
-      Alert.alert('提示', '请先绑定手机号，再解除绑定 Apple 账号，以免丢失账号。');
+      Alert.alert(t('common.tip'), t('accountSecurity.unbindAppleWarning'));
       return;
     }
 
     Alert.alert(
-      '解除绑定',
-      '确定要解除绑定 Apple 账号吗？',
+      t('accountSecurity.unbindAppleTitle'),
+      t('accountSecurity.unbindAppleConfirm'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '解除绑定',
+          text: t('accountSecurity.unbind'),
           style: 'destructive',
           onPress: async () => {
             try {
-              toast.loading('正在解绑...');
+              toast.loading(t('accountSecurity.unbinding'));
               const res: any = await CloudService.callFunction('user', {
                 action: 'unbindAppleId',
                 data: { userId: user._id },
@@ -186,15 +188,15 @@ const AccountSecurityScreen: React.FC = () => {
 
               toast.hide();
               if (res.code === 0 && res.data?.success) {
-                toast.success('解绑成功');
+                toast.success(t('accountSecurity.unbindSuccess'));
                 // 更新本地状态，将 appleId 设为 undefined
                 useAuthStore.getState().updateProfile(user._id, { appleId: undefined });
               } else {
-                toast.error(res.data?.message || '解绑失败');
+                toast.error(res.data?.message || t('accountSecurity.unbindFailed'));
               }
             } catch (error: any) {
               toast.hide();
-              toast.error(error?.message || '解绑失败，请稍后重试');
+              toast.error(error?.message || t('accountSecurity.unbindError'));
             }
           },
         },
@@ -266,7 +268,7 @@ const AccountSecurityScreen: React.FC = () => {
           <Feather name="arrow-left" size={24} color={isDark ? '#E5E7EB' : '#333'} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#E5E7EB' : '#333' }]}>
-          账号与安全
+          {t('accountSecurity.title')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -290,7 +292,7 @@ const AccountSecurityScreen: React.FC = () => {
         >
           {renderSettingItem(
             'smartphone',
-            '手机号',
+            t('accountSecurity.phone'),
             currentHealingColors.blue[500],
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text
@@ -299,7 +301,7 @@ const AccountSecurityScreen: React.FC = () => {
                   { color: user?.phone ? (isDark ? '#9CA3AF' : currentHealingColors.gray[500]) : currentHealingColors.pink[500] },
                 ]}
               >
-                {user?.phone ? formatPhone(user.phone) : '去绑定'}
+                {user?.phone ? formatPhone(user.phone) : t('accountSecurity.goBind')}
               </Text>
               {!user?.phone && (
                 <Feather
@@ -318,7 +320,7 @@ const AccountSecurityScreen: React.FC = () => {
           )}
           {renderSettingItem(
             'lock',
-            '隐私安全',
+            t('accountSecurity.privacy'),
             currentHealingColors.yellow[600],
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text
@@ -327,7 +329,7 @@ const AccountSecurityScreen: React.FC = () => {
                   { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
                 ]}
               >
-                设置
+                {t('accountSecurity.settings')}
               </Text>
               <Feather
                 name="chevron-right"
@@ -364,7 +366,7 @@ const AccountSecurityScreen: React.FC = () => {
           >
             {renderSettingItem(
               'apple',
-              'Apple 账号',
+              t('accountSecurity.appleAccount'),
               isDark ? '#FFFFFF' : '#000000',
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text
@@ -373,7 +375,7 @@ const AccountSecurityScreen: React.FC = () => {
                     { color: user?.appleId ? (isDark ? '#9CA3AF' : currentHealingColors.gray[500]) : currentHealingColors.pink[500] },
                   ]}
                 >
-                  {user?.appleId ? '已绑定' : '去绑定'}
+                  {user?.appleId ? t('accountSecurity.bound') : t('accountSecurity.goBind')}
                 </Text>
                 {!user?.appleId && (
                   <Feather
@@ -409,7 +411,7 @@ const AccountSecurityScreen: React.FC = () => {
         >
           {renderSettingItem(
             'user-x',
-            '注销账号',
+            t('accountSecurity.deleteAccount'),
             currentHealingColors.pink[600],
             <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
             true,
@@ -422,13 +424,13 @@ const AccountSecurityScreen: React.FC = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF' }]}>
             <Text style={[styles.modalTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}>
-              真的要离开吗？🥺
+              {t('accountSecurity.deleteModalTitle')}
             </Text>
             <Text style={[styles.modalText, { color: currentHealingColors.gray[600] }]}>
-              注销账号后，您在毛球日记记录的<Text style={{ fontWeight: 'bold', color: currentHealingColors.pink[500] }}>所有日记、相册以及心情数据将永远消失，无法找回</Text>。
+              {t('accountSecurity.deleteModalDesc1')}<Text style={{ fontWeight: 'bold', color: currentHealingColors.pink[500] }}>{t('accountSecurity.deleteModalDescHighlight')}</Text>{t('accountSecurity.deleteModalDesc2')}
             </Text>
             <Text style={[styles.modalText, { color: currentHealingColors.gray[600], marginTop: 12, marginBottom: 24 }]}>
-              毛球会很想念您的，希望能有机会再听您分享每一天的喜怒哀乐。
+              {t('accountSecurity.deleteModalDesc3')}
             </Text>
             
             <View style={styles.modalButtonGroup}>
@@ -436,7 +438,7 @@ const AccountSecurityScreen: React.FC = () => {
                 style={[styles.modalButton, { backgroundColor: currentHealingColors.gray[100] }]}
                 onPress={() => setShowDeleteModal(false)}
               >
-                <Text style={[styles.modalButtonText, { color: currentHealingColors.gray[700] }]}>我再想想</Text>
+                <Text style={[styles.modalButtonText, { color: currentHealingColors.gray[700] }]}>{t('accountSecurity.thinkAgain')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -451,7 +453,7 @@ const AccountSecurityScreen: React.FC = () => {
                 }}
               >
                 <Text style={[styles.modalButtonText, { color: 'white' }]}>
-                  {deleteCountdown > 0 ? `残忍离开 (${deleteCountdown}s)` : '残忍离开'}
+                  {deleteCountdown > 0 ? `${t('accountSecurity.leaveCruelly')} (${deleteCountdown}s)` : t('accountSecurity.leaveCruelly')}
                 </Text>
               </TouchableOpacity>
             </View>

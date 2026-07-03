@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTranslation } from 'react-i18next';
+
 import { HEALING_COLORS } from '@/config/handDrawnTheme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import userService, { BlockedUserListItem } from '@/services/userService';
@@ -21,6 +23,7 @@ const BlockedUsersScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
 
   const [blockedUsers, setBlockedUsers] = useState<BlockedUserListItem[]>([]);
@@ -87,7 +90,7 @@ const BlockedUsersScreen: React.FC = () => {
 
   const formatTime = (timestamp?: number | null) => {
     if (!timestamp) {
-      return '已拉黑';
+      return t('blockedUsers.blocked');
     }
 
     const date = new Date(timestamp);
@@ -95,10 +98,17 @@ const BlockedUsersScreen: React.FC = () => {
     const isThisYear = date.getFullYear() === now.getFullYear();
 
     if (isThisYear) {
-      return `${date.getMonth() + 1}月${date.getDate()}日拉黑`;
+      return t('blockedUsers.blockedThisYear', {
+        month: date.getMonth() + 1,
+        day: date.getDate(),
+      });
     }
 
-    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日拉黑`;
+    return t('blockedUsers.blockedOtherYear', {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+    });
   };
 
   const renderItem = ({ item }: { item: BlockedUserListItem }) => {
@@ -116,7 +126,7 @@ const BlockedUsersScreen: React.FC = () => {
         </View>
         <View style={styles.userInfo}>
           <Text style={[styles.nickname, { color: isDark ? '#FFF' : '#111827' }]}>
-            {item.nickname || '某只毛球'}
+            {item.nickname || t('blockedUsers.defaultName')}
           </Text>
           <Text style={[styles.blockedTime, { color: isDark ? '#AAA' : '#9CA3AF' }]}>
             {formatTime(item.blockedAt)}
@@ -139,7 +149,7 @@ const BlockedUsersScreen: React.FC = () => {
           <Ionicons name="chevron-back" size={28} color={isDark ? '#FFF' : '#111827'} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#111827' }]}>
-          黑名单用户
+          {t('blockedUsers.title')}
         </Text>
         <View style={{ width: 28 }} />
       </View>
@@ -162,10 +172,10 @@ const BlockedUsersScreen: React.FC = () => {
             <View style={styles.emptyContainer}>
               <Ionicons name="ban-outline" size={48} color={isDark ? '#555' : '#D1D5DB'} />
               <Text style={[styles.emptyText, { color: isDark ? '#AAA' : '#6B7280' }]}>
-                你还没有拉黑任何用户
+                {t('blockedUsers.emptyText')}
               </Text>
               <Text style={[styles.emptyHint, { color: isDark ? '#777' : '#9CA3AF' }]}>
-                拉黑后会显示在这里，点进主页右上角可解除拉黑
+                {t('blockedUsers.emptyHint')}
               </Text>
             </View>
           }
