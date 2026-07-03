@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -54,68 +55,68 @@ type ShareCardTheme = {
 
 const DEFAULT_SHARE_CARD_THEME: ShareCardTheme = {
   gradient: ['#FFF9FB', '#FFF2F7', '#FFFDFE'],
-  heroEyebrow: '今天的碎片值得被收藏',
-  heroLead: '今天值得被好好收藏，也值得被温柔分享。',
-  posterTitle: '把今天写成一张想分享的卡片',
-  posterSubtitle: '记录普通日子里的微光时刻',
+  heroEyebrow: '',
+  heroLead: '',
+  posterTitle: '',
+  posterSubtitle: '',
 };
 
 const SHARE_CARD_THEMES: Record<string, ShareCardTheme> = {
   daily: {
     gradient: ['#FFF8FB', '#FFEAF2', '#FFFDFD'],
-    heroEyebrow: '把今天的柔软留住',
-    heroLead: '日常不是重复，而是值得反复回看的生活片段。',
-    posterTitle: '今日份生活切片',
-    posterSubtitle: '把平凡的一天也分享得闪闪发亮',
+    heroEyebrow: '',
+    heroLead: '',
+    posterTitle: '',
+    posterSubtitle: '',
   },
   travel: {
     gradient: ['#F6FCFF', '#EAF7FF', '#FFFDFB'],
-    heroEyebrow: '把风景装进回忆里',
-    heroLead: '出发的意义，是把路上的心动带回日常。',
-    posterTitle: '这一站的风景很值得分享',
-    posterSubtitle: '把旅途里最心动的一帧留给朋友看',
+    heroEyebrow: '',
+    heroLead: '',
+    posterTitle: '',
+    posterSubtitle: '',
   },
   movie: {
     gradient: ['#FFF7FB', '#F7F0FF', '#FFFDFE'],
-    heroEyebrow: '把情绪留在银幕之外',
-    heroLead: '好的电影会散场，好的感受会继续发光。',
-    posterTitle: '刚刚看完，想立刻分享给你',
-    posterSubtitle: '把一场观影后的情绪，做成一张海报卡',
+    heroEyebrow: '',
+    heroLead: '',
+    posterTitle: '',
+    posterSubtitle: '',
   },
   outing: {
     gradient: ['#F8FFF9', '#EEFBF1', '#FFFDFC'],
-    heroEyebrow: '把散步感装进春天里',
-    heroLead: '出门的快乐，往往藏在那些不经意的小瞬间里。',
-    posterTitle: '今天出门遇见了好心情',
-    posterSubtitle: '轻轻松松的一天，也适合被认真分享',
+    heroEyebrow: '',
+    heroLead: '',
+    posterTitle: '',
+    posterSubtitle: '',
   },
   food: {
     gradient: ['#FFF9F2', '#FFF1DE', '#FFFDFC'],
-    heroEyebrow: '让好吃的拥有海报感',
-    heroLead: '味道会过去，但此刻的满足感值得被留下。',
-    posterTitle: '这一口，值得发给朋友馋一下',
-    posterSubtitle: '把今天吃到的幸福感，打包成一张分享卡',
+    heroEyebrow: '',
+    heroLead: '',
+    posterTitle: '',
+    posterSubtitle: '',
   },
   special: {
     gradient: ['#FFF8FF', '#F5EDFF', '#FFFDFE'],
-    heroEyebrow: '特别的时刻要有仪式感',
-    heroLead: '重要的不只是今天发生了什么，而是它会被好好记住。',
-    posterTitle: '这一刻，值得郑重分享',
-    posterSubtitle: '把特别日子的光亮，留成一张有纪念感的海报',
+    heroEyebrow: '',
+    heroLead: '',
+    posterTitle: '',
+    posterSubtitle: '',
   },
   learning: {
     gradient: ['#F7F8FF', '#EEF1FF', '#FFFDFE'],
-    heroEyebrow: '让成长也有主角感',
-    heroLead: '每一次认真积累，都在悄悄把自己变得更厉害。',
-    posterTitle: '今天又比昨天多懂了一点',
-    posterSubtitle: '把成长中的收获，分享成一张有力量的卡片',
+    heroEyebrow: '',
+    heroLead: '',
+    posterTitle: '',
+    posterSubtitle: '',
   },
   inspiration: {
     gradient: ['#FFFDF2', '#FFF8D9', '#FFFDFB'],
-    heroEyebrow: '灵感来时要立刻发光',
-    heroLead: '突然冒出来的念头，往往最值得被及时记录。',
-    posterTitle: '刚刚闪过一个很想分享的灵感',
-    posterSubtitle: '把脑海里发亮的瞬间，变成一张会发光的卡',
+    heroEyebrow: '',
+    heroLead: '',
+    posterTitle: '',
+    posterSubtitle: '',
   },
 };
 
@@ -125,6 +126,7 @@ const getShareCardTheme = (scenarioType?: string): ShareCardTheme =>
 export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, onClose }) => {
   const exportViewShotRef = useRef<ViewShot>(null);
   const toast = useToast();
+  const { t, i18n } = useTranslation();
   const [isSharing, setIsSharing] = useState(false);
   const [isSavingImage, setIsSavingImage] = useState(false);
 
@@ -132,13 +134,22 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
   const mood = getMoodConfig(diary.mood);
   const weather = getWeatherConfig(diary.weather);
   const accentColor = scenario?.color || HEALING_COLORS.pink[500];
-  const shareTheme = getShareCardTheme(scenario?.type || diary.scenario);
-  const heroTitle = diary.title?.trim() || scenario?.name || '今日记录';
-  const contentText = diary.content?.trim() || '把今天的心情装进一张卡片里。';
+  
+  const themeKey = scenario?.type || diary.scenario || 'default';
+  const shareTheme = {
+    gradient: getShareCardTheme(themeKey).gradient,
+    heroEyebrow: t(`shareCard.themes.${themeKey}.heroEyebrow`, { defaultValue: t('shareCard.themes.default.heroEyebrow') }),
+    heroLead: t(`shareCard.themes.${themeKey}.heroLead`, { defaultValue: t('shareCard.themes.default.heroLead') }),
+    posterTitle: t(`shareCard.themes.${themeKey}.posterTitle`, { defaultValue: t('shareCard.themes.default.posterTitle') }),
+    posterSubtitle: t(`shareCard.themes.${themeKey}.posterSubtitle`, { defaultValue: t('shareCard.themes.default.posterSubtitle') }),
+  };
+
+  const heroTitle = diary.title?.trim() || scenario?.name || t('shareCard.defaultTitle');
+  const contentText = diary.content?.trim() || t('shareCard.defaultContent');
   const singleMedia = diary.media?.length === 1 ? diary.media[0] : null;
   const posterMetaLine = [scenario?.name, mood?.label, weather?.label].filter(Boolean).join(' · ');
   const date = new Date(diary.date || diary.createdAt);
-  const formattedDate = date.toLocaleDateString('zh-CN', {
+  const formattedDate = date.toLocaleDateString(i18n.language, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -162,7 +173,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
       setIsSavingImage(true);
       const permission = await MediaLibrary.requestPermissionsAsync(true);
       if (!permission.granted) {
-        toast.error('请先允许访问相册，才能保存图片');
+        toast.error(t('shareCard.alerts.permissionDenied'));
         return;
       }
 
@@ -171,13 +182,13 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
       shouldCloseAfterSave = true;
     } catch (e) {
       console.error('Save share card error:', e);
-      toast.error('保存图片失败，请稍后重试');
+      toast.error(t('shareCard.alerts.saveFailed'));
     } finally {
       setIsSavingImage(false);
       if (shouldCloseAfterSave) {
         onClose();
         setTimeout(() => {
-          toast.success('图片已保存到系统相册');
+          toast.success(t('shareCard.alerts.saveSuccess'));
         }, 250);
       }
     }
@@ -191,12 +202,12 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
       if (isAvailable) {
         await Sharing.shareAsync(uri, {
           mimeType: 'image/jpeg',
-          dialogTitle: '分享日记卡片',
+          dialogTitle: t('shareCard.dialogTitle'),
         });
       }
     } catch (e) {
       console.error('Share error:', e);
-      toast.error('打开分享失败，请稍后重试');
+      toast.error(t('shareCard.alerts.shareFailed'));
     } finally {
       setIsSharing(false);
       onClose();
@@ -264,19 +275,19 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
         {singleMedia.type === 'video' && (
           <View style={styles.heroVideoBadge}>
             <Ionicons name="play-circle" size={16} color="#FFF" />
-            <Text style={styles.heroVideoBadgeText}>视频片段</Text>
+            <Text style={styles.heroVideoBadgeText}>{t('shareCard.videoClip')}</Text>
           </View>
         )}
         {singleMedia.type === 'livePhoto' && (
           <View style={styles.heroVideoBadge}>
             <Ionicons name="aperture" size={14} color="#FFF" />
-            <Text style={styles.heroVideoBadgeText}>实况瞬间</Text>
+            <Text style={styles.heroVideoBadgeText}>{t('shareCard.livePhoto')}</Text>
           </View>
         )}
         <View style={styles.heroMediaCopy}>
           <Text style={styles.heroMediaEyebrow}>{shareTheme.heroEyebrow}</Text>
           <Text style={styles.heroMediaSubline} numberOfLines={1}>
-            {posterMetaLine || '来自毛球日记'}
+            {posterMetaLine || t('shareCard.fromApp')}
           </Text>
         </View>
       </View>
@@ -319,13 +330,13 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
 
         <View style={styles.metaRow}>
           <View style={[styles.metaChip, { backgroundColor: withOpacity(accentColor, '18') }]}>
-            <Text style={[styles.metaChipText, { color: accentColor }]}>{scenario?.name || '日记'}</Text>
+            <Text style={[styles.metaChipText, { color: accentColor }]}>{scenario?.name || t('shareCard.defaultScenario')}</Text>
           </View>
           <View style={[styles.metaChip, styles.metaChipSoft, styles.metaChipSpacing]}>
-            <Text style={styles.metaChipSoftText}>{mood?.emoji} {mood?.label || '心情'}</Text>
+            <Text style={styles.metaChipSoftText}>{mood?.emoji} {mood?.label || t('shareCard.defaultMood')}</Text>
           </View>
           <View style={[styles.metaChip, styles.metaChipSoft, styles.metaChipSpacing]}>
-            <Text style={styles.metaChipSoftText}>{weather?.emoji} {weather?.label || '天气'}</Text>
+            <Text style={styles.metaChipSoftText}>{weather?.emoji} {weather?.label || t('shareCard.defaultWeather')}</Text>
           </View>
         </View>
 
@@ -352,9 +363,9 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
           <View style={styles.posterFooterTop}>
             <View style={styles.footerBadge}>
               <View style={styles.footerDot} />
-              <Text style={styles.footerBrand}>毛球日记</Text>
+              <Text style={styles.footerBrand}>{t('shareCard.appName')}</Text>
             </View>
-            <Text style={styles.posterFooterMeta}>{posterMetaLine || '认真记录每一天'}</Text>
+            <Text style={styles.posterFooterMeta}>{posterMetaLine || t('shareCard.slogan')}</Text>
           </View>
           <Text style={styles.posterFooterTitle}>{shareTheme.posterTitle}</Text>
           <Text style={styles.posterFooterSubtitle}>{shareTheme.posterSubtitle}</Text>
@@ -382,8 +393,8 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
               <Ionicons name="close" size={24} color="#fff" />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.title}>分享这份心情</Text>
-              <Text style={styles.subtitle}>生成一张更适合发给朋友的日记卡片</Text>
+              <Text style={styles.title}>{t('shareCard.title')}</Text>
+              <Text style={styles.subtitle}>{t('shareCard.subtitle')}</Text>
             </View>
             <View style={styles.headerSpacer} />
           </View>
@@ -401,7 +412,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
           </ScrollView>
 
           <View style={styles.bottomActionContainer}>
-            <Text style={styles.bottomHint}>保存后可以分享到聊天、朋友圈或社交平台</Text>
+            <Text style={styles.bottomHint}>{t('shareCard.bottomHint')}</Text>
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={[styles.secondaryBtn, (isSavingImage || isSharing) && styles.buttonDisabled]}
@@ -413,7 +424,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
                 ) : (
                   <>
                     <Ionicons name="download-outline" size={18} color={HEALING_COLORS.pink[500]} />
-                    <Text style={styles.secondaryBtnText}>保存图片</Text>
+                    <Text style={styles.secondaryBtnText}>{t('shareCard.saveImage')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -427,7 +438,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
                 ) : (
                   <>
                     <Ionicons name="paper-plane" size={18} color="#fff" />
-                    <Text style={styles.shareBtnText}>分享图片</Text>
+                    <Text style={styles.shareBtnText}>{t('shareCard.shareImage')}</Text>
                   </>
                 )}
               </TouchableOpacity>
