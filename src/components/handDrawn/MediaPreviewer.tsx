@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Video, ResizeMode, Audio } from 'expo-av';
-import { File, Paths } from 'expo-file-system';
+import { File, Directory, Paths } from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -436,7 +436,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
   const currentItem = media[currentIndex];
   const showZoomHint = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
   const canDownloadCurrentMedia =
-    currentItem?.type === 'image' || currentItem?.type === 'livePhoto' || currentItem?.type === 'video';
+    currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
   const watermarkUserName = watermarkOwnerName || user?.nickname || user?.phone || '毛球用户';
 
   useEffect(() => {
@@ -517,6 +517,9 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
       write_image_failed: '写入带水印的 Live Photo 图片失败。',
       save_failed: '系统相册保存失败。',
       insert_video_failed: '视频轨道导出准备失败。',
+      load_failed: '视频资源加载失败。',
+      load_cancelled: '视频资源加载被取消。',
+      load_unknown: '视频资源加载状态异常。',
       export_failed: '视频导出失败。',
       export_cancelled: '视频导出已取消。',
       export_unknown: '视频导出失败。',
@@ -635,47 +638,96 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     }
 
     const timestamp = Date.now();
-    const imageFile = await File.downloadFileAsync(
-      item.uri,
-      new File(Paths.cache, `maoqiu-diary-live-${timestamp}.${getDownloadFileExtension(item)}`)
-    );
-    const videoFile = await File.downloadFileAsync(
-      item.livePhotoVideoUri,
-      new File(Paths.cache, `maoqiu-diary-live-${timestamp}.${getLivePhotoVideoExtension(item)}`)
-    );
+    const isImageLocal = item.uri.startsWith('file://') || item.uri.startsWith('/');
+    const isVideoLocal = item.livePhotoVideoUri.startsWith('file://') || item.livePhotoVideoUri.startsWith('/');
+
+    let imageUri = item.uri;
+    let videoUri = item.livePhotoVideoUri;
+    let imageFile: any = null;
+    let videoFile: any = null;
+
+    // 确保下载目录存在
+    const cacheDir = new Directory(Paths.cache, 'maoqiu-media-downloads');
+    if ((!isImageLocal || !isVideoLocal) && !cacheDir.exists) {
+      cacheDir.create();
+    }
+
+    if (!isImageLocal) {
+      imageFile = await File.downloadFileAsync(
+        item.uri,
+        new File(cacheDir, `live-img-${timestamp}.${getDownloadFileExtension(item)}`),
+        { idempotent: true }
+      );
+      if (!imageFile.exists) {
+        throw new Error('missing_file');
+      }
+      imageUri = imageFile.uri;
+    }
+
+    if (!isVideoLocal) {
+      videoFile = await File.downloadFileAsync(
+        item.livePhotoVideoUri,
+        new File(cacheDir, `live-vid-${timestamp}.${getLivePhotoVideoExtension(item)}`),
+        { idempotent: true }
+      );
+      if (!videoFile.exists) {
+        throw new Error('missing_file');
+      }
+      videoUri = videoFile.uri;
+    }
 
     try {
       await LivePhotoSaver.saveLivePhoto(
-        imageFile.uri,
-        videoFile.uri,
+        imageUri,
+        videoUri,
         '毛球日记',
         `用户：${watermarkUserName}`
       );
     } finally {
-      imageFile.delete();
-      videoFile.delete();
+      if (imageFile) imageFile.delete();
+      if (videoFile) videoFile.delete();
     }
   };
 
   const saveVideoToLibrary = async (item: MediaResource) => {
     const timestamp = Date.now();
-    const downloadedVideo = await File.downloadFileAsync(
-      item.uri,
-      new File(Paths.cache, `maoqiu-diary-video-${timestamp}.${getVideoFileExtension(item)}`)
-    );
+    const isLocal = item.uri.startsWith('file://') || item.uri.startsWith('/');
+    
+    let videoUri = item.uri;
+    let downloadedVideo: any = null;
+
+    if (!isLocal) {
+      // 确保下载目录存在
+      const cacheDir = new Directory(Paths.cache, 'maoqiu-media-downloads');
+      if (!cacheDir.exists) {
+        cacheDir.create();
+      }
+      
+      downloadedVideo = await File.downloadFileAsync(
+        item.uri,
+        new File(cacheDir, `video-${timestamp}.${getVideoFileExtension(item)}`),
+        { idempotent: true }
+      );
+      if (!downloadedVideo.exists) {
+        throw new Error('missing_file');
+      }
+      videoUri = downloadedVideo.uri;
+    }
 
     try {
       if (Platform.OS === 'ios' && LivePhotoSaver?.saveVideo) {
         await LivePhotoSaver.saveVideo(
-          downloadedVideo.uri,
+          videoUri,
           '毛球日记',
           `用户：${watermarkUserName}`
         );
       } else {
-        await MediaLibrary.saveToLibraryAsync(downloadedVideo.uri);
+        await MediaLibrary.saveToLibraryAsync(videoUri);
       }
     } finally {
-      downloadedVideo.delete();
+      if (downloadedVideo) {
+        downloadedVideo.delete();
+      }
     }
   };
 
