@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +17,8 @@ import {
   Image,
   ScrollView,
   Dimensions,
+  ActionSheetIOS,
+  Alert,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -30,9 +33,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONT_SIZES, SPACING } from '../../config/constant';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useAuthStore } from '../../store/authStore';
+import { useAppStore, I18nLangType } from '../../store/appStore';
 
 import { Modal as CommonModal } from '@/components/common/Modal';
 import { useToast } from '@/components/common/Toast';
+
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const { width } = Dimensions.get('window');
 const AGREEMENT_ACCEPTED_KEY = 'login_agreement_accepted';
@@ -117,11 +124,61 @@ const LoginScreen: React.FC = () => {
   const [hasAcceptedAgreement, setHasAcceptedAgreement] = useState(false);
   const [agreementModalVisible, setAgreementModalVisible] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const { login, loginWithWechat, sendCode, loading, sendingCode } = useAuthStore();
+  const [isAppleAvailable, setIsAppleAvailable] = useState(Platform.OS === 'ios');
+  const { login, loginWithWechat, loginWithApple, sendCode, loading, sendingCode } = useAuthStore();
+  const { language, setLanguage } = useAppStore();
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { isDark, colors } = useAppTheme();
   const { t } = useTranslation();
+
+  const handleLanguageChange = async (nextLanguage: I18nLangType) => {
+    if (nextLanguage === language) {
+      return;
+    }
+    try {
+      await setLanguage(nextLanguage);
+    } catch (error) {
+      console.error('Set language error:', error);
+      toast.error(t('settingsScreen.setLanguageFailed') || 'Failed to set language');
+    }
+  };
+
+  const handleLanguagePress = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [t('setting.chinese') || '简体中文', t('setting.english') || 'English', t('common.cancel') || 'Cancel'],
+          cancelButtonIndex: 2,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 0) {
+            handleLanguageChange('zh-CN');
+          } else if (buttonIndex === 1) {
+            handleLanguageChange('en-US');
+          }
+        }
+      );
+      return;
+    }
+
+    Alert.alert(t('settingsScreen.chooseLanguage') || 'Choose Language', '', [
+      {
+        text: t('setting.chinese') || '简体中文',
+        onPress: () => {
+          handleLanguageChange('zh-CN');
+        },
+      },
+      {
+        text: t('setting.english') || 'English',
+        onPress: () => {
+          handleLanguageChange('en-US');
+        },
+      },
+      { text: t('common.cancel') || 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   useEffect(() => {
     const loadAgreementState = async () => {
@@ -134,6 +191,26 @@ const LoginScreen: React.FC = () => {
     };
 
     loadAgreementState();
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const checkAvailability = async () => {
+      if (Platform.OS !== 'ios') {
+        setIsAppleAvailable(false);
+        return;
+      }
+      const available = await AppleAuthentication.isAvailableAsync();
+      if (mounted) {
+        setIsAppleAvailable(available);
+      }
+    };
+    checkAvailability().catch(() => {
+      if (mounted) setIsAppleAvailable(false);
+    });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -248,6 +325,50 @@ const LoginScreen: React.FC = () => {
     }
   };
 
+  const handleAppleLogin = async () => {
+    const canContinue = await ensureAgreementAccepted();
+    if (!canContinue) {
+      return;
+    }
+
+    if (Platform.OS !== 'ios') {
+      toast.error('Apple 登录仅支持 iOS 设备');
+      return;
+    }
+
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      const fullName = [credential.fullName?.familyName, credential.fullName?.givenName]
+        .filter(Boolean)
+        .join('');
+      
+      const result = await loginWithApple({
+        userId: credential.user,
+        email: credential.email ?? null,
+        fullName: fullName || null,
+        identityToken: credential.identityToken ?? null,
+        authorizationCode: credential.authorizationCode ?? null,
+      });
+      
+      if (!result.needsBind) {
+        const currentError = useAuthStore.getState().error;
+        if (currentError) {
+          toast.error(currentError);
+        }
+      }
+    } catch (error: any) {
+      if (error?.code === 'ERR_REQUEST_CANCELED') {
+        return;
+      }
+      toast.error(error?.message || 'Apple 登录暂时不可用，请稍后重试');
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: isDark ? colors.background : '#FFF5F8' }]}
@@ -255,6 +376,15 @@ const LoginScreen: React.FC = () => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : insets.top}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} translucent={true} backgroundColor="transparent" />
+      
+      {/* 语言切换按钮 */}
+      <TouchableOpacity
+        style={[styles.languageButton, { top: insets.top + SPACING.small }]}
+        onPress={handleLanguagePress}
+      >
+        <Ionicons name="language" size={24} color={isDark ? colors.text : COLORS.primary} />
+      </TouchableOpacity>
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -426,8 +556,8 @@ const LoginScreen: React.FC = () => {
               </Text>
             </View>
 
-            {/* 微信登录（因个人开发者暂无权限，先隐藏以便后续使用） */}
-            {false && (
+            {/* 第三方登录 */}
+            {Platform.OS === 'ios' && (
               <>
                 <View style={styles.dividerContainer}>
                   <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -435,22 +565,59 @@ const LoginScreen: React.FC = () => {
                   <View style={[styles.divider, { backgroundColor: colors.border }]} />
                 </View>
 
-                <TouchableOpacity
-                  style={[styles.wechatButton, { backgroundColor: colors.surface }]}
-                  onPress={async () => {
-                    const canContinue = await ensureAgreementAccepted();
-                    if (!canContinue) {
-                      return;
-                    }
-                    await loginWithWechat();
-                    const currentError = useAuthStore.getState().error;
-                    if (currentError) toast.error(currentError);
-                  }}
-                  disabled={loading}
-                >
-                  <Ionicons name="logo-wechat" size={24} color="#07C160" />
-                  <Text style={styles.wechatButtonText}>{t('loginScreen.wechatLogin')}</Text>
-                </TouchableOpacity>
+                {isAppleAvailable ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.customAppleButton,
+                      {
+                        backgroundColor: '#FFF',
+                        borderColor: isDark ? '#FFF' : COLORS.border,
+                      },
+                    ]}
+                    onPress={handleAppleLogin}
+                  >
+                    <Ionicons name="logo-apple" size={20} color="#000" />
+                    <Text style={styles.customAppleButtonText}>
+                      {language === 'en-US' ? 'Sign in with Apple' : '通过 Apple 登录'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    disabled
+                    style={[
+                      styles.wechatButton,
+                      {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                        borderColor: 'transparent',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="logo-apple" size={24} color={colors.textSecondary} />
+                    <Text style={[styles.wechatButtonText, { color: colors.textSecondary }]}>
+                      Apple 登录当前不可用
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* 微信登录（因个人开发者暂无权限，先隐藏以便后续使用） */}
+                {false && (
+                  <TouchableOpacity
+                    style={[styles.wechatButton, { backgroundColor: colors.surface }]}
+                    onPress={async () => {
+                      const canContinue = await ensureAgreementAccepted();
+                      if (!canContinue) {
+                        return;
+                      }
+                      await loginWithWechat();
+                      const currentError = useAuthStore.getState().error;
+                      if (currentError) toast.error(currentError);
+                    }}
+                    disabled={loading}
+                  >
+                    <Ionicons name="logo-wechat" size={24} color="#07C160" />
+                    <Text style={styles.wechatButtonText}>{t('loginScreen.wechatLogin')}</Text>
+                  </TouchableOpacity>
+                )}
               </>
             )}
           </View>
@@ -523,6 +690,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF5F8',
+  },
+  languageButton: {
+    position: 'absolute',
+    right: SPACING.large,
+    zIndex: 10,
+    padding: SPACING.small,
   },
   scrollContent: {
     flexGrow: 1,
@@ -631,7 +804,7 @@ const styles = StyleSheet.create({
   loginButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 24,
-    paddingVertical: SPACING.medium + 4,
+    height: 56,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -714,6 +887,30 @@ const styles = StyleSheet.create({
   },
   wechatButtonText: {
     color: '#07C160',
+    fontSize: FONT_SIZES.large,
+    fontWeight: '600',
+    marginLeft: SPACING.small,
+  },
+  customAppleButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 24,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    marginTop: SPACING.large,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4.65,
+    elevation: 8,
+  },
+  customAppleButtonText: {
+    color: '#000',
     fontSize: FONT_SIZES.large,
     fontWeight: '600',
     marginLeft: SPACING.small,

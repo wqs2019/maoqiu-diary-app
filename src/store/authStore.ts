@@ -6,12 +6,21 @@ import userService from '../services/userService';
 
 export interface AuthState {
   isLoggedIn: boolean;
+  needsBind: boolean;
+  setNeedsBind: (needsBind: boolean) => void;
   user: UserInfo | null;
   loading: boolean;
   sendingCode: boolean;
   error: string | null;
   login: (phone: string, code: string) => Promise<void>;
   loginWithWechat: () => Promise<void>;
+  loginWithApple: (data: {
+    userId: string;
+    email: string | null;
+    fullName: string | null;
+    identityToken: string | null;
+    authorizationCode: string | null;
+  }) => Promise<{ token: string; user: UserInfo; needsBind: boolean }>;
   logout: () => Promise<void>;
   sendCode: (phone: string) => Promise<boolean>;
   checkAuth: () => Promise<boolean>;
@@ -21,6 +30,8 @@ export interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   isLoggedIn: false,
+  needsBind: false,
+  setNeedsBind: (needsBind) => set({ needsBind }),
   user: null,
   loading: false,
   sendingCode: false,
@@ -39,6 +50,33 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error: any) {
       console.error('Login failed in store:', error);
       set({ error: error.message || '登录失败', loading: false });
+    }
+  },
+  loginWithApple: async (data) => {
+    set({ loading: true, error: null });
+    try {
+      const { token, user } = await authService.appleLogin(data);
+
+      // 无论是否需要绑定手机号，都先将 token 和 user 保存到本地
+      await authService.saveToken(token);
+      await authService.saveUserInfo(user);
+
+      if (!user.phone) {
+        // 如果没有手机号，设置 needsBind 为 true，让 RootNavigator 渲染绑定页面
+        set({ isLoggedIn: true, user, needsBind: true, loading: false });
+        return { token, user, needsBind: true };
+      }
+
+      set({ isLoggedIn: true, user, needsBind: false, loading: false });
+
+      if (user.biometricEnabled !== undefined) {
+        await useAppStore.getState().syncAppLockFromUser(user.biometricEnabled);
+      }
+      return { token, user, needsBind: false };
+    } catch (error: any) {
+      console.error('Apple Login failed in store:', error);
+      set({ error: error.message || 'Apple 登录失败', loading: false });
+      throw error;
     }
   },
   loginWithWechat: async () => {

@@ -1,7 +1,9 @@
-import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -16,9 +18,12 @@ import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import { Modal } from '../../components/common/Modal';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { RootStackParamList } from '../../navigation/RootNavigator';
 
 const AccountSecurityScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const { t } = useTranslation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const { checkVipPermission } = useVipGuard();
@@ -27,6 +32,28 @@ const AccountSecurityScreen: React.FC = () => {
   const toast = useToast();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCountdown, setDeleteCountdown] = useState(0);
+  const [isAppleAvailable, setIsAppleAvailable] = useState(Platform.OS === 'ios');
+  const [isBindingApple, setIsBindingApple] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const checkAvailability = async () => {
+      if (Platform.OS !== 'ios') {
+        setIsAppleAvailable(false);
+        return;
+      }
+      const available = await AppleAuthentication.isAvailableAsync();
+      if (mounted) {
+        setIsAppleAvailable(available);
+      }
+    };
+    checkAvailability().catch(() => {
+      if (mounted) setIsAppleAvailable(false);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -56,14 +83,14 @@ const AccountSecurityScreen: React.FC = () => {
 
   // Mask phone number
   const formatPhone = (phone?: string) => {
-    if (!phone || phone.length < 11) return '未绑定手机号';
+    if (!phone || phone.length < 11) return t('accountSecurity.unboundPhone');
     return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
   };
 
   const handleDeleteAccount = async () => {
     if (!user?._id) return;
     
-    toast.loading('正在注销账号...');
+    toast.loading(t('accountSecurity.deletingAccount'));
     
     try {
       // 1. 标记用户的日记本为已注销
@@ -72,7 +99,7 @@ const AccountSecurityScreen: React.FC = () => {
         data: { userId: user._id },
       });
       if (notebookRes.code !== 0 && notebookRes.data?.success === false) {
-        throw new Error(notebookRes.data?.message || '注销日记本失败');
+        throw new Error(notebookRes.data?.message || t('accountSecurity.deleteNotebookFailed'));
       }
 
       // 2. 标记用户账户为已注销
@@ -81,18 +108,100 @@ const AccountSecurityScreen: React.FC = () => {
         data: { _id: user._id },
       });
       if (userRes.code !== 0 && userRes.data?.success === false) {
-        throw new Error(userRes.data?.message || '注销账户失败');
+        throw new Error(userRes.data?.message || t('accountSecurity.deleteAccountFailed'));
       }
 
       // 3. 退出登录
       toast.hide();
-      toast.success('账号已成功注销');
+      toast.success(t('accountSecurity.deleteAccountSuccess'));
       await logout();
     } catch (error) {
       console.error('Delete account error:', error);
       toast.hide();
-      toast.error('注销账号失败，请稍后重试');
+      toast.error(t('accountSecurity.deleteAccountError'));
     }
+  };
+
+  const handleBindApple = async () => {
+    if (!user?._id || isBindingApple) return;
+
+    try {
+      setIsBindingApple(true);
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      toast.loading(t('accountSecurity.binding'));
+      const res: any = await CloudService.callFunction('user', {
+        action: 'bindAppleId',
+        data: {
+          userId: user._id,
+          appleId: credential.user,
+        },
+      });
+
+      toast.hide();
+      if (res.code === 0 && res.data?.success) {
+        toast.success(t('accountSecurity.bindSuccess'));
+        // 更新本地状态
+        useAuthStore.getState().updateProfile(user._id, { appleId: credential.user });
+      } else {
+        toast.error(res.data?.message || t('accountSecurity.bindFailed'));
+      }
+    } catch (error: any) {
+      toast.hide();
+      if (error?.code === 'ERR_REQUEST_CANCELED') {
+        return;
+      }
+      toast.error(error?.message || t('accountSecurity.bindError'));
+    } finally {
+      setIsBindingApple(false);
+    }
+  };
+
+  const handleUnbindApple = () => {
+    if (!user?._id) return;
+
+    if (!user.phone) {
+      Alert.alert(t('common.tip'), t('accountSecurity.unbindAppleWarning'));
+      return;
+    }
+
+    Alert.alert(
+      t('accountSecurity.unbindAppleTitle'),
+      t('accountSecurity.unbindAppleConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('accountSecurity.unbind'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              toast.loading(t('accountSecurity.unbinding'));
+              const res: any = await CloudService.callFunction('user', {
+                action: 'unbindAppleId',
+                data: { userId: user._id },
+              });
+
+              toast.hide();
+              if (res.code === 0 && res.data?.success) {
+                toast.success(t('accountSecurity.unbindSuccess'));
+                // 更新本地状态，将 appleId 设为 undefined
+                useAuthStore.getState().updateProfile(user._id, { appleId: undefined });
+              } else {
+                toast.error(res.data?.message || t('accountSecurity.unbindFailed'));
+              }
+            } catch (error: any) {
+              toast.hide();
+              toast.error(error?.message || t('accountSecurity.unbindError'));
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderSettingItem = (
@@ -159,7 +268,7 @@ const AccountSecurityScreen: React.FC = () => {
           <Feather name="arrow-left" size={24} color={isDark ? '#E5E7EB' : '#333'} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: isDark ? '#E5E7EB' : '#333' }]}>
-          账号与安全
+          {t('accountSecurity.title')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -183,23 +292,35 @@ const AccountSecurityScreen: React.FC = () => {
         >
           {renderSettingItem(
             'smartphone',
-            '手机号',
+            t('accountSecurity.phone'),
             currentHealingColors.blue[500],
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text
                 style={[
                   styles.valueText,
-                  { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
+                  { color: user?.phone ? (isDark ? '#9CA3AF' : currentHealingColors.gray[500]) : currentHealingColors.pink[500] },
                 ]}
               >
-                {formatPhone(user?.phone)}
+                {user?.phone ? formatPhone(user.phone) : t('accountSecurity.goBind')}
               </Text>
+              {!user?.phone && (
+                <Feather
+                  name="chevron-right"
+                  size={20}
+                  color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
+                  style={{ marginLeft: 4 }}
+                />
+              )}
             </View>,
-            false
+            false,
+            user?.phone ? undefined : () => {
+              // 传递一个明确的标识，表示是从设置页进入的
+              navigation.navigate('BindPhone', { scene: 'account' });
+            }
           )}
           {renderSettingItem(
             'lock',
-            '隐私安全',
+            t('accountSecurity.privacy'),
             currentHealingColors.yellow[600],
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text
@@ -208,7 +329,7 @@ const AccountSecurityScreen: React.FC = () => {
                   { color: isDark ? '#9CA3AF' : currentHealingColors.gray[500] },
                 ]}
               >
-                设置
+                {t('accountSecurity.settings')}
               </Text>
               <Feather
                 name="chevron-right"
@@ -226,24 +347,52 @@ const AccountSecurityScreen: React.FC = () => {
           )}
         </View>
 
-        {/* 第三方绑定
-        <View
-          style={[
-            styles.menuSection,
-            {
-              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-              borderColor: isDark ? '#333' : currentHealingColors.pink[100],
-              borderRadius: themeStyle.borderRadius,
-              shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
-              shadowOpacity: themeStyle.shadowOpacity * 0.5,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 4,
-            },
-          ]}
-        >
-        </View>
-        */}
+        {/* 第三方绑定 */}
+        {isAppleAvailable && (
+          <View
+            style={[
+              styles.menuSection,
+              {
+                backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+                borderColor: isDark ? '#333' : currentHealingColors.pink[100],
+                borderRadius: themeStyle.borderRadius,
+                shadowColor: isDark ? '#000' : currentHealingColors.pink[400],
+                shadowOpacity: themeStyle.shadowOpacity * 0.5,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 4,
+              },
+            ]}
+          >
+            {renderSettingItem(
+              'apple',
+              t('accountSecurity.appleAccount'),
+              isDark ? '#FFFFFF' : '#000000',
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  style={[
+                    styles.valueText,
+                    { color: user?.appleId ? (isDark ? '#9CA3AF' : currentHealingColors.gray[500]) : currentHealingColors.pink[500] },
+                  ]}
+                >
+                  {user?.appleId ? t('accountSecurity.bound') : t('accountSecurity.goBind')}
+                </Text>
+                {!user?.appleId && (
+                  <Feather
+                    name="chevron-right"
+                    size={20}
+                    color={isDark ? '#6B7280' : currentHealingColors.gray[400]}
+                    style={{ marginLeft: 4 }}
+                  />
+                )}
+              </View>,
+              true,
+              user?.appleId ? handleUnbindApple : handleBindApple,
+              'FontAwesome5'
+            )}
+          </View>
+        )}
+
         {/* 危险操作 */}
         <View
           style={[
@@ -262,7 +411,7 @@ const AccountSecurityScreen: React.FC = () => {
         >
           {renderSettingItem(
             'user-x',
-            '注销账号',
+            t('accountSecurity.deleteAccount'),
             currentHealingColors.pink[600],
             <Feather name="chevron-right" size={20} color={currentHealingColors.gray[400]} />,
             true,
@@ -275,13 +424,13 @@ const AccountSecurityScreen: React.FC = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF' }]}>
             <Text style={[styles.modalTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}>
-              真的要离开吗？🥺
+              {t('accountSecurity.deleteModalTitle')}
             </Text>
             <Text style={[styles.modalText, { color: currentHealingColors.gray[600] }]}>
-              注销账号后，您在毛球日记记录的<Text style={{ fontWeight: 'bold', color: currentHealingColors.pink[500] }}>所有日记、相册以及心情数据将永远消失，无法找回</Text>。
+              {t('accountSecurity.deleteModalDesc1')}<Text style={{ fontWeight: 'bold', color: currentHealingColors.pink[500] }}>{t('accountSecurity.deleteModalDescHighlight')}</Text>{t('accountSecurity.deleteModalDesc2')}
             </Text>
             <Text style={[styles.modalText, { color: currentHealingColors.gray[600], marginTop: 12, marginBottom: 24 }]}>
-              毛球会很想念您的，希望能有机会再听您分享每一天的喜怒哀乐。
+              {t('accountSecurity.deleteModalDesc3')}
             </Text>
             
             <View style={styles.modalButtonGroup}>
@@ -289,7 +438,7 @@ const AccountSecurityScreen: React.FC = () => {
                 style={[styles.modalButton, { backgroundColor: currentHealingColors.gray[100] }]}
                 onPress={() => setShowDeleteModal(false)}
               >
-                <Text style={[styles.modalButtonText, { color: currentHealingColors.gray[700] }]}>我再想想</Text>
+                <Text style={[styles.modalButtonText, { color: currentHealingColors.gray[700] }]}>{t('accountSecurity.thinkAgain')}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -304,7 +453,7 @@ const AccountSecurityScreen: React.FC = () => {
                 }}
               >
                 <Text style={[styles.modalButtonText, { color: 'white' }]}>
-                  {deleteCountdown > 0 ? `残忍离开 (${deleteCountdown}s)` : '残忍离开'}
+                  {deleteCountdown > 0 ? `${t('accountSecurity.leaveCruelly')} (${deleteCountdown}s)` : t('accountSecurity.leaveCruelly')}
                 </Text>
               </TouchableOpacity>
             </View>

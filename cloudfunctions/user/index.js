@@ -1625,6 +1625,10 @@ exports.main = async (event, context) => {
       return await getBlockedUserIds(data);
     case 'getBlockedUsersList':
       return await getBlockedUsersList(data);
+    case 'bindAppleId':
+      return await bindAppleId(data);
+    case 'unbindAppleId':
+      return await unbindAppleId(data);
     default:
       return {
         success: false,
@@ -1632,3 +1636,76 @@ exports.main = async (event, context) => {
       };
   }
 };
+
+async function bindAppleId(data) {
+  try {
+    const { userId, appleId } = data || {};
+
+    if (!userId || !appleId) {
+      return { success: false, message: '缺少必要参数' };
+    }
+
+    // 检查这个 appleId 是否已经被其他账号绑定
+    const existingUser = await db.collection('users').where({ appleId }).get();
+    if (existingUser.data && existingUser.data.length > 0) {
+      // 如果找到的账号不是当前账号，说明已经被别人绑定了
+      const foundId = existingUser.data[0]._id || existingUser.data[0].id;
+      if (foundId !== userId) {
+        // 如果这个 appleId 对应的账号是一个没有绑定手机号的“空壳”账号（即刚才 Apple 登录自动创建的）
+        // 我们可以允许合并：删除那个空壳账号，把 appleId 绑到当前老账号上
+        if (!existingUser.data[0].phone) {
+          await db.collection('users').doc(foundId).remove();
+        } else {
+          return { success: false, message: '该 Apple 账号已被其他用户绑定' };
+        }
+      } else {
+        // 如果就是当前账号，直接返回成功
+        return { success: true, message: '已绑定' };
+      }
+    }
+
+    // 更新当前用户的 appleId
+    await db.collection('users').doc(userId).update({
+      appleId,
+      updatedAt: db.serverDate(),
+    });
+
+    return { success: true, message: '绑定成功' };
+  } catch (error) {
+    console.error('Bind Apple ID error:', error);
+    return { success: false, message: '绑定失败', error: error.message };
+  }
+}
+
+async function unbindAppleId(data) {
+  try {
+    const { userId } = data || {};
+
+    if (!userId) {
+      return { success: false, message: '缺少必要参数' };
+    }
+
+    // 检查用户是否绑定了手机号，如果没有手机号，不允许解绑 Apple ID
+    const userRecord = await db.collection('users').doc(userId).get();
+    const user = getDocData(userRecord);
+    
+    if (!user) {
+      return { success: false, message: '用户不存在' };
+    }
+    
+    if (!user.phone) {
+      return { success: false, message: '未绑定手机号，无法解绑 Apple 账号' };
+    }
+
+    // 更新当前用户的 appleId 为空
+    await db.collection('users').doc(userId).update({
+      appleId: _.remove(),
+      updatedAt: db.serverDate(),
+    });
+
+    return { success: true, message: '解绑成功' };
+  } catch (error) {
+    console.error('Unbind Apple ID error:', error);
+    return { success: false, message: '解绑失败', error: error.message };
+  }
+}

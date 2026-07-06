@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { DiaryCard } from './DiaryCard';
@@ -18,6 +19,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   onYearLayouts,
 }) => {
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
 
   const groupedItems = items.reduce(
     (acc, item) => {
@@ -29,7 +31,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       if (!acc[dateKey]) {
         acc[dateKey] = {
           date: dateKey,
-          displayDate: `${year}年${month}月`,
+          displayDate: `${year}${t('timeline.yearSuffix')}${month}${t('timeline.monthSuffix')}`,
           year: year.toString(),
           items: [],
         };
@@ -72,8 +74,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                   { backgroundColor: isDark ? '#2C1B24' : HEALING_COLORS.pink[100] },
                 ]}
               >
-                <Text style={[styles.dateHeaderYear, { color: HEALING_COLORS.pink[600] }]}>{itemData.year}年</Text>
-                <Text style={[styles.dateHeaderMonth, { color: HEALING_COLORS.pink[700] }]}>{dateKey.split('-')[1]}月</Text>
+                <Text style={[styles.dateHeaderYear, { color: HEALING_COLORS.pink[600] }]}>{itemData.year}{t('timeline.yearSuffix')}</Text>
+                <Text style={[styles.dateHeaderMonth, { color: HEALING_COLORS.pink[700] }]}>{dateKey.split('-')[1]}{t('timeline.monthSuffix')}</Text>
               </View>
               <View
                 style={[
@@ -87,7 +89,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               const isLastItem = itemIndex === groupedItems[dateKey].items.length - 1;
               const dateObj = new Date(item.date);
               const dayStr = String(dateObj.getDate()).padStart(2, '0');
-              const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+              const days = t('timeline.weekdaysShort', { returnObjects: true }) as string[];
               const weekStr = days[dateObj.getDay()];
 
               // 格式化今天的友好展示
@@ -106,7 +108,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                         isToday && { color: HEALING_COLORS.pink[500] }
                       ]}
                     >
-                      {isToday ? '今天' : dayStr}
+                      {isToday ? t('timeline.today') : dayStr}
                     </Text>
                     <Text
                       style={[
@@ -152,8 +154,8 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       {items.length === 0 && (
         <View style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>📝</Text>
-          <Text style={styles.emptyText}>暂无记录</Text>
-          <Text style={styles.emptySubText}>开始记录你的生活吧</Text>
+          <Text style={styles.emptyText}>{t('timeline.noData')}</Text>
+          <Text style={styles.emptySubText}>{t('timeline.startRecording')}</Text>
         </View>
       )}
     </View>

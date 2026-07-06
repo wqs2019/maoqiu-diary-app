@@ -1,5 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet, Image, Pressable, StyleProp, ViewStyle } from 'react-native';
 
 import { FormatUtil } from '@/utils/format';
@@ -69,12 +70,15 @@ const CommentPressable: React.FC<CommentPressableProps> = ({
 
 export const CommentList: React.FC<CommentListProps> = ({
   comments = [],
-  emptyText = '还没有评论哦，快来抢沙发~',
+  emptyText,
   authorId,
   onReplyPress,
   onCommentLongPress,
 }) => {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
+
+  const finalEmptyText = emptyText || t('commentList.emptyDefault');
 
   // 在组件内部将扁平的评论数组转换为树形结构
   const commentTree = useMemo(() => {
@@ -101,7 +105,7 @@ export const CommentList: React.FC<CommentListProps> = ({
 
   return (
     <View style={styles.commentsSection}>
-      <Text style={styles.commentsTitle}>全部评论 ({comments.length})</Text>
+      <Text style={styles.commentsTitle}>{t('commentList.allComments', { count: comments.length })}</Text>
       {commentTree.map((comment) => (
         <View key={comment.id} style={styles.commentItem}>
           <Pressable
@@ -114,7 +118,7 @@ export const CommentList: React.FC<CommentListProps> = ({
                 : undefined
             }
             accessibilityRole={comment.userId ? 'button' : undefined}
-            accessibilityLabel={comment.userId ? `查看 ${comment.user} 的主页` : undefined}
+            accessibilityLabel={comment.userId ? t('commentList.viewProfile', { user: comment.user }) : undefined}
           >
             {comment.avatar ? (
               <Image source={{ uri: comment.avatar }} style={styles.avatarImage} />
@@ -136,7 +140,7 @@ export const CommentList: React.FC<CommentListProps> = ({
                   <Text style={styles.commentUser}>{comment.user}</Text>
                   {authorId && comment.userId === authorId && (
                     <View style={styles.authorTag}>
-                      <Text style={styles.authorTagText}>作者</Text>
+                      <Text style={styles.authorTagText}>{t('commentList.author')}</Text>
                     </View>
                   )}
                 </View>
@@ -165,7 +169,7 @@ export const CommentList: React.FC<CommentListProps> = ({
                       <Text style={styles.replyUser}>{reply.user}</Text>
                       {reply.replyToUser && (
                         <>
-                          <Text style={styles.replyAction}> 回复 </Text>
+                          <Text style={styles.replyAction}>{t('commentList.reply')}</Text>
                           <Text style={styles.replyUser}>{reply.replyToUser}</Text>
                         </>
                       )}
@@ -179,7 +183,7 @@ export const CommentList: React.FC<CommentListProps> = ({
           </View>
         </View>
       ))}
-      {comments.length === 0 && <Text style={styles.emptyCommentText}>{emptyText}</Text>}
+      {comments.length === 0 && <Text style={styles.emptyCommentText}>{finalEmptyText}</Text>}
     </View>
   );
 };

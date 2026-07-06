@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { DraggableGrid } from 'react-native-draggable-grid';
 
 import { MediaPreviewer } from './MediaPreviewer';
@@ -47,6 +48,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const { isDark } = useAppTheme();
+  const { t } = useTranslation();
   const userId = useAuthStore((state) => state.user?._id);
   const currentVideoCount = media.filter((item) => item.type === 'video').length;
 
@@ -640,7 +642,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
               color={isDark ? '#AAA' : HEALING_COLORS.pink[500]}
             />
             <Text style={[styles.addButtonText, { color: isDark ? '#AAA' : '#999' }]}>
-              添加媒体
+              {t('mediaSelector.addMedia') || '添加媒体'}
             </Text>
           </View>
         </View>
@@ -658,9 +660,13 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       {!hideHeader && (
         <View style={styles.header}>
           <View style={styles.titleContainer}>
-            <Text style={[styles.title, { color: isDark ? '#AAA' : '#666' }]}>媒体附件</Text>
+            <Text style={[styles.title, { color: isDark ? '#AAA' : '#666' }]}>
+              {t('mediaSelector.title') || '媒体附件'}
+            </Text>
             <Text style={[styles.subtitle, { color: isDark ? '#888' : '#999' }]}>
-              （最多{maxCount}个{draggable && media.length > 1 ? '，长按可拖动排序' : ''}）
+              {draggable && media.length > 1
+                ? t('mediaSelector.maxCountWithDrag', { maxCount }) || `（最多${maxCount}个，长按可拖动排序）`
+                : t('mediaSelector.maxCount', { maxCount }) || `（最多${maxCount}个）`}
             </Text>
           </View>
           <Text style={[styles.count, { color: isDark ? '#888' : '#999' }]}>

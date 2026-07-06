@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { checkAppUpdate, APP_STORE_URL } from '../../utils/update';
 
 const { width } = Dimensions.get('window');
 const FEATURE_CARD_WIDTH = width - 64;
@@ -28,34 +29,7 @@ const FEATURE_CARD_GAP = 10;
 const FEATURE_SNAP_INTERVAL = FEATURE_CARD_WIDTH + FEATURE_CARD_GAP;
 const USER_AGREEMENT_URL = 'https://wqs2019.github.io/maoqiu-diary-app/terms.html';
 const PRIVACY_POLICY_URL = 'https://wqs2019.github.io/maoqiu-diary-app/privacy.html';
-const APP_STORE_URL = 'https://apps.apple.com/cn/app/%E6%AF%9B%E7%90%83%E6%97%A5%E8%AE%B0/id6759290118';
-const APP_STORE_LOOKUP_URL = 'https://itunes.apple.com/lookup?id=6759290118&country=cn';
 const APP_VERSION = Constants.expoConfig?.version || Constants.nativeAppVersion || '';
-
-const compareVersions = (currentVersion: string, targetVersion: string) => {
-  const currentParts = String(currentVersion || '0')
-    .split('.')
-    .map((part) => Number(part) || 0);
-  const targetParts = String(targetVersion || '0')
-    .split('.')
-    .map((part) => Number(part) || 0);
-  const maxLength = Math.max(currentParts.length, targetParts.length);
-
-  for (let index = 0; index < maxLength; index += 1) {
-    const current = currentParts[index] || 0;
-    const target = targetParts[index] || 0;
-
-    if (current > target) {
-      return 1;
-    }
-
-    if (current < target) {
-      return -1;
-    }
-  }
-
-  return 0;
-};
 
 const AboutScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -134,36 +108,16 @@ const AboutScreen: React.FC = () => {
   }, [isFeatureAutoPlayPaused]);
 
   const handleCheckUpdate = async () => {
-    try {
-      const response = await fetch(APP_STORE_LOOKUP_URL);
-
-      if (!response.ok) {
-        throw new Error(t('aboutScreen.updateErrors.appStoreUnavailable'));
-      }
-
-      const result = await response.json();
-      const latestVersion = result?.results?.[0]?.version?.trim();
-
-      if (!latestVersion) {
-        Alert.alert(t('aboutScreen.updateErrors.checkTitle'), t('aboutScreen.updateErrors.noStoreInfo'));
-        return;
-      }
-
-      if (compareVersions(appVersion, latestVersion) < 0) {
-        Alert.alert(
-          t('aboutScreen.updateErrors.newVersionTitle'),
-          t('aboutScreen.updateErrors.newVersionMessage', { current: appVersion, latest: latestVersion }),
-          [
-            { text: t('aboutScreen.updateErrors.later'), style: 'cancel' },
-            { text: t('aboutScreen.updateErrors.updateNow'), onPress: () => Linking.openURL(APP_STORE_URL) },
-          ]
-        );
-        return;
-      }
-
-      Alert.alert(t('aboutScreen.updateErrors.checkTitle'), t('aboutScreen.updateErrors.latestVersion', { current: appVersion }));
-    } catch (error: any) {
-      Alert.alert(t('aboutScreen.updateErrors.checkFailed'), error?.message || t('aboutScreen.updateErrors.checkFailedFallback'));
+    const updateInfo = await checkAppUpdate(true);
+    if (updateInfo?.hasUpdate) {
+      Alert.alert(
+        t('aboutScreen.updateErrors.newVersionTitle'),
+        t('aboutScreen.updateErrors.newVersionMessage', { current: updateInfo.currentVersion, latest: updateInfo.latestVersion }),
+        [
+          { text: t('aboutScreen.updateErrors.later'), style: 'cancel' },
+          { text: t('aboutScreen.updateErrors.updateNow'), onPress: () => Linking.openURL(APP_STORE_URL) },
+        ]
+      );
     }
   };
 
