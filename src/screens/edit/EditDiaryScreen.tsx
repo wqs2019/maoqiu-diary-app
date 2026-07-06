@@ -354,7 +354,7 @@ const EditDiaryScreen: React.FC = () => {
           <MediaSelector
             media={media}
             onMediaChange={setMedia}
-            maxCount={user?.isVip?.value ? 9 : 3}
+            maxCount={user?.isVip?.value ? 9 : 1}
             isVip={!!user?.isVip?.value}
             draggable
             onDragStart={() => {
