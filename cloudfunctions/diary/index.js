@@ -1066,9 +1066,6 @@ const getDiaryList = async (data) => {
 
     if (likedByUserId) {
       queryConditions.push({ likedUserIds: likedByUserId });
-      if (viewerId !== likedByUserId) {
-        queryConditions.push({ isPublic: true });
-      }
     }
 
     if (commentedByUserId) {
@@ -1078,7 +1075,18 @@ const getDiaryList = async (data) => {
           userId: commentedByUserId
         })
       });
-      if (viewerId !== commentedByUserId) {
+    }
+
+    // 权限过滤：在查看点赞或评论列表时，只能看到自己的日记，或者别人公开的日记
+    if (likedByUserId || commentedByUserId) {
+      if (viewerId) {
+        queryConditions.push(
+          _.or([
+            { userId: viewerId },
+            { isPublic: true }
+          ])
+        );
+      } else {
         queryConditions.push({ isPublic: true });
       }
     }
