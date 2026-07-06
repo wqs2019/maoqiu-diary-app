@@ -1066,6 +1066,9 @@ const getDiaryList = async (data) => {
 
     if (likedByUserId) {
       queryConditions.push({ likedUserIds: likedByUserId });
+      if (viewerId !== likedByUserId) {
+        queryConditions.push({ isPublic: true });
+      }
     }
 
     if (commentedByUserId) {
@@ -1075,6 +1078,9 @@ const getDiaryList = async (data) => {
           userId: commentedByUserId
         })
       });
+      if (viewerId !== commentedByUserId) {
+        queryConditions.push({ isPublic: true });
+      }
     }
 
     let finalQuery = queryConditions.length > 0 ? _.and(queryConditions) : {};
