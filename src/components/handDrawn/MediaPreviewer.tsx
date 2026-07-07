@@ -435,8 +435,7 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
 
   const currentItem = media[currentIndex];
   const showZoomHint = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
-  const canDownloadCurrentMedia =
-    currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
+  const canDownloadCurrentMedia = currentItem?.type === 'image'; // 暂时不允许保存实况照片
   const watermarkUserName = watermarkOwnerName || user?.nickname || user?.phone || '毛球用户';
 
   useEffect(() => {
