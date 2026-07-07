@@ -194,6 +194,55 @@ const AdminUserManagementScreen: React.FC = () => {
     );
   };
 
+  const handleToggleLifetimeVip = (item: AdminUserListItem) => {
+    const isLifetime = item.isVip?.type === 'lifetime';
+
+    if (!isLifetime && !item.phone) {
+      Alert.alert('无法设置', '用户未绑定手机号不可设置会员');
+      return;
+    }
+
+    const actionText = isLifetime ? '移除' : '设置';
+
+    Alert.alert(
+      `${actionText}终身会员`,
+      `确认将「${item.nickname || item.maskedPhone || '该用户'}」${actionText}终身会员吗？`,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: `确认${actionText}`,
+          style: isLifetime ? 'destructive' : 'default',
+          onPress: async () => {
+            if (!user?._id) {
+              return;
+            }
+
+            try {
+              setUpdatingUserId(item._id);
+              if (isLifetime) {
+                await userService.removeLifetimeVip({
+                  adminUserId: user._id,
+                  targetUserId: item._id,
+                });
+              } else {
+                await userService.setLifetimeVip({
+                  adminUserId: user._id,
+                  targetUserId: item._id,
+                });
+              }
+              Alert.alert(`${actionText}成功`, `已成功${actionText}该用户的终身会员`);
+              await fetchUsers({ nextPage: 1 });
+            } catch (error: any) {
+              Alert.alert(`${actionText}失败`, error?.message || `暂时无法${actionText}终身会员`);
+            } finally {
+              setUpdatingUserId('');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const summaryCards = useMemo(
     () => [
       { key: 'total', label: '总用户', value: summary.totalUsers, accent: HEALING_COLORS.pink[500] },
@@ -280,6 +329,55 @@ const AdminUserManagementScreen: React.FC = () => {
       </View>
 
       <View style={styles.actionRow}>
+        {/* 终身会员按钮 */}
+        <TouchableOpacity
+          activeOpacity={item.isAdmin || item._id === user?._id ? 1 : 0.85}
+          disabled={item.isAdmin || item._id === user?._id || updatingUserId === item._id}
+          style={[
+            styles.freezeButton,
+            {
+              backgroundColor:
+                item.isAdmin || item._id === user?._id
+                  ? isDark
+                    ? '#27272A'
+                    : '#F3F4F6'
+                  : item.isVip?.type === 'lifetime'
+                    ? isDark
+                      ? '#3F1D1D' // 红色背景 (移除)
+                      : '#FEE2E2'
+                    : isDark
+                      ? '#312E81' // 蓝色背景 (设置)
+                      : '#EEF2FF',
+              marginRight: 8,
+            },
+          ]}
+          onPress={() => handleToggleLifetimeVip(item)}
+        >
+          {updatingUserId === item._id ? (
+            <ActivityIndicator size="small" color={item.isVip?.type === 'lifetime' ? '#DC2626' : '#4F46E5'} />
+          ) : (
+            <Text
+              style={[
+                styles.freezeButtonText,
+                {
+                  color:
+                    item.isAdmin || item._id === user?._id
+                      ? subTextColor
+                      : item.isVip?.type === 'lifetime'
+                        ? isDark
+                          ? '#FCA5A5'
+                          : '#DC2626'
+                        : isDark
+                          ? '#C7D2FE'
+                          : '#4F46E5',
+                },
+              ]}
+            >
+              {item.isVip?.type === 'lifetime' ? '移除终身会员' : '设置终身会员'}
+            </Text>
+          )}
+        </TouchableOpacity>
+
         <TouchableOpacity
           activeOpacity={item.isAdmin || item._id === user?._id ? 1 : 0.85}
           disabled={item.isAdmin || item._id === user?._id || updatingUserId === item._id}
@@ -696,7 +794,9 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     marginTop: 12,
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   freezeButton: {
     minWidth: 96,
