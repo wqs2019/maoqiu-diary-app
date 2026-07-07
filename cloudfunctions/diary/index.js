@@ -1077,6 +1077,20 @@ const getDiaryList = async (data) => {
       });
     }
 
+    // 权限过滤：在查看点赞或评论列表时，只能看到自己的日记，或者别人公开的日记
+    if (likedByUserId || commentedByUserId) {
+      if (viewerId) {
+        queryConditions.push(
+          _.or([
+            { userId: viewerId },
+            { isPublic: true }
+          ])
+        );
+      } else {
+        queryConditions.push({ isPublic: true });
+      }
+    }
+
     let finalQuery = queryConditions.length > 0 ? _.and(queryConditions) : {};
 
     // 计算分页

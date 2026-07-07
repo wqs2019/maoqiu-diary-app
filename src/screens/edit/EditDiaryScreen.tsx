@@ -354,7 +354,7 @@ const EditDiaryScreen: React.FC = () => {
           <MediaSelector
             media={media}
             onMediaChange={setMedia}
-            maxCount={user?.isVip?.value ? 9 : 3}
+            maxCount={user?.isVip?.value ? 9 : 1}
             isVip={!!user?.isVip?.value}
             draggable
             onDragStart={() => {
@@ -507,7 +507,8 @@ const styles = StyleSheet.create({
   titleInput: {
     fontSize: 24,
     fontWeight: 'bold',
-    paddingVertical: 10,
+    height: 50,
+    paddingVertical: 0,
   },
   divider: {
     borderBottomWidth: 1,

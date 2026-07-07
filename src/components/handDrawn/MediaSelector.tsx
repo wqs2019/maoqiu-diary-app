@@ -392,11 +392,6 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       return;
     }
 
-    if (!isVip && currentVideoCount >= 1) {
-      Alert.alert('提示', '非 VIP 用户最多只能上传 1 个视频');
-      return;
-    }
-
     const remainingCount = maxCount - media.length;
 
     const result = await ImagePicker.launchImageLibraryAsync({

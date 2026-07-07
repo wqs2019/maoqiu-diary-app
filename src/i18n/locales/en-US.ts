@@ -465,6 +465,7 @@ export default {
       activeStatus: 'VIP Active',
       inactiveStatus: 'VIP Inactive',
       expiresAt: 'Expires on {{date}}',
+      lifetime: 'Lifetime',
     },
     plansTitle: 'Choose a Subscription Plan',
     footerNotes: '• Payment: After confirming the purchase, the charge will be billed to your iTunes account.\n• Renewal: Your iTunes account will be charged within 24 hours before expiration, and the subscription will be extended after successful payment.\n• Cancel renewal: To cancel auto-renewal, please turn it off manually in iTunes/Apple ID settings at least 24 hours before the current billing cycle ends.',

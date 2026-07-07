@@ -820,6 +820,17 @@ const syncVipStatus = async (data) => {
 
     let isVip = false;
     
+    // 如果是终身会员，直接跳过校验，保持 VIP 状态
+    if (user.isVip && user.isVip.type === 'lifetime') {
+      return {
+        success: true,
+        data: {
+          _id,
+          isVip: user.isVip,
+        },
+      };
+    }
+    
     // 如果有收据，去苹果服务器重新校验一下最新状态（苹果会自动返回该收据对应的最新续费状态）
     if (user.latestReceipt) {
       const verifyResult = await verifyAppleReceipt(user.latestReceipt);
@@ -1629,6 +1640,10 @@ exports.main = async (event, context) => {
       return await bindAppleId(data);
     case 'unbindAppleId':
       return await unbindAppleId(data);
+    case 'setLifetimeVip':
+      return await setLifetimeVip(data);
+    case 'removeLifetimeVip':
+      return await removeLifetimeVip(data);
     default:
       return {
         success: false,
@@ -1636,6 +1651,118 @@ exports.main = async (event, context) => {
       };
   }
 };
+
+async function setLifetimeVip(data) {
+  try {
+    const { adminUserId, targetUserId } = data || {};
+
+    if (!adminUserId || !targetUserId) {
+      return { success: false, message: '缺少必要参数' };
+    }
+
+    const isAdmin = await isAdminUser(adminUserId);
+    if (!isAdmin) {
+      return { success: false, message: '无管理员权限' };
+    }
+
+    const targetUser = await getUserDoc(targetUserId);
+    if (!targetUser) {
+      return { success: false, message: '目标用户不存在' };
+    }
+
+    if (!targetUser.phone) {
+      return { success: false, message: '该用户未绑定手机号，无法设置为终身会员' };
+    }
+
+    // 检查是否已经在 members 集合中
+    const membersCollection = db.collection('members');
+    const existingMember = await membersCollection.where({ phone: targetUser.phone }).limit(1).get();
+    
+    if (!existingMember.data || existingMember.data.length === 0) {
+      // 插入到 members 集合
+      await membersCollection.add({
+        phone: targetUser.phone,
+        createdAt: db.serverDate(),
+        addedBy: adminUserId
+      });
+    }
+
+    // 更新用户的 isVip 状态
+    const lifetimeVipInfo = {
+      value: true,
+      type: 'lifetime',
+      expiresAt: 4102444800000 // 2100-01-01
+    };
+
+    const updateData = { isVip: lifetimeVipInfo };
+
+    // 如果当前有有效的订阅会员，备份它
+    if (targetUser.isVip && targetUser.isVip.value && targetUser.isVip.type !== 'lifetime' && targetUser.isVip.expiresAt > Date.now()) {
+      updateData.subscriptionVip = targetUser.isVip;
+    }
+
+    await db.collection('users').doc(targetUserId).update(updateData);
+
+    return { success: true, message: '设置终身会员成功' };
+  } catch (error) {
+    console.error('Set lifetime VIP error:', error);
+    return { success: false, message: '设置终身会员失败', error: error.message };
+  }
+}
+
+async function removeLifetimeVip(data) {
+  try {
+    const { adminUserId, targetUserId } = data || {};
+
+    if (!adminUserId || !targetUserId) {
+      return { success: false, message: '缺少必要参数' };
+    }
+
+    const isAdmin = await isAdminUser(adminUserId);
+    if (!isAdmin) {
+      return { success: false, message: '无管理员权限' };
+    }
+
+    const targetUser = await getUserDoc(targetUserId);
+    if (!targetUser) {
+      return { success: false, message: '目标用户不存在' };
+    }
+
+    // 从 members 集合中移除
+    if (targetUser.phone) {
+      const membersCollection = db.collection('members');
+      const existingMember = await membersCollection.where({ phone: targetUser.phone }).get();
+      if (existingMember.data && existingMember.data.length > 0) {
+        for (const member of existingMember.data) {
+          await membersCollection.doc(member._id || member.id).remove();
+        }
+      }
+    }
+
+    // 恢复之前的订阅状态
+    let restoredVipInfo = {
+      value: false,
+      type: 'expired',
+      expiresAt: Date.now()
+    };
+
+    if (targetUser.subscriptionVip && targetUser.subscriptionVip.expiresAt > Date.now()) {
+      restoredVipInfo = targetUser.subscriptionVip;
+    }
+
+    const updateData = {
+      isVip: restoredVipInfo,
+      subscriptionVip: _.remove() // 清除备份
+    };
+
+    await db.collection('users').doc(targetUserId).update(updateData);
+
+    return { success: true, message: '移除终身会员成功' };
+  } catch (error) {
+    console.error('Remove lifetime VIP error:', error);
+    return { success: false, message: '移除终身会员失败', error: error.message };
+  }
+}
 
 async function bindAppleId(data) {
   try {

@@ -362,6 +362,48 @@ export class UserService {
       throw error;
     }
   }
+
+  async setLifetimeVip(params: {
+    adminUserId: string;
+    targetUserId: string;
+  }): Promise<boolean> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'setLifetimeVip',
+        data: params,
+      });
+
+      if (response.code === 0 && response.data?.success) {
+        return true;
+      }
+
+      throw new Error(response.data?.message || response.message || '设置终身会员失败');
+    } catch (error) {
+      console.error('UserService.setLifetimeVip error:', error);
+      throw error;
+    }
+  }
+
+  async removeLifetimeVip(params: {
+    adminUserId: string;
+    targetUserId: string;
+  }): Promise<boolean> {
+    try {
+      const response: any = await CloudService.callFunction('user', {
+        action: 'removeLifetimeVip',
+        data: params,
+      });
+
+      if (response.code === 0 && response.data?.success) {
+        return true;
+      }
+
+      throw new Error(response.data?.message || response.message || '移除终身会员失败');
+    } catch (error) {
+      console.error('UserService.removeLifetimeVip error:', error);
+      throw error;
+    }
+  }
 }
 
 export default new UserService();

@@ -468,6 +468,7 @@ export default {
       activeStatus: '当前已开通',
       inactiveStatus: '当前未开通',
       expiresAt: '{{date}} 到期',
+      lifetime: '终身有效',
     },
     plansTitle: '选择订阅方案',
     footerNotes: '• 付款：用户确认购买并付款后记入 iTunes 账户。\n• 续期：苹果 iTunes 账户会在到期前 24 小时内扣款，扣款成功后订阅周期顺延一个订阅周期。\n• 取消续订：如需取消续订，请在当前扣款周期前至少 24 小时，手动在 iTunes/Apple ID 设置管理中关闭自动续订功能。',
