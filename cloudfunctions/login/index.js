@@ -8,6 +8,7 @@ const app = cloud.init({
 const db = app.database();
 const usersCollection = db.collection('users');
 const adminCollection = db.collection('admin_list');
+const membersCollection = db.collection('members');
 const USER_ERROR_CODES = {
   USER_FROZEN: 'USER_FROZEN',
 };
@@ -26,6 +27,55 @@ const isPhoneAdmin = async (phone) => {
   const result = await adminCollection.where({ phone }).limit(1).get();
   return !!(result.data && result.data.length > 0);
 };
+
+const isPhoneMember = async (phone) => {
+  if (!phone) {
+    return false;
+  }
+
+  const result = await membersCollection.where({ phone }).limit(1).get();
+  return !!(result.data && result.data.length > 0);
+};
+
+async function syncLifetimeVipStatus(userId, userData, isMember) {
+  let updateData = null;
+
+  if (isMember && (!userData.isVip || userData.isVip.type !== 'lifetime')) {
+    const lifetimeVipInfo = {
+      value: true,
+      type: 'lifetime',
+      expiresAt: 4102444800000 // 2100-01-01
+    };
+
+    updateData = { isVip: lifetimeVipInfo };
+
+    // 如果当前有有效的订阅会员，备份它
+    if (userData.isVip && userData.isVip.value && userData.isVip.type !== 'lifetime' && userData.isVip.expiresAt > Date.now()) {
+      updateData.subscriptionVip = userData.isVip;
+    }
+
+    await usersCollection.doc(userId).update(updateData);
+    Object.assign(userData, updateData);
+
+  } else if (!isMember && userData.isVip && userData.isVip.type === 'lifetime') {
+    // 恢复之前的订阅状态
+    let restoredVipInfo = {
+      value: false,
+      type: 'expired',
+      expiresAt: Date.now()
+    };
+
+    if (userData.subscriptionVip && userData.subscriptionVip.expiresAt > Date.now()) {
+      restoredVipInfo = userData.subscriptionVip;
+    }
+
+    updateData = { isVip: restoredVipInfo };
+    await usersCollection.doc(userId).update(updateData);
+    Object.assign(userData, updateData);
+  }
+  
+  return userData;
+}
 
 exports.main = async (event, context) => {
   const { action, data } = event;
@@ -99,6 +149,11 @@ async function loginHandler(data) {
 
     const userId = user.data[0]._id || user.data[0].id;
     const isAdmin = await isPhoneAdmin(phone);
+    const isMember = await isPhoneMember(phone);
+    
+    let userData = user.data[0];
+    userData = await syncLifetimeVipStatus(userId, userData, isMember);
+
     // 生成Token
     const token = generateToken(userId);
 
@@ -108,7 +163,7 @@ async function loginHandler(data) {
       data: {
         token,
         user: {
-          ...user.data[0],
+          ...userData,
           _id: userId,
           isAdmin,
         },
@@ -181,6 +236,11 @@ async function appleLoginHandler(data) {
 
     const docId = user.data[0]._id || user.data[0].id;
     const isAdmin = false; // Apple 登录暂不处理管理员
+    
+    let userData = user.data[0];
+    const isMember = await isPhoneMember(userData.phone);
+    userData = await syncLifetimeVipStatus(docId, userData, isMember);
+
     const token = generateToken(docId);
 
     return {
@@ -189,7 +249,7 @@ async function appleLoginHandler(data) {
       data: {
         token,
         user: {
-          ...user.data[0],
+          ...userData,
           _id: docId,
           isAdmin,
         },
@@ -264,6 +324,8 @@ async function validateTokenHandler(data) {
     }
 
     const isAdmin = await isPhoneAdmin(userData.phone);
+    const isMember = await isPhoneMember(userData.phone);
+    userData = await syncLifetimeVipStatus(userId, userData, isMember);
 
     return {
       code: 0,
