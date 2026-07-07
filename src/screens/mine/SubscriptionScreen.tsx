@@ -142,6 +142,7 @@ const SubscriptionScreen: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState<string>(t('subscriptionScreen.loading.processing'));
   const [latestVersion, setLatestVersion] = useState<string>('');
   const isActiveVIP = !!user?.isVip?.value;
+  const isLifetimeVIP = user?.isVip?.type === 'lifetime';
   const isPurchasing = useRef(false);
 
   const startLoading = (message: string) => {
@@ -516,9 +517,11 @@ const SubscriptionScreen: React.FC = () => {
               </Text>
               {isActiveVIP && user?.isVip?.expiresAt && (
                 <Text style={[styles.vipCardExpire, isActiveVIP && { color: '#9CA3AF' }]}>
-                  {t('subscriptionScreen.vipCard.expiresAt', {
-                    date: new Date(user.isVip.expiresAt).toLocaleDateString(i18n.language),
-                  })}
+                  {user.isVip.type === 'lifetime'
+                    ? t('subscriptionScreen.vipCard.lifetime')
+                    : t('subscriptionScreen.vipCard.expiresAt', {
+                        date: new Date(user.isVip.expiresAt).toLocaleDateString(i18n.language),
+                      })}
                 </Text>
               )}
             </View>
@@ -747,38 +750,40 @@ const SubscriptionScreen: React.FC = () => {
       </ScrollView>
 
       {/* 底部悬浮按钮 */}
-      <View
-        style={[
-          styles.bottomBar,
-          {
-            backgroundColor: isDark ? '#1E1E1E' : '#FFF',
-            borderTopColor: isDark ? '#333' : '#F3F4F6',
-          },
-        ]}
-      >
-        <TouchableOpacity
+      {!isLifetimeVIP && (
+        <View
           style={[
-            styles.subscribeButton,
-            { backgroundColor: isActiveVIP ? '#2C2C2C' : currentHealingColors.pink[500] }, // 已经是VIP时变为黑金风格
-            loading && { opacity: 0.7 },
+            styles.bottomBar,
+            {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+              borderTopColor: isDark ? '#333' : '#F3F4F6',
+            },
           ]}
-          activeOpacity={0.8}
-          disabled={loading}
-          onPress={
-            isActiveVIP
-              ? () => Linking.openURL('https://apps.apple.com/account/subscriptions')
-              : handleSubscribe
-          }
         >
-          {loading ? (
-            <ActivityIndicator color={isActiveVIP ? '#FBBF24' : '#FFF'} />
-          ) : (
-            <Text style={[styles.subscribeButtonText, isActiveVIP && { color: '#FBBF24' }]}>
-              {isActiveVIP ? t('subscriptionScreen.manage') : t('subscriptionScreen.subscribeNow')}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[
+              styles.subscribeButton,
+              { backgroundColor: isActiveVIP ? '#2C2C2C' : currentHealingColors.pink[500] }, // 已经是VIP时变为黑金风格
+              loading && { opacity: 0.7 },
+            ]}
+            activeOpacity={0.8}
+            disabled={loading}
+            onPress={
+              isActiveVIP
+                ? () => Linking.openURL('https://apps.apple.com/account/subscriptions')
+                : handleSubscribe
+            }
+          >
+            {loading ? (
+              <ActivityIndicator color={isActiveVIP ? '#FBBF24' : '#FFF'} />
+            ) : (
+              <Text style={[styles.subscribeButtonText, isActiveVIP && { color: '#FBBF24' }]}>
+                {isActiveVIP ? t('subscriptionScreen.manage') : t('subscriptionScreen.subscribeNow')}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };

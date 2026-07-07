@@ -507,7 +507,8 @@ const styles = StyleSheet.create({
   titleInput: {
     fontSize: 24,
     fontWeight: 'bold',
-    paddingVertical: 10,
+    height: 50,
+    paddingVertical: 0,
   },
   divider: {
     borderBottomWidth: 1,

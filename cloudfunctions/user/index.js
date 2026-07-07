@@ -820,6 +820,17 @@ const syncVipStatus = async (data) => {
 
     let isVip = false;
     
+    // 如果是终身会员，直接跳过校验，保持 VIP 状态
+    if (user.isVip && user.isVip.type === 'lifetime') {
+      return {
+        success: true,
+        data: {
+          _id,
+          isVip: user.isVip,
+        },
+      };
+    }
+    
     // 如果有收据，去苹果服务器重新校验一下最新状态（苹果会自动返回该收据对应的最新续费状态）
     if (user.latestReceipt) {
       const verifyResult = await verifyAppleReceipt(user.latestReceipt);

@@ -57,6 +57,16 @@ async function syncLifetimeVipStatus(userId, userData, isMember) {
     await usersCollection.doc(userId).update(updateData);
     Object.assign(userData, updateData);
 
+  } else if (isMember && userData.isVip && userData.isVip.type === 'lifetime' && userData.isVip.value === false) {
+    // 修复：如果已经是 lifetime，但是 value 被错误地置为了 false，则修复它
+    const lifetimeVipInfo = {
+      value: true,
+      type: 'lifetime',
+      expiresAt: 4102444800000 // 2100-01-01
+    };
+    updateData = { isVip: lifetimeVipInfo };
+    await usersCollection.doc(userId).update(updateData);
+    Object.assign(userData, updateData);
   } else if (!isMember && userData.isVip && userData.isVip.type === 'lifetime') {
     // 恢复之前的订阅状态
     let restoredVipInfo = {
