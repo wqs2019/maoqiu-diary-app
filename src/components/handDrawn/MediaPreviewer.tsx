@@ -18,6 +18,7 @@ import {
   Pressable,
   Animated,
   PanResponder,
+  TouchableOpacity,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
@@ -73,6 +74,54 @@ const getMaxOffset = (scale: number, size: number) => {
   return Math.max(0, ((scale - 1) * size) / 2);
 };
 
+const formatDuration = (ms: number) => {
+  if (!ms || isNaN(ms)) return '00:00';
+  const totalSeconds = Math.floor(ms / 1000);
+  const m = Math.floor(totalSeconds / 60);
+  const s = Math.floor(totalSeconds % 60);
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
+const AudioWaveform = ({ isPlaying }: { isPlaying: boolean }) => {
+  const waveAnims = useRef(Array.from({ length: 20 }).map(() => new Animated.Value(0.2))).current;
+
+  useEffect(() => {
+    if (isPlaying) {
+      const animations = waveAnims.map(anim => {
+        return Animated.loop(
+          Animated.sequence([
+            Animated.timing(anim, { toValue: Math.random() * 0.8 + 0.2, duration: 200 + Math.random() * 200, useNativeDriver: true }),
+            Animated.timing(anim, { toValue: 0.2, duration: 200 + Math.random() * 200, useNativeDriver: true })
+          ])
+        );
+      });
+      animations.forEach(a => a.start());
+      return () => animations.forEach(a => a.stop());
+    } else {
+      waveAnims.forEach(anim => {
+        Animated.timing(anim, { toValue: 0.2, duration: 200, useNativeDriver: true }).start();
+      });
+    }
+  }, [isPlaying]);
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', height: 40, gap: 4 }}>
+      {waveAnims.map((anim, index) => (
+        <Animated.View
+          key={index}
+          style={{
+            width: 4,
+            height: 40,
+            backgroundColor: '#FF85A2',
+            borderRadius: 2,
+            transform: [{ scaleY: anim }]
+          }}
+        />
+      ))}
+    </View>
+  );
+};
+
 const MediaItem = ({
   item,
   isFocused,
@@ -85,8 +134,9 @@ const MediaItem = ({
   onLoadStateChange?: (isLoaded: boolean) => void;
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioStatus, setAudioStatus] = useState({ isPlaying: false, position: 0, duration: item.duration || 0 });
   const [isMediaLoading, setIsMediaLoading] = useState(
-    item.type === 'image' || item.type === 'livePhoto' || item.type === 'video'
+    item.type === 'image' || item.type === 'livePhoto' || item.type === 'video' || item.type === 'audio'
   );
   const videoRef = useRef<Video>(null);
   const scale = useSharedValue(1);
@@ -97,14 +147,17 @@ const MediaItem = ({
   const savedTranslateY = useSharedValue(0);
 
   useEffect(() => {
-    setIsMediaLoading(item.type === 'image' || item.type === 'livePhoto' || item.type === 'video');
+    setIsMediaLoading(item.type === 'image' || item.type === 'livePhoto' || item.type === 'video' || item.type === 'audio');
   }, [item.type, item.uri]);
 
   useEffect(() => {
-    if (!isFocused && isPlaying) {
-      setIsPlaying(false);
+    if (!isFocused) {
+      if (isPlaying) setIsPlaying(false);
+      if (audioStatus.isPlaying) {
+        videoRef.current?.pauseAsync();
+      }
     }
-  }, [isFocused, isPlaying]);
+  }, [isFocused, isPlaying, audioStatus.isPlaying]);
 
   useEffect(() => {
     if (!isFocused) {
@@ -274,6 +327,56 @@ const MediaItem = ({
               onReadyForDisplay={() => setIsMediaLoading(false)}
               onError={() => setIsMediaLoading(false)}
             />
+          ) : item.type === 'audio' ? (
+            <View style={[styles.fullScreen, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212' }]}>
+              <Video
+                ref={videoRef}
+                source={{ uri: item.uri }}
+                style={{ width: 0, height: 0 }}
+                shouldPlay={isFocused && audioStatus.isPlaying}
+                onLoadStart={() => setIsMediaLoading(true)}
+                onReadyForDisplay={() => setIsMediaLoading(false)}
+                onLoad={() => setIsMediaLoading(false)}
+                onError={() => setIsMediaLoading(false)}
+                onPlaybackStatusUpdate={(status: any) => {
+                  if (status.isLoaded) {
+                    // 只要加载成功，就取消 loading 状态
+                    setIsMediaLoading(false);
+                    setAudioStatus({
+                      isPlaying: status.isPlaying,
+                      position: status.positionMillis,
+                      duration: status.durationMillis || item.duration || 0,
+                    });
+                    if (status.didJustFinish) {
+                      videoRef.current?.setPositionAsync(0);
+                      videoRef.current?.pauseAsync();
+                    }
+                  }
+                }}
+              />
+              <View style={styles.audioPlayerCard}>
+                <TouchableOpacity
+                  style={styles.audioPlayButton}
+                  onPress={() => {
+                    if (audioStatus.isPlaying) {
+                      videoRef.current?.pauseAsync();
+                    } else {
+                      videoRef.current?.playAsync();
+                    }
+                  }}
+                >
+                  <Ionicons name={audioStatus.isPlaying ? "pause" : "play"} size={28} color="#FFF" />
+                </TouchableOpacity>
+                
+                <View style={styles.audioWaveformContainer}>
+                  <AudioWaveform isPlaying={audioStatus.isPlaying} />
+                </View>
+
+                <Text style={styles.audioTimeText}>
+                  {formatDuration(audioStatus.position)} / {formatDuration(audioStatus.duration)}
+                </Text>
+              </View>
+            </View>
           ) : (
             <Reanimated.View style={[styles.zoomableContent, animatedImageStyle]}>
               <Image
@@ -998,5 +1101,38 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 5,
+  },
+  audioPlayerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2C2C2C',
+    padding: 16,
+    borderRadius: 24,
+    width: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  audioPlayButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FF85A2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  audioWaveformContainer: {
+    flex: 1,
+    height: 40,
+    justifyContent: 'center',
+  },
+  audioTimeText: {
+    color: '#AAA',
+    fontSize: 12,
+    marginLeft: 12,
+    fontVariant: ['tabular-nums'],
   },
 });

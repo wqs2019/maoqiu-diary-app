@@ -4,6 +4,9 @@ import { View, StyleSheet, TouchableOpacity, Dimensions, Text } from 'react-nati
 
 import { LoadableImage } from './PhotoWall';
 import { MediaPreviewer } from './MediaPreviewer';
+import { InlineAudioPlayer } from './InlineAudioPlayer';
+import { useAppTheme } from '../../hooks/useAppTheme';
+import { HEALING_COLORS } from '../../config/handDrawnTheme';
 
 import { MediaResource } from '@/types';
 
@@ -16,6 +19,15 @@ interface NineGridMediaProps {
 }
 
 const IMAGE_MARGIN = 4;
+
+const formatDuration = (ms: number) => {
+  if (!ms || isNaN(ms)) return '00:00';
+  const totalSeconds = Math.floor(ms / 1000);
+  const m = Math.floor(totalSeconds / 60);
+  const s = Math.floor(totalSeconds % 60);
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
 /**
  * 9宫格图片组件
  */
@@ -26,10 +38,15 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
 }) => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const { isDark } = useAppTheme();
 
   if (!media || media.length === 0) return null;
 
-  const mediaCount = media.length;
+  // 分离音频和其他媒体
+  const audioMedia = media.filter(m => m.type === 'audio');
+  const visualMedia = media.filter(m => m.type !== 'audio');
+
+  const mediaCount = visualMedia.length;
 
   // 1张图：最大宽度为容器宽度的 2/3，或者全宽
   // 2张图、4张图：2列
@@ -47,48 +64,68 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
   const { columns, itemWidth } = getLayout();
 
   return (
-    <View style={[styles.mediaGrid, { width: containerWidth }]}>
-      {media.map((mediaItem, index) => {
-        const isLastInRow = (index + 1) % columns === 0;
-        const isLastRow = Math.floor(index / columns) === Math.floor((mediaCount - 1) / columns);
+    <View style={{ width: containerWidth }}>
+      {/* 视觉媒体（图片/视频）九宫格展示 */}
+      {visualMedia.length > 0 && (
+        <View style={[styles.mediaGrid, { width: containerWidth }]}>
+          {visualMedia.map((mediaItem, index) => {
+            const isLastInRow = (index + 1) % columns === 0;
+            const isLastRow = Math.floor(index / columns) === Math.floor((mediaCount - 1) / columns);
+            const originalIndex = media.findIndex(m => m.uri === mediaItem.uri);
 
-        return (
-          <TouchableOpacity
-            key={index}
-            activeOpacity={0.8}
-            onPress={() => {
-              setPreviewIndex(index);
-              setPreviewVisible(true);
-            }}
-            style={[
-              styles.mediaWrapper,
-              {
-                width: itemWidth,
-                height: itemWidth,
-                marginRight: isLastInRow ? 0 : IMAGE_MARGIN,
-                marginBottom: isLastRow ? 0 : IMAGE_MARGIN,
-              },
-            ]}
-          >
-            <LoadableImage
-              source={{ uri: mediaItem.thumbnail || mediaItem.uri }}
-              style={styles.mediaImage}
-              resizeMode="cover"
+            return (
+              <TouchableOpacity
+                key={`visual-${index}`}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setPreviewIndex(originalIndex);
+                  setPreviewVisible(true);
+                }}
+                style={[
+                  styles.mediaWrapper,
+                  {
+                    width: itemWidth,
+                    height: itemWidth,
+                    marginRight: isLastInRow ? 0 : IMAGE_MARGIN,
+                    marginBottom: isLastRow ? 0 : IMAGE_MARGIN,
+                  },
+                ]}
+              >
+                <LoadableImage
+                  source={{ uri: mediaItem.thumbnail || mediaItem.uri }}
+                  style={styles.mediaImage}
+                  resizeMode="cover"
+                />
+                {mediaItem.type === 'video' && (
+                  <View style={styles.playOverlay}>
+                    <Ionicons name="play" size={Math.max(24, itemWidth * 0.3)} color="#FFF" />
+                  </View>
+                )}
+                {mediaItem.type === 'livePhoto' && (
+                  <View style={styles.liveBadge}>
+                    <Ionicons name="aperture" size={12} color="#FFF" />
+                    <Text style={styles.liveText}>实况</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
+      {/* 音频列表单独展示 */}
+      {audioMedia.length > 0 && (
+        <View style={styles.audioListContainer}>
+          {audioMedia.map((audioItem, index) => (
+            <InlineAudioPlayer 
+              key={`audio-${index}`} 
+              uri={audioItem.uri} 
+              duration={audioItem.duration} 
+              isDark={isDark} 
             />
-            {mediaItem.type === 'video' && (
-              <View style={styles.playOverlay}>
-                <Ionicons name="play" size={Math.max(24, itemWidth * 0.3)} color="#FFF" />
-              </View>
-            )}
-            {mediaItem.type === 'livePhoto' && (
-              <View style={styles.liveBadge}>
-                <Ionicons name="aperture" size={12} color="#FFF" />
-                <Text style={styles.liveText}>实况</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        );
-      })}
+          ))}
+        </View>
+      )}
 
       <MediaPreviewer
         visible={previewVisible}
@@ -143,5 +180,10 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 10,
     marginLeft: 2,
+  },
+  audioListContainer: {
+    marginTop: 8,
+    marginBottom: 12,
+    gap: 8,
   },
 });

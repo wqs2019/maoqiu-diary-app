@@ -101,7 +101,7 @@ export type TagType =
   | 'shopping';
 
 // 媒体资源类型
-export type MediaType = 'image' | 'livePhoto' | 'video';
+export type MediaType = 'image' | 'livePhoto' | 'video' | 'audio';
 
 // 上传状态
 export type UploadStatus = 'loading' | 'success' | 'fail';
