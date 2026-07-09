@@ -201,25 +201,41 @@ const MineScreen: React.FC = () => {
             activeOpacity={0.85}
             onPress={() => navigation.navigate('EditProfile' as never)}
           >
-            <Image
-              source={
-                user?.avatar
-                  ? { uri: user.avatar }
-                  : require('../../../assets/logo_bg.png')
-              }
-              fadeDuration={0}
-              style={[
-                styles.avatar,
-                {
-                  borderColor: isDark ? '#1E1E1E' : '#FFFFFF',
-                  backgroundColor: isDark ? '#333' : currentHealingColors.pink[50],
-                },
-              ]}
-            />
+            <View style={styles.avatarContainer}>
+              <Image
+                source={
+                  user?.avatar
+                    ? { uri: user.avatar }
+                    : require('../../../assets/logo_bg.png')
+                }
+                fadeDuration={0}
+                style={[
+                  styles.avatar,
+                  {
+                    borderColor: user?.isVip?.value ? '#FFD700' : (isDark ? '#1E1E1E' : '#FFFFFF'),
+                    borderWidth: user?.isVip?.value ? 2.5 : 2,
+                    backgroundColor: isDark ? '#333' : currentHealingColors.pink[50],
+                  },
+                ]}
+              />
+              {user?.isVip?.value && (
+                <View style={styles.crownBadge}>
+                  <Text style={styles.crownEmoji}>👑</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.userDetails}>
               <View style={styles.userNameRow}>
                 <Text
-                  style={[styles.userName, { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 }]}
+                  style={[
+                    styles.userName, 
+                    { 
+                      color: user?.isVip?.value ? '#FFD700' : '#FFFFFF', 
+                      textShadowColor: 'rgba(0,0,0,0.6)', 
+                      textShadowOffset: { width: 0, height: 1 }, 
+                      textShadowRadius: 4 
+                    }
+                  ]}
                 >
                   {user?.nickname || t('mineScreen.defaultNickname')}
                 </Text>
@@ -676,12 +692,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  avatarContainer: {
+    position: 'relative',
+  },
   avatar: {
     width: 64,
     height: 64,
     borderRadius: 32,
     borderWidth: 2,
     borderColor: '#FFF',
+  },
+  crownBadge: {
+    position: 'absolute',
+    top: -14,
+    left: -6,
+    transform: [{ rotate: '-40deg' }],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  crownEmoji: {
+    fontSize: 22,
   },
   userDetails: {
     flex: 1,
