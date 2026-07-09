@@ -79,7 +79,7 @@ export interface ComponentProps {
 }
 
 // 场景类型
-export type ScenarioType = 'travel' | 'movie' | 'outing' | 'food' | 'daily' | 'special' | 'learning' | 'inspiration';
+export type ScenarioType = 'travel' | 'movie' | 'outing' | 'food' | 'daily' | 'special' | 'learning' | 'inspiration' | 'pet' | 'work' | 'fitness';
 
 // 心情类型
 export type MoodType = 'happy' | 'sad' | 'normal' | 'excited' | 'angry' | 'relaxed' | 'touched' | 'speechless';

@@ -227,6 +227,67 @@ export const SCENARIO_TEMPLATES: Record<ScenarioType, ScenarioTemplate> = {
       { id: 'tags', label: '标签', type: 'tags', required: false },
     ],
   },
+  pet: {
+    id: 'pet',
+    type: 'pet',
+    name: '宠物日常',
+    icon: '🐾',
+    color: '#FF9F0A',
+    placeholder: '今天毛孩子做了什么趣事？',
+    prompts: [
+      '今天有什么好玩的瞬间？',
+      '学会了什么新技能？',
+      '吃了什么好吃的？',
+      '去了哪里玩？',
+      '想对它说什么？',
+    ],
+    fields: [
+      { id: 'content', label: '日常记录', type: 'text', required: true, placeholder: '记录宠物的可爱瞬间' },
+      { id: 'photos', label: '照片', type: 'image', required: false },
+      { id: 'tags', label: '标签', type: 'tags', required: false },
+    ],
+  },
+  work: {
+    id: 'work',
+    type: 'work',
+    name: '工作记录',
+    icon: '💼',
+    color: '#007AFF',
+    placeholder: '今天工作有什么进展？',
+    prompts: [
+      '完成了什么重要任务？',
+      '遇到了什么挑战？',
+      '有什么新的想法？',
+      '和同事相处如何？',
+      '明天的计划是什么？',
+    ],
+    fields: [
+      { id: 'content', label: '工作总结', type: 'text', required: true, placeholder: '记录今天的工作' },
+      { id: 'mood', label: '心情', type: 'text', required: false, placeholder: '工作心情' },
+      { id: 'tags', label: '标签', type: 'tags', required: false },
+    ],
+  },
+  fitness: {
+    id: 'fitness',
+    type: 'fitness',
+    name: '运动健身',
+    icon: '🏃‍♂️',
+    color: '#32ADE6',
+    placeholder: '今天锻炼了多久？',
+    prompts: [
+      '做了什么运动？',
+      '坚持了多长时间？',
+      '感觉状态如何？',
+      '有什么突破？',
+      '下一次的目标是什么？',
+    ],
+    fields: [
+      { id: 'content', label: '运动记录', type: 'text', required: true, placeholder: '记录今天的运动' },
+      { id: 'duration', label: '时长', type: 'text', required: false, placeholder: '运动了多久？' },
+      { id: 'photos', label: '照片', type: 'image', required: false },
+      { id: 'tags', label: '标签', type: 'tags', required: false },
+    ],
+  },
 };
 
 // 获取场景模板

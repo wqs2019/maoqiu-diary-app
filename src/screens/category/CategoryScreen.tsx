@@ -25,9 +25,9 @@ import { useAuthStore } from '../../store/authStore';
 import { ScenarioType, MediaResource } from '../../types';
 
 const { width } = Dimensions.get('window');
-const GRID_SPACING = 16;
+const GRID_SPACING = 12;
 // 减去 0.1 或使用 Math.floor 防止浮点数精度问题导致在某些大屏机型（如 iPhone 16 Pro Max）上换行
-const GRID_ITEM_WIDTH = Math.floor((width - GRID_SPACING * 4) / 3);
+const GRID_ITEM_WIDTH = Math.floor((width - GRID_SPACING * 5) / 4);
 const PHOTO_GRID_SPACING = 8;
 const PHOTO_SIZE = Math.floor((width - GRID_SPACING * 2 - 24 - PHOTO_GRID_SPACING * 2) / 3);
 
@@ -103,7 +103,7 @@ const CategoryScreen: React.FC = () => {
           activeOpacity={0.8}
         >
           <View style={[styles.iconContainer, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
-            <Ionicons name="apps" size={28} color={isDark ? '#AAA' : '#6B7280'} />
+            <Ionicons name="apps" size={22} color={isDark ? '#AAA' : '#6B7280'} />
           </View>
           <Text
             style={[
@@ -114,6 +114,7 @@ const CategoryScreen: React.FC = () => {
                 { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] },
               ],
             ]}
+            numberOfLines={1}
           >
             {t('homeScreen.all')}
           </Text>
@@ -158,6 +159,7 @@ const CategoryScreen: React.FC = () => {
                     { color: isDark ? HEALING_COLORS.pink[400] : HEALING_COLORS.pink[600] },
                   ],
                 ]}
+                numberOfLines={1}
               >
                 {t(`scenario.${type}`)}
               </Text>
@@ -183,7 +185,7 @@ const CategoryScreen: React.FC = () => {
             },
           ]}
         >
-          <Ionicons name="document-text" size={28} color={HEALING_COLORS.pink[400]} />
+          <Ionicons name="document-text" size={22} color={HEALING_COLORS.pink[400]} />
           <Text style={[styles.statsValue, { color: isDark ? '#FFF' : '#111827' }]}>
             {totalCount}
           </Text>
@@ -198,7 +200,7 @@ const CategoryScreen: React.FC = () => {
             },
           ]}
         >
-          <Ionicons name="images" size={28} color={HEALING_COLORS.pink[400]} />
+          <Ionicons name="images" size={22} color={HEALING_COLORS.pink[400]} />
           <Text style={[styles.statsValue, { color: isDark ? '#FFF' : '#111827' }]}>
             {allMedia.length}
           </Text>
@@ -416,9 +418,10 @@ const styles = StyleSheet.create({
   gridItem: {
     width: GRID_ITEM_WIDTH,
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     backgroundColor: '#FFF',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: 'transparent',
     shadowColor: '#000',
@@ -432,20 +435,21 @@ const styles = StyleSheet.create({
     backgroundColor: HEALING_COLORS.pink[50],
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   scenarioIcon: {
-    fontSize: 24,
+    fontSize: 18,
   },
   gridItemText: {
-    fontSize: 13,
+    fontSize: 11,
     color: '#4B5563',
     fontWeight: '500',
+    textAlign: 'center',
   },
   gridItemTextSelected: {
     color: HEALING_COLORS.pink[600],
@@ -483,8 +487,8 @@ const styles = StyleSheet.create({
   statsCard: {
     flex: 1,
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -493,11 +497,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statsValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
     color: '#111827',
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 6,
+    marginBottom: 2,
   },
   statsLabelRow: {
     flexDirection: 'row',
@@ -505,7 +509,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statsLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
   },
   cardContainer: {
