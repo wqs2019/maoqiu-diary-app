@@ -536,9 +536,10 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
     itemVisiblePercentThreshold: 50,
   }).current;
 
-  const currentItem = media[currentIndex];
-  const showZoomHint = currentItem?.type === 'image' || currentItem?.type === 'livePhoto';
-  const canDownloadCurrentMedia = currentItem?.type === 'image'; // 暂时不允许保存实况照片
+ const currentItem = media[currentIndex];
+  const showZoomHint = currentItem?.type === 'image';
+  const showLivePhotoHint = currentItem?.type === 'livePhoto';
+  const canDownloadCurrentMedia = currentItem?.type === 'image' || currentItem?.type === 'video';// 暂时不允许保存实况照片
   const watermarkUserName = watermarkOwnerName || user?.nickname || user?.phone || '毛球用户';
 
   useEffect(() => {
@@ -920,6 +921,10 @@ export const MediaPreviewer: React.FC<MediaPreviewerProps> = ({
         {showZoomHint ? (
           <View style={styles.zoomHint} pointerEvents="none">
             <Text style={styles.zoomHintText}>双指缩放，双击还原</Text>
+          </View>
+        ) : showLivePhotoHint ? (
+          <View style={styles.zoomHint} pointerEvents="none">
+            <Text style={styles.zoomHintText}>长按图片播放</Text>
           </View>
         ) : null}
 
