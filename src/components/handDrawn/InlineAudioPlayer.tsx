@@ -13,15 +13,15 @@ const formatDuration = (ms: number) => {
 };
 
 const AudioWaveform = ({ isPlaying, isDark }: { isPlaying: boolean, isDark: boolean }) => {
-  const waveAnims = useRef(Array.from({ length: 25 }).map(() => new Animated.Value(0.2))).current;
+  const waveAnims = useRef(Array.from({ length: 30 }).map(() => new Animated.Value(0.15))).current;
 
   useEffect(() => {
     if (isPlaying) {
       const animations = waveAnims.map(anim => {
         return Animated.loop(
           Animated.sequence([
-            Animated.timing(anim, { toValue: Math.random() * 0.8 + 0.2, duration: 200 + Math.random() * 200, useNativeDriver: true }),
-            Animated.timing(anim, { toValue: 0.2, duration: 200 + Math.random() * 200, useNativeDriver: true })
+            Animated.timing(anim, { toValue: Math.random() * 0.6 + 0.4, duration: 250 + Math.random() * 200, useNativeDriver: true }),
+            Animated.timing(anim, { toValue: 0.15, duration: 250 + Math.random() * 200, useNativeDriver: true })
           ])
         );
       });
@@ -29,23 +29,23 @@ const AudioWaveform = ({ isPlaying, isDark }: { isPlaying: boolean, isDark: bool
       return () => animations.forEach(a => a.stop());
     } else {
       waveAnims.forEach(anim => {
-        Animated.timing(anim, { toValue: 0.2, duration: 200, useNativeDriver: true }).start();
+        Animated.timing(anim, { toValue: 0.15, duration: 300, useNativeDriver: true }).start();
       });
     }
   }, [isPlaying]);
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', height: 24, gap: 3, flex: 1, marginHorizontal: 12 }}>
+    <View style={styles.waveformContainer}>
       {waveAnims.map((anim, index) => (
         <Animated.View
           key={index}
-          style={{
-            flex: 1,
-            height: 24,
-            backgroundColor: isDark ? '#666' : HEALING_COLORS.pink[300],
-            borderRadius: 2,
-            transform: [{ scaleY: anim }]
-          }}
+          style={[
+            styles.waveBar,
+            {
+              backgroundColor: isDark ? '#666' : HEALING_COLORS.pink[400],
+              transform: [{ scaleY: anim }]
+            }
+          ]}
         />
       ))}
     </View>
@@ -137,23 +137,35 @@ export const InlineAudioPlayer: React.FC<InlineAudioPlayerProps> = ({ uri, durat
 
   return (
     <TouchableOpacity 
-      activeOpacity={0.8}
+      activeOpacity={0.85}
       onPress={handlePlayPause}
       style={[
         styles.container,
         {
           backgroundColor: isDark ? '#2C2C2C' : HEALING_COLORS.pink[50],
-          borderColor: isDark ? '#444' : HEALING_COLORS.pink[100],
-        }
+          shadowColor: isDark ? '#000' : HEALING_COLORS.pink[200],
+        },
+        !isDark && styles.lightShadow
       ]}
     >
-      <View style={[styles.playButton, { backgroundColor: isDark ? '#444' : '#FFF' }]}>
-        <Ionicons name={isPlaying ? "pause" : "play"} size={18} color={isDark ? '#AAA' : HEALING_COLORS.pink[500]} style={{ marginLeft: isPlaying ? 0 : 2 }} />
+      <View style={[
+        styles.playButton, 
+        { backgroundColor: isDark ? '#444' : HEALING_COLORS.pink[500] }
+      ]}>
+        <Ionicons 
+          name={isPlaying ? "pause" : "play"} 
+          size={16} 
+          color="#FFF" 
+          style={{ marginLeft: isPlaying ? 0 : 2 }} 
+        />
       </View>
       
       <AudioWaveform isPlaying={isPlaying} isDark={isDark} />
       
-      <Text style={[styles.timeText, { color: isDark ? '#AAA' : HEALING_COLORS.pink[600] }]}>
+      <Text style={[
+        styles.timeText, 
+        { color: isDark ? '#999' : HEALING_COLORS.pink[600] }
+      ]}>
         {isPlaying ? formatDuration(position) : formatDuration(duration)}
       </Text>
     </TouchableOpacity>
@@ -165,11 +177,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1,
-    paddingHorizontal: 12,
+    height: 44,
+    borderRadius: 22,
+    paddingHorizontal: 6,
+    paddingRight: 16,
     marginBottom: 8,
+  },
+  lightShadow: {
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   playButton: {
     width: 32,
@@ -177,12 +195,31 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  waveformContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 24,
+    flex: 1,
+    marginHorizontal: 12,
+  },
+  waveBar: {
+    width: 3,
+    height: 24,
+    borderRadius: 1.5,
   },
   timeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
-    minWidth: 40,
+    minWidth: 36,
     textAlign: 'right',
+    letterSpacing: 0.5,
   }
 });
