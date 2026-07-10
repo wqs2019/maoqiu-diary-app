@@ -146,6 +146,16 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     if (!user) {
       fetchUserInfo();
+    } else if (user._id) {
+      // 记录用户活跃时间
+      const now = Date.now();
+      // 如果距离上次记录超过 5 分钟，则更新，避免频繁请求
+      if (!user.lastActiveAt || now - user.lastActiveAt > 5 * 60 * 1000) {
+        console.log('Updating lastActiveAt for user:', user._id, now);
+        useAuthStore.getState().updateProfile(user._id, { lastActiveAt: now }).catch(e => {
+          console.log('Failed to update lastActiveAt', e);
+        });
+      }
     }
     // 首页挂载时检查更新
     const checkUpdate = async () => {

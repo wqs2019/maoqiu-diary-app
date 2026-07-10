@@ -200,6 +200,7 @@ const buildLimitedProfileData = (userData, extra = {}) => ({
   followersCount: 0,
   totalLikes: 0,
   isFollowing: false,
+  lastActiveAt: userData.lastActiveAt || null,
   ...extra,
 });
 
@@ -333,6 +334,7 @@ const buildAdminUserListItem = (user, adminPhoneSet, publicDiariesCountMap = {})
         : 0,
     createdAt: user && user.createdAt ? user.createdAt : null,
     updatedAt: user && user.updatedAt ? user.updatedAt : null,
+    lastActiveAt: user && user.lastActiveAt ? user.lastActiveAt : null,
   };
 };
 
@@ -343,6 +345,8 @@ const sanitizeUserUpdateData = (updateData = {}) => {
       delete sanitizedData[field];
     }
   });
+  // 确保不覆盖 _id
+  delete sanitizedData._id;
   return sanitizedData;
 };
 
@@ -514,12 +518,21 @@ const updateUser = async (data) => {
       };
     }
 
+    const sanitizedData = sanitizeUserUpdateData(updateData);
+    
+    // 确保 lastActiveAt 被正确处理
+    if (updateData.lastActiveAt) {
+      sanitizedData.lastActiveAt = updateData.lastActiveAt;
+    } else if (updateData.lastActiveAt === null) {
+      sanitizedData.lastActiveAt = null;
+    }
+
     // Update user data
     const result = await db
       .collection('users')
       .doc(_id)
       .update({
-        ...sanitizeUserUpdateData(updateData),
+        ...sanitizedData,
         updatedAt: db.serverDate(),
       });
 
@@ -569,6 +582,11 @@ const getUser = async (data) => {
       const fallbackResult = await db.collection('users').where({ _id }).get();
       userData =
         fallbackResult.data && fallbackResult.data.length > 0 ? fallbackResult.data[0] : null;
+    }
+
+    // 确保返回 lastActiveAt
+    if (userData && userData.lastActiveAt) {
+      userData.lastActiveAt = userData.lastActiveAt;
     }
 
     return {
@@ -1002,6 +1020,7 @@ const adminListUsers = async (data) => {
           blockedUsers: true,
           createdAt: true,
           updatedAt: true,
+          lastActiveAt: true,
         })
         .skip(skip)
         .limit(normalizedPageSize)
@@ -1214,6 +1233,7 @@ const getProfile = async (data) => {
         isFollowing,
         isBlockedByCurrentUser: false,
         blockedByTargetUser,
+        lastActiveAt: userData.lastActiveAt || null,
       }
     };
   } catch (error) {

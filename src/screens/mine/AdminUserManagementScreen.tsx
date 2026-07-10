@@ -43,6 +43,19 @@ const formatDateTime = (value?: string | number | null) => {
   return `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}-${`${date.getDate()}`.padStart(2, '0')}`;
 };
 
+const formatExactDateTime = (value?: string | number | null) => {
+  if (!value) {
+    return '未知时间';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '未知时间';
+  }
+
+  return `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}-${`${date.getDate()}`.padStart(2, '0')} ${`${date.getHours()}`.padStart(2, '0')}:${`${date.getMinutes()}`.padStart(2, '0')}`;
+};
+
 const AdminUserManagementScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -300,6 +313,9 @@ const AdminUserManagementScreen: React.FC = () => {
 
           <Text style={[styles.userSubInfo, { color: subTextColor }]}>
             {item.maskedPhone || '未绑定手机号'} · 注册于 {formatDateTime(item.createdAt)}
+          </Text>
+          <Text style={[styles.userSubInfo, { color: subTextColor, marginTop: 2 }]}>
+            最近活跃:  {item.lastActiveAt ? formatExactDateTime(item.lastActiveAt) : (item.updatedAt ? formatExactDateTime(item.updatedAt) : '未知')}
           </Text>
           <Text style={[styles.userIdText, { color: subTextColor }]} numberOfLines={1}>
             ID: {item._id}
