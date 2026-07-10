@@ -35,9 +35,9 @@ const ReportDiaryPickerScreen: React.FC = () => {
   const { isDark } = useAppTheme();
   const currentUser = useAuthStore((state) => state.user);
 
-  const { data, isLoading, refetch, isRefetching } = useDiaryList({
+  const { data, isLoading, refetch, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage } = useDiaryList({
     page: 1,
-    pageSize: 100,
+    pageSize: 20,
     userId,
     isPublic: true,
     viewerId: currentUser?._id,
@@ -124,6 +124,25 @@ const ReportDiaryPickerScreen: React.FC = () => {
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={HEALING_COLORS.pink[400]} />
+            </View>
+          ) : !hasNextPage && diaries.length > 0 ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
+                已经到底啦，共 {diaries.length} 条日记
+              </Text>
+            </View>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}

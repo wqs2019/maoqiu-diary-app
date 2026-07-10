@@ -49,9 +49,9 @@ const CircleScreen: React.FC = () => {
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [latestInteraction, setLatestInteraction] = useState<CircleInteractionNotification | null>(null);
 
-  const { data, isLoading, refetch } = useDiaryList({
+  const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useDiaryList({
     page: 1,
-    pageSize: 100, // Fetch enough for now
+    pageSize: 20,
     isPublic: true, // Fetch public diaries
     viewerId: user?._id,
   });
@@ -330,6 +330,25 @@ const CircleScreen: React.FC = () => {
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={currentHealingColors.pink[400]} />
+              </View>
+            ) : !hasNextPage && diaries.length > 0 ? (
+              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
+                  {t('circleScreen.noMoreData', { defaultValue: `已经到底啦，共 ${diaries.length} 条日记` })}
+                </Text>
+              </View>
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               refreshing={isManualRefreshing}

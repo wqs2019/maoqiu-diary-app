@@ -102,9 +102,9 @@ const UserProfileScreen: React.FC = () => {
   // Tab 状态：'public' | 'commented' | 'liked'
   const [activeTab, setActiveTab] = useState<'public' | 'commented' | 'liked'>('public');
 
-  const { data: diaryData, isLoading: diaryLoading, refetch } = useDiaryList({
+  const { data: diaryData, isLoading: diaryLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useDiaryList({
     page: 1,
-    pageSize: 100,
+    pageSize: 20,
     userId: activeTab === 'public' ? targetUserId : undefined,
     likedByUserId: activeTab === 'liked' ? targetUserId : undefined,
     commentedByUserId: activeTab === 'commented' ? targetUserId : undefined,
@@ -755,12 +755,31 @@ const UserProfileScreen: React.FC = () => {
               (diaryLoading || displayedDiaries.length === 0) && styles.listContentWhenEmpty,
             ]}
             showsVerticalScrollIndicator={false}
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.5}
             refreshControl={
               <RefreshControl
                 refreshing={isManualRefreshing}
                 onRefresh={onRefresh}
                 tintColor={HEALING_COLORS.pink[400]}
               />
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={HEALING_COLORS.pink[400]} />
+                </View>
+              ) : !hasNextPage && displayedDiaries.length > 0 ? (
+                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                  <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
+                    {t('userProfileScreen.noMoreData', { defaultValue: `已经到底啦，共 ${displayedDiaries.length} 条日记` })}
+                  </Text>
+                </View>
+              ) : null
             }
             ListEmptyComponent={
               diaryLoading ? (
