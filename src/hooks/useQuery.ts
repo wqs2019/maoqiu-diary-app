@@ -6,6 +6,8 @@ import {
   UseQueryOptions,
   UseMutationOptions,
   useIsMutating,
+  useInfiniteQuery,
+  UseInfiniteQueryOptions,
 } from '@tanstack/react-query';
 
 // 通用查询 Hook
@@ -15,6 +17,19 @@ export const useAppQuery = <TData, TError = Error>(
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
+    queryKey,
+    queryFn,
+    ...options,
+  });
+};
+
+// 通用无限查询 Hook
+export const useAppInfiniteQuery = <TData, TError = Error>(
+  queryKey: unknown[],
+  queryFn: (context: { pageParam: number }) => Promise<TData>,
+  options: Omit<UseInfiniteQueryOptions<TData, TError, import('@tanstack/react-query').InfiniteData<TData>, unknown[], number>, 'queryKey' | 'queryFn'>
+) => {
+  return useInfiniteQuery({
     queryKey,
     queryFn,
     ...options,

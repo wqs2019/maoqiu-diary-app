@@ -43,7 +43,7 @@ const ReportDiaryPickerScreen: React.FC = () => {
     viewerId: currentUser?._id,
   });
 
-  const diaries = data?.list || [];
+  const diaries = data?.pages?.flatMap((page) => page.list) || [];
 
   const handleSelectDiary = (item: Diary) => {
     const state = navigation.getState();

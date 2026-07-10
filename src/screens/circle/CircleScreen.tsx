@@ -94,7 +94,7 @@ const CircleScreen: React.FC = () => {
 
   const likeMutation = useLikeDiary();
 
-  const diaries = data?.list || [];
+  const diaries = data?.pages?.flatMap((page) => page.list) || [];
 
   const handleDiaryPress = (item: Diary) => {
     navigation.navigate('CircleDetail', { _id: item._id });

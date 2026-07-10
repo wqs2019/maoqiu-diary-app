@@ -14,10 +14,10 @@ import {
   Animated,
   TextInput,
   Dimensions,
-  KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -133,6 +133,9 @@ const HomeScreen: React.FC = () => {
     isLoading,
     error,
     refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useDiaryList({
     page: 1,
     pageSize: 20,
@@ -300,7 +303,7 @@ const HomeScreen: React.FC = () => {
   };
 
   // 从云端获取的时间轴数据
-  const timelineItems: TimelineItem[] = diaryList?.list?.map(convertDiaryToTimelineItem) || [];
+  const timelineItems: TimelineItem[] = diaryList?.pages?.flatMap((page) => page.list)?.map(convertDiaryToTimelineItem) || [];
   const selectedScenarioTemplate = selectedScenario ? SCENARIO_TEMPLATES[selectedScenario] : undefined;
 
   // 获取所有唯一且降序排列的年份
@@ -649,6 +652,13 @@ const HomeScreen: React.FC = () => {
           const layoutHeight = e.nativeEvent.layoutMeasurement.height;
           const contentHeight = e.nativeEvent.contentSize.height;
 
+          // 触底加载更多
+          if (offsetY + layoutHeight >= contentHeight - 50) {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }
+
           let currentYear = availableYears[0];
 
           // 如果滚动到了底部，直接选中最后一个年份
@@ -705,6 +715,18 @@ const HomeScreen: React.FC = () => {
               onItemPress={handleTimelineItemPress}
               onYearLayouts={handleYearLayout}
             />
+            {isFetchingNextPage && (
+              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={currentHealingColors.pink[400]} />
+              </View>
+            )}
+            {!hasNextPage && timelineItems.length > 0 && (
+              <View style={{ paddingTop: 0, paddingBottom: 30, marginTop: -10, alignItems: 'center' }}>
+                <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
+                  {t('homeScreen.noMoreData', { total: timelineItems.length })}
+                </Text>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -792,7 +814,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingBottom: 100,
     paddingTop: 10,
   },
   header: {

@@ -22,7 +22,7 @@ import { getMoodConfig } from '../../config/statusConfig';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
-import { ScenarioType, MediaResource } from '../../types';
+import { ScenarioType, MediaResource, Diary } from '../../types';
 
 const { width } = Dimensions.get('window');
 const GRID_SPACING = 12;
@@ -48,8 +48,8 @@ const CategoryScreen: React.FC = () => {
     userId,
   });
 
-  const diaries = data?.list || [];
-  const totalCount = data?.total || 0;
+  const diaries = data?.pages?.flatMap((page) => page.list) || [];
+  const totalCount = data?.pages?.[0]?.total || 0;
   const scenarios = getAllScenarios();
 
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -60,7 +60,7 @@ const CategoryScreen: React.FC = () => {
     const mediaList: MediaResource[] = [];
     const moodCounts: Record<string, number> = {};
 
-    diaries.forEach((d) => {
+    diaries.forEach((d: Diary) => {
       if (d.media) {
         mediaList.push(...d.media);
       }

@@ -187,6 +187,7 @@ export default {
       afternoon: '下午好',
       evening: '晚上好',
     },
+    noMoreData: '已经到底啦，共 {{total}} 条日记',
   },
   onboarding: {
     slides: {

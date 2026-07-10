@@ -18,6 +18,7 @@ import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../co
 import { getMoodConfig } from '../../config/statusConfig';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList, useDiaryStats } from '../../hooks/useDiaryQuery';
+import { Diary } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 
 const CalendarScreen: React.FC = () => {
@@ -67,8 +68,9 @@ const CalendarScreen: React.FC = () => {
   // 处理当前月份的日记数据，按日期（YYYY-MM-DD）分组
   const diariesByDate = useMemo(() => {
     const map: Record<string, any> = {};
-    if (diaryData?.list) {
-      diaryData.list.forEach((diary: any) => {
+    if (diaryData?.pages) {
+      const allDiaries = diaryData.pages.flatMap((page) => page.list);
+      allDiaries.forEach((diary: Diary) => {
         // 严格使用用户在写日记时选择的日期 date
         const d = new Date(diary.date);
         const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
@@ -123,9 +125,12 @@ const CalendarScreen: React.FC = () => {
     let totalCheckIns = 0;
 
     // 计算本月打卡次数（使用当月的数据）
-    if (diaryData?.list && diaryData.list.length > 0) {
-      const sortedDates = Object.keys(diariesByDate).sort((a, b) => b.localeCompare(a));
-      totalCheckIns = sortedDates.length;
+    if (diaryData?.pages) {
+      const allDiaries = diaryData.pages.flatMap((page) => page.list);
+      if (allDiaries.length > 0) {
+        const sortedDates = Object.keys(diariesByDate).sort((a, b) => b.localeCompare(a));
+        totalCheckIns = sortedDates.length;
+      }
     }
 
     return { totalCheckIns, currentStreak, maxStreak };

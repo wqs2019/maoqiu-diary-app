@@ -60,9 +60,10 @@ const PhotoWallScreen: React.FC = () => {
 
   const allMedia = useMemo(() => {
     const mediaList: PhotoItem[] = [];
-    data?.list?.forEach((d) => {
+    const diaries = data?.pages?.flatMap((page) => page.list) || [];
+    diaries.forEach((d: any) => {
       if (d.media) {
-        d.media.forEach((m) => {
+        d.media.forEach((m: any) => {
           mediaList.push({
             ...m,
             diaryId: d._id,
@@ -72,7 +73,7 @@ const PhotoWallScreen: React.FC = () => {
       }
     });
     return mediaList;
-  }, [data?.list]);
+  }, [data?.pages]);
 
   const { leftColumn, rightColumn } = useMemo(() => {
     const left: { item: PhotoItem; index: number; height: number }[] = [];

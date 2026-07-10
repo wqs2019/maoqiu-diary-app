@@ -112,7 +112,7 @@ const UserProfileScreen: React.FC = () => {
     viewerId: currentUser?._id,
   });
 
-  const diaries = diaryData?.list || [];
+  const diaries = diaryData?.pages?.flatMap((page) => page.list) || [];
   const likeMutation = useLikeDiary();
 
   const fetchProfile = useCallback(async () => {
