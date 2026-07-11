@@ -345,7 +345,7 @@ const CircleScreen: React.FC = () => {
             ) : !hasNextPage && diaries.length > 0 ? (
               <View style={{ paddingVertical: 20, alignItems: 'center' }}>
                 <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
-                  {t('circleScreen.noMoreData', { defaultValue: `已经到底啦，共 ${diaries.length} 条日记` })}
+                  {t('homeScreen.noMoreData', { total: diaries.length })}
                 </Text>
               </View>
             ) : null

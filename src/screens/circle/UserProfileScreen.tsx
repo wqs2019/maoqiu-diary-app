@@ -777,7 +777,7 @@ const UserProfileScreen: React.FC = () => {
               ) : !hasNextPage && displayedDiaries.length > 0 ? (
                 <View style={{ paddingVertical: 20, alignItems: 'center' }}>
                   <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
-                    {t('userProfileScreen.noMoreData', { defaultValue: `已经到底啦，共 ${displayedDiaries.length} 条日记` })}
+                    {t('homeScreen.noMoreData', { total: displayedDiaries.length })}
                   </Text>
                 </View>
               ) : null

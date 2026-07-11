@@ -716,7 +716,7 @@ const HomeScreen: React.FC = () => {
               onYearLayouts={handleYearLayout}
             />
             {isFetchingNextPage && (
-              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <View style={{ paddingTop: 0, paddingBottom: 20, marginTop: -10, alignItems: 'center' }}>
                 <ActivityIndicator size="small" color={currentHealingColors.pink[400]} />
               </View>
             )}

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { FlashList } from '@shopify/flash-list';
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -7,7 +8,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
   RefreshControl,
   Dimensions,
@@ -49,9 +49,8 @@ const PhotoWallScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const userId = user?._id;
 
-  const { data, isLoading, refetch, isRefetching } = useDiaryList({
-    page: 1,
-    pageSize: 1000, // 瀑布流尽量取全量数据
+  const { data, isLoading, refetch, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage } = useDiaryList({
+    pageSize: 20,
     scenario: scenario === 'all' ? undefined : scenario,
     userId,
   });
@@ -76,27 +75,6 @@ const PhotoWallScreen: React.FC = () => {
     return mediaList;
   }, [data?.pages]);
 
-  const { leftColumn, rightColumn } = useMemo(() => {
-    const left: { item: PhotoItem; index: number; height: number }[] = [];
-    const right: { item: PhotoItem; index: number; height: number }[] = [];
-
-    let leftHeight = 0;
-    let rightHeight = 0;
-
-    allMedia.forEach((item, index) => {
-      const h = getStableHeight(item.uri);
-      if (leftHeight <= rightHeight) {
-        left.push({ item, index, height: h });
-        leftHeight += h;
-      } else {
-        right.push({ item, index, height: h });
-        rightHeight += h;
-      }
-    });
-
-    return { leftColumn: left, rightColumn: right };
-  }, [allMedia]);
-
   const scenarioName =
     scenario === 'all' || !scenario
       ? t('photoWallScreen.allRecords')
@@ -109,48 +87,49 @@ const PhotoWallScreen: React.FC = () => {
     setPreviewVisible(true);
   };
 
-  const renderMediaItem = (itemData: { item: PhotoItem; index: number; height: number }) => {
-    const { item, index, height } = itemData;
+  const renderMediaItem = ({ item, index }: { item: PhotoItem; index: number }) => {
+    const height = getStableHeight(item.uri);
     return (
-      <TouchableOpacity
-        key={index}
-        activeOpacity={0.8}
-        onPress={() => {
-          handlePreview(index);
-        }}
-        style={[
-          styles.mediaCard,
-          {
-            height,
-            backgroundColor: isDark ? '#1E1E1E' : '#FFF',
-            shadowColor: isDark ? '#000' : '#000',
-          },
-        ]}
-      >
-        <LoadableImage
-          source={{ uri: getThumbnailUrl(item.thumbnail || item.uri, 400, 400) }}
-          style={styles.mediaImage}
-          resizeMode="cover"
-        />
-        {item.type === 'video' && (
-          <View style={styles.mediaOverlay}>
-            <Ionicons name="play" size={24} color="#FFF" />
-          </View>
-        )}
-        {item.type === 'livePhoto' && (
-          <View style={styles.liveBadge}>
-            <Ionicons name="aperture" size={12} color="#FFF" />
-            <Text style={styles.liveBadgeText}>{t('photoWallScreen.livePhoto')}</Text>
-          </View>
-        )}
+      <View style={{ padding: SPACING / 2 }}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => {
+            handlePreview(index);
+          }}
+          style={[
+            styles.mediaCard,
+            {
+              height,
+              backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+              shadowColor: isDark ? '#000' : '#000',
+            },
+          ]}
+        >
+          <LoadableImage
+            source={{ uri: getThumbnailUrl(item.thumbnail || item.uri, 400, 400) }}
+            style={styles.mediaImage}
+            resizeMode="cover"
+          />
+          {item.type === 'video' && (
+            <View style={styles.mediaOverlay}>
+              <Ionicons name="play" size={24} color="#FFF" />
+            </View>
+          )}
+          {item.type === 'livePhoto' && (
+            <View style={styles.liveBadge}>
+              <Ionicons name="aperture" size={12} color="#FFF" />
+              <Text style={styles.liveBadgeText}>{t('photoWallScreen.livePhoto')}</Text>
+            </View>
+          )}
 
-        {/* 日记标题 */}
-        <View style={styles.diaryTitleBadge}>
-          <Text style={styles.diaryTitleText} numberOfLines={1}>
-            {item.diaryTitle}
-          </Text>
-        </View>
-      </TouchableOpacity>
+          {/* 日记标题 */}
+          <View style={styles.diaryTitleBadge}>
+            <Text style={styles.diaryTitleText} numberOfLines={1}>
+              {item.diaryTitle}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -174,27 +153,47 @@ const PhotoWallScreen: React.FC = () => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        indicatorStyle={isDark ? 'white' : 'black'}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={HEALING_COLORS.pink[400]}
-          />
-        }
-      >
+      <View style={{ flex: 1 }}>
         {isLoading && !isRefetching ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={HEALING_COLORS.pink[400]} />
           </View>
         ) : allMedia.length > 0 ? (
-          <View style={styles.masonryContainer}>
-            <View style={styles.column}>{leftColumn.map(renderMediaItem)}</View>
-            <View style={styles.column}>{rightColumn.map(renderMediaItem)}</View>
-          </View>
+          <FlashList
+            data={allMedia}
+            renderItem={renderMediaItem}
+            numColumns={2}
+            masonry
+            contentContainerStyle={{ padding: SPACING / 2, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            indicatorStyle={isDark ? 'white' : 'black'}
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={refetch}
+                tintColor={HEALING_COLORS.pink[400]}
+              />
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <View style={{ paddingTop: 0, paddingBottom: 20, marginTop: 10, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={HEALING_COLORS.pink[400]} />
+                </View>
+              ) : !hasNextPage && allMedia.length > 0 ? (
+                <View style={{ paddingTop: 0, paddingBottom: 20, marginTop: 10, alignItems: 'center' }}>
+                  <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
+                    {t('homeScreen.noMoreData', { total: data?.pages?.[0]?.total || 0 })}
+                  </Text>
+                </View>
+              ) : null
+            }
+          />
         ) : (
           <View style={styles.emptyContainer}>
             <Ionicons name="images-outline" size={48} color={isDark ? '#444' : '#D1D5DB'} />
@@ -203,7 +202,7 @@ const PhotoWallScreen: React.FC = () => {
             </Text>
           </View>
         )}
-      </ScrollView>
+      </View>
 
       {allMedia.length > 0 && (
         <MediaPreviewer

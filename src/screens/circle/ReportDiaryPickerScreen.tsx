@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -31,6 +32,7 @@ const getReportDiaryTitle = (diary: Diary): string => {
 const ReportDiaryPickerScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { t } = useTranslation();
   const { userId, selectedDiaryId } = route.params || {};
   const { isDark } = useAppTheme();
   const currentUser = useAuthStore((state) => state.user);
@@ -138,7 +140,7 @@ const ReportDiaryPickerScreen: React.FC = () => {
           ) : !hasNextPage && diaries.length > 0 ? (
             <View style={{ paddingVertical: 20, alignItems: 'center' }}>
               <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
-                已经到底啦，共 {diaries.length} 条日记
+                {t('homeScreen.noMoreData', { total: diaries.length })}
               </Text>
             </View>
           ) : null
