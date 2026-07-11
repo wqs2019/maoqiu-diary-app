@@ -23,8 +23,7 @@ import { useDiaryList, useLikeDiary } from '@/hooks/useDiaryQuery';
 import { getNotifications } from '@/services/notificationService';
 import { useAuthStore } from '@/store/authStore';
 import { useNotificationStore } from '@/store/notificationStore';
-import { Diary } from '@/types';
-import { Notification } from '@/types';
+import { Diary, Notification } from '@/types';
 import FormatUtil from '@/utils/format';
 import { getThumbnailUrl } from '@/utils/image';
 
