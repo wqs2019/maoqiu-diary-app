@@ -20,6 +20,7 @@ import { useNotebookStore } from '../../store/notebookStore';
 import { useIsFocused } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
+import { getThumbnailUrl } from '../../utils/image';
 
 type MineScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -123,7 +124,7 @@ const MineScreen: React.FC = () => {
       {user?.profileBackground ? (
         <View style={[styles.headerBackgroundContainer, { height: 260 + insets.top }]}>
           <Image
-            source={{ uri: user.profileBackground }}
+            source={{ uri: getThumbnailUrl(user.profileBackground, 800, 600) }}
             style={styles.headerBackgroundImage}
           />
           {/* 半透明黑色遮罩，确保前景信息更清晰 */}
@@ -205,7 +206,7 @@ const MineScreen: React.FC = () => {
               <Image
                 source={
                   user?.avatar
-                    ? { uri: user.avatar }
+                    ? { uri: getThumbnailUrl(user.avatar, 200, 200) }
                     : require('../../../assets/logo_bg.png')
                 }
                 fadeDuration={0}

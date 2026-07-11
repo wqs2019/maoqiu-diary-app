@@ -33,6 +33,7 @@ import userService from '@/services/userService';
 import { useAuthStore } from '@/store/authStore';
 import { Diary } from '@/types';
 import { FormatUtil } from '@/utils/format';
+import { getThumbnailUrl } from '@/utils/image';
 
 const formatCount = (count: number | undefined): string => {
   if (!count) return '0';
@@ -453,7 +454,7 @@ const UserProfileScreen: React.FC = () => {
         <View style={styles.profileTop}>
           <View style={[styles.avatarContainer, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
             {profile.avatar ? (
-              <Image source={{ uri: profile.avatar }} style={styles.avatar} />
+              <Image source={{ uri: getThumbnailUrl(profile.avatar, 200, 200) }} style={styles.avatar} />
             ) : (
               <Image source={require('../../../assets/logo_bg.png')} style={styles.avatar} />
             )}
@@ -711,7 +712,7 @@ const UserProfileScreen: React.FC = () => {
       {hasBackground && (
         <View style={[styles.headerBackgroundContainer, { height: 220 + insets.top }]}>
           <Image
-            source={{ uri: profile.profileBackground }}
+            source={{ uri: getThumbnailUrl(profile.profileBackground, 800, 600) }}
             style={styles.headerBackgroundImage}
           />
           {/* 半透明黑色遮罩，确保前景信息更清晰 */}

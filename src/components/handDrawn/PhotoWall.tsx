@@ -43,6 +43,7 @@ export const ImageSkeleton = () => {
 
 // Component to handle individual image loading state
 export const LoadableImage = ({ source, style, resizeMode }: any) => {
+  console.log('source====>', source);
   const imageUri = typeof source === 'number' ? String(source) : source?.uri || '';
   const [isLoading, setIsLoading] = useState(!!imageUri);
 

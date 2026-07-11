@@ -26,6 +26,7 @@ import { useNotificationStore } from '@/store/notificationStore';
 import { Diary } from '@/types';
 import { Notification } from '@/types';
 import FormatUtil from '@/utils/format';
+import { getThumbnailUrl } from '@/utils/image';
 
 const { width } = Dimensions.get('window');
 const CONTENT_WIDTH = width; // full width
@@ -146,7 +147,7 @@ const CircleScreen: React.FC = () => {
               >
                 {item.authorInfo?.avatar ? (
                   <Image
-                    source={{ uri: item.authorInfo.avatar }}
+                    source={{ uri: getThumbnailUrl(item.authorInfo.avatar, 100, 100) }}
                     style={{ width: 40, height: 40, borderRadius: 20 }}
                   />
                 ) : (
@@ -294,7 +295,7 @@ const CircleScreen: React.FC = () => {
           <Image
             source={
               latestInteraction.senderInfo?.avatar
-                ? { uri: latestInteraction.senderInfo.avatar }
+                ? { uri: getThumbnailUrl(latestInteraction.senderInfo.avatar, 100, 100) }
                 : require('../../../assets/logo_bg.png')
             }
             style={[

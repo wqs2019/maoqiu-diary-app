@@ -22,7 +22,8 @@ import { getMoodConfig } from '../../config/statusConfig';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
-import { ScenarioType, MediaResource, Diary } from '../../types';
+import { ScenarioType, Diary, MediaResource } from '../../types';
+import { getThumbnailUrl } from '../../utils/image';
 
 const { width } = Dimensions.get('window');
 const GRID_SPACING = 12;
@@ -306,7 +307,7 @@ const CategoryScreen: React.FC = () => {
               style={styles.photoItem}
             >
               <LoadableImage
-                source={{ uri: media.thumbnail || media.uri }}
+                source={{ uri: getThumbnailUrl(media.thumbnail || media.uri, 300, 300) }}
                 style={styles.photoImage}
                 resizeMode="cover"
               />

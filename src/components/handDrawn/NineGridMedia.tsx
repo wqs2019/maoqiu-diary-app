@@ -9,6 +9,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 
 import { MediaResource } from '@/types';
+import { getThumbnailUrl } from '@/utils/image';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -92,7 +93,7 @@ export const NineGridMedia: React.FC<NineGridMediaProps> = ({
                 ]}
               >
                 <LoadableImage
-                  source={{ uri: mediaItem.thumbnail || mediaItem.uri }}
+                  source={{ uri: getThumbnailUrl(mediaItem.thumbnail || mediaItem.uri, 400, 400) }}
                   style={styles.mediaImage}
                   resizeMode="cover"
                 />

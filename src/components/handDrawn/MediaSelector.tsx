@@ -21,6 +21,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { imageService } from '../../services/imageService';
 import { useAuthStore } from '../../store/authStore';
 import { MediaResource } from '../../types';
+import { getThumbnailUrl } from '../../utils/image';
 
 interface MediaSelectorProps {
   media: MediaResource[];
@@ -569,7 +570,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         {item.type === 'image' || item.type === 'livePhoto' ? (
           <View style={{ flex: 1 }}>
             <Image
-              source={{ uri: item.uri }}
+              source={{ uri: getThumbnailUrl(item.uri, 200, 200) }}
               style={[
                 styles.mediaThumbnail,
                 isFailed && styles.mediaThumbnailFailed,
@@ -586,7 +587,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         ) : item.type === 'video' ? (
           <View style={styles.videoThumbnail}>
             <Image
-              source={{ uri: item.thumbnail || item.uri }}
+              source={{ uri: getThumbnailUrl(item.thumbnail || item.uri, 200, 200) }}
               style={[
                 styles.mediaThumbnail,
                 isFailed && styles.mediaThumbnailFailed,

@@ -20,6 +20,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList } from '../../hooks/useDiaryQuery';
 import { useAuthStore } from '../../store/authStore';
 import { ScenarioType, MediaResource } from '../../types';
+import { getThumbnailUrl } from '../../utils/image';
 
 const { width } = Dimensions.get('window');
 const SPACING = 8;
@@ -127,7 +128,7 @@ const PhotoWallScreen: React.FC = () => {
         ]}
       >
         <LoadableImage
-          source={{ uri: item.thumbnail || item.uri }}
+          source={{ uri: getThumbnailUrl(item.thumbnail || item.uri, 400, 400) }}
           style={styles.mediaImage}
           resizeMode="cover"
         />

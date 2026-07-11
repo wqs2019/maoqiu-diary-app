@@ -8,6 +8,7 @@ import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { TimelineItem } from '../../types';
+import { getThumbnailUrl } from '../../utils/image';
 
 interface DiaryCardProps {
   item: TimelineItem;
@@ -57,7 +58,7 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
       <View style={styles.topBar}>
         <View style={styles.dateContainer}>
           {item.authorInfo?.avatar ? (
-            <Image source={{ uri: item.authorInfo.avatar }} style={styles.authorAvatar} />
+            <Image source={{ uri: getThumbnailUrl(item.authorInfo.avatar, 100, 100) }} style={styles.authorAvatar} />
           ) : item.authorInfo?.nickname ? (
             <Ionicons
               name="person-circle-outline"
@@ -123,10 +124,13 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
             ) : (
               <Image
                 source={{
-                  uri:
+                  uri: getThumbnailUrl(
                     coverImage.type === 'video' && coverImage.thumbnail
                       ? coverImage.thumbnail
                       : coverImage.uri,
+                    300,
+                    300
+                  ),
                 }}
                 style={styles.coverImage}
                 resizeMode="cover"
