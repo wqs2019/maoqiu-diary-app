@@ -79,7 +79,7 @@ export interface ComponentProps {
 }
 
 // 场景类型
-export type ScenarioType = 'travel' | 'movie' | 'outing' | 'food' | 'daily' | 'special' | 'learning' | 'inspiration';
+export type ScenarioType = 'travel' | 'movie' | 'outing' | 'food' | 'daily' | 'special' | 'learning' | 'inspiration' | 'pet' | 'work' | 'fitness';
 
 // 心情类型
 export type MoodType = 'happy' | 'sad' | 'normal' | 'excited' | 'angry' | 'relaxed' | 'touched' | 'speechless';
@@ -101,7 +101,7 @@ export type TagType =
   | 'shopping';
 
 // 媒体资源类型
-export type MediaType = 'image' | 'livePhoto' | 'video';
+export type MediaType = 'image' | 'livePhoto' | 'video' | 'audio';
 
 // 上传状态
 export type UploadStatus = 'loading' | 'success' | 'fail';
@@ -185,8 +185,6 @@ export interface ScenarioTemplate {
   icon: string;
   color: string;
   placeholder: string;
-  prompts: string[];
-  fields: TemplateField[];
 }
 
 // 模板字段

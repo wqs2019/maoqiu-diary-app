@@ -284,6 +284,24 @@ export const SCENARIO_COLORS = {
     background: '#FFF3E0',
     icon: '💡',
   },
+  pet: {
+    primary: '#FF9F0A',
+    secondary: '#FFD699',
+    background: '#FFF6E5',
+    icon: '🐾',
+  },
+  work: {
+    primary: '#007AFF',
+    secondary: '#99D0FF',
+    background: '#F0F8FF',
+    icon: '💼',
+  },
+  fitness: {
+    primary: '#32ADE6',
+    secondary: '#B6E8FF',
+    background: '#F0F9FF',
+    icon: '🏃‍♂️',
+  },
 };
 
 // 深色模式适配

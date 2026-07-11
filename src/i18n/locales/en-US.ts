@@ -184,6 +184,7 @@ export default {
       afternoon: 'Good afternoon',
       evening: 'Good evening',
     },
+    noMoreData: 'No more data. Total {{total}} diaries',
   },
   onboarding: {
     slides: {

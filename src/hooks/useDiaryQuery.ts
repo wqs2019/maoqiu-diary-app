@@ -1,9 +1,9 @@
 // 日记相关的 React Query Hooks
 import React from 'react';
 
-import { useAppQuery, useAppMutation, useQueryClient, useIsMutating } from '../hooks/useQuery';
+import { useAppQuery, useAppMutation, useQueryClient, useIsMutating, useAppInfiniteQuery } from '../hooks/useQuery';
 import * as diaryApi from '../services/diaryService';
-import type { DiaryListParams } from '../services/diaryService';
+import type { DiaryListParams, DiaryListResponse } from '../services/diaryService';
 import { useAuthStore } from '../store/authStore';
 
 /**
@@ -21,16 +21,23 @@ import { useAuthStore } from '../store/authStore';
  * const { data, isLoading, error, refetch, fetchNextPage, hasNextPage } = useDiaryList({ page: 1, pageSize: 10 });
  */
 export const useDiaryList = (params: DiaryListParams = {}) => {
-  return useAppQuery(
+  return useAppInfiniteQuery<DiaryListResponse>(
     // 查询键：用于缓存和失效
     ['diaryList', params],
     // 查询函数：实际的数据获取
-    async () => {
-      const result = await diaryApi.getDiaryList(params);
+    async ({ pageParam = 1 }) => {
+      const result = await diaryApi.getDiaryList({ ...params, page: pageParam });
       return result;
     },
     {
       // 可选配置
+      initialPageParam: 1,
+      getNextPageParam: (lastPage) => {
+        if (lastPage.page * lastPage.pageSize < lastPage.total) {
+          return lastPage.page + 1;
+        }
+        return undefined;
+      },
       staleTime: 1000 * 60 * 1, // 1 分钟内数据不失效
       retry: 2, // 失败重试 2 次
       enabled:
@@ -79,8 +86,12 @@ export const useDiaryStats = (userId?: string) => {
     let badges = 1;
     let unlockedBadges: string[] = [];
 
-    if (allDiaryData?.list && allDiaryData.list.length > 0) {
-      totalDiaries = allDiaryData.total || allDiaryData.list.length;
+    // 处理 InfiniteData 结构
+    const allDiaries = (allDiaryData as any)?.pages?.flatMap((page: any) => page.list) || [];
+    const total = (allDiaryData as any)?.pages?.[0]?.total || 0;
+
+    if (allDiaries.length > 0) {
+      totalDiaries = total || allDiaries.length;
 
       const allDiariesMap: Record<string, boolean> = {};
       const uniqueMoods = new Set();
@@ -104,7 +115,7 @@ export const useDiaryStats = (userId?: string) => {
       let lastRainySnowyDate: Date | null = null;
 
       // 预处理排序以计算按时间连续的状态（升序，旧的在前）
-      const sortedDiaries = [...allDiaryData.list].sort((a: any, b: any) => {
+      const sortedDiaries = [...allDiaries].sort((a: any, b: any) => {
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 

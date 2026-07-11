@@ -179,7 +179,7 @@ export const CloudService = {
         ...options,
       });
 
-      console.log('[TCB] Function result received:', res);
+      // console.log('[TCB] Function result received:', res);
 
       // 将响应转换为纯 JSON 对象
       const responseData = res.result;

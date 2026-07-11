@@ -44,6 +44,7 @@ export interface AdminUserListItem {
   publicDiariesCount?: number;
   createdAt?: string | number | null;
   updatedAt?: string | number | null;
+  lastActiveAt?: number;
 }
 
 export interface AdminUserListResult {

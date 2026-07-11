@@ -26,6 +26,7 @@ import { useNotificationStore } from '@/store/notificationStore';
 import { Diary } from '@/types';
 import { Notification } from '@/types';
 import FormatUtil from '@/utils/format';
+import { getThumbnailUrl } from '@/utils/image';
 
 const { width } = Dimensions.get('window');
 const CONTENT_WIDTH = width; // full width
@@ -49,9 +50,9 @@ const CircleScreen: React.FC = () => {
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [latestInteraction, setLatestInteraction] = useState<CircleInteractionNotification | null>(null);
 
-  const { data, isLoading, refetch } = useDiaryList({
+  const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useDiaryList({
     page: 1,
-    pageSize: 100, // Fetch enough for now
+    pageSize: 20,
     isPublic: true, // Fetch public diaries
     viewerId: user?._id,
   });
@@ -94,7 +95,7 @@ const CircleScreen: React.FC = () => {
 
   const likeMutation = useLikeDiary();
 
-  const diaries = data?.list || [];
+  const diaries = data?.pages?.flatMap((page) => page.list) || [];
 
   const handleDiaryPress = (item: Diary) => {
     navigation.navigate('CircleDetail', { _id: item._id });
@@ -146,7 +147,7 @@ const CircleScreen: React.FC = () => {
               >
                 {item.authorInfo?.avatar ? (
                   <Image
-                    source={{ uri: item.authorInfo.avatar }}
+                    source={{ uri: getThumbnailUrl(item.authorInfo.avatar, 100, 100) }}
                     style={{ width: 40, height: 40, borderRadius: 20 }}
                   />
                 ) : (
@@ -294,7 +295,7 @@ const CircleScreen: React.FC = () => {
           <Image
             source={
               latestInteraction.senderInfo?.avatar
-                ? { uri: latestInteraction.senderInfo.avatar }
+                ? { uri: getThumbnailUrl(latestInteraction.senderInfo.avatar, 100, 100) }
                 : require('../../../assets/logo_bg.png')
             }
             style={[
@@ -330,6 +331,25 @@ const CircleScreen: React.FC = () => {
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={currentHealingColors.pink[400]} />
+              </View>
+            ) : !hasNextPage && diaries.length > 0 ? (
+              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
+                  {t('homeScreen.noMoreData', { total: diaries.length })}
+                </Text>
+              </View>
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               refreshing={isManualRefreshing}

@@ -23,6 +23,7 @@ import { useToast } from '../common/Toast';
 import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { Diary } from '../../types';
+import { getThumbnailUrl } from '../../utils/image';
 
 interface ShareCardModalProps {
   visible: boolean;
@@ -249,7 +250,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
                 ]}
               >
                 <Image
-                  source={{ uri: item.thumbnail || item.uri }}
+                  source={{ uri: getThumbnailUrl(item.thumbnail || item.uri, 300, 300) }}
                   style={styles.mediaImage}
                   resizeMode="cover"
                 />
@@ -267,7 +268,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ visible, diary, 
     return (
       <View style={styles.heroMediaCard}>
         <Image
-          source={{ uri: singleMedia.thumbnail || singleMedia.uri }}
+          source={{ uri: getThumbnailUrl(singleMedia.thumbnail || singleMedia.uri, 800, 800) }}
           style={styles.heroMediaImage}
           resizeMode="cover"
         />

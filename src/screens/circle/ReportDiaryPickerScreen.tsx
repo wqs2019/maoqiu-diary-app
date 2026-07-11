@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -31,19 +32,20 @@ const getReportDiaryTitle = (diary: Diary): string => {
 const ReportDiaryPickerScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { t } = useTranslation();
   const { userId, selectedDiaryId } = route.params || {};
   const { isDark } = useAppTheme();
   const currentUser = useAuthStore((state) => state.user);
 
-  const { data, isLoading, refetch, isRefetching } = useDiaryList({
+  const { data, isLoading, refetch, isRefetching, fetchNextPage, hasNextPage, isFetchingNextPage } = useDiaryList({
     page: 1,
-    pageSize: 100,
+    pageSize: 20,
     userId,
     isPublic: true,
     viewerId: currentUser?._id,
   });
 
-  const diaries = data?.list || [];
+  const diaries = data?.pages?.flatMap((page) => page.list) || [];
 
   const handleSelectDiary = (item: Diary) => {
     const state = navigation.getState();
@@ -124,6 +126,25 @@ const ReportDiaryPickerScreen: React.FC = () => {
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={HEALING_COLORS.pink[400]} />
+            </View>
+          ) : !hasNextPage && diaries.length > 0 ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
+                {t('homeScreen.noMoreData', { total: diaries.length })}
+              </Text>
+            </View>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}

@@ -65,7 +65,7 @@ const FavoritesScreen: React.FC = () => {
     };
   };
 
-  const timelineItems: TimelineItem[] = diaryList?.list?.map(convertDiaryToTimelineItem) || [];
+  const timelineItems: TimelineItem[] = diaryList?.pages?.flatMap((page) => page.list)?.map(convertDiaryToTimelineItem) || [];
   const favoriteCount = timelineItems.length;
   const coveredMonths = new Set(
     timelineItems.map((item) => {

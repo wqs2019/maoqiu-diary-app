@@ -15,11 +15,13 @@ import { useTranslation } from 'react-i18next';
 import { DraggableGrid } from 'react-native-draggable-grid';
 
 import { MediaPreviewer } from './MediaPreviewer';
+import { VoiceRecordModal } from './VoiceRecordModal';
 import { HEALING_COLORS } from '../../config/handDrawnTheme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { imageService } from '../../services/imageService';
 import { useAuthStore } from '../../store/authStore';
 import { MediaResource } from '../../types';
+import { getThumbnailUrl } from '../../utils/image';
 
 interface MediaSelectorProps {
   media: MediaResource[];
@@ -47,6 +49,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
   const isUploading = useRef(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [voiceModalVisible, setVoiceModalVisible] = useState(false);
   const { isDark } = useAppTheme();
   const { t } = useTranslation();
   const userId = useAuthStore((state) => state.user?._id);
@@ -160,6 +163,10 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
       {
         text: '🎬 视频',
         onPress: () => pickVideo(),
+      },
+      {
+        text: '🎤 录音',
+        onPress: () => setVoiceModalVisible(true),
       },
       {
         text: '取消',
@@ -295,6 +302,54 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
     await Promise.all(Array.from({ length: concurrency }, () => worker()));
 
     return uploadedMedia;
+  };
+
+  const handleRecordComplete = async (uri: string, duration: number) => {
+    setVoiceModalVisible(false);
+    if (media.length >= maxCount) {
+      Alert.alert('提示', `最多只能上传 ${maxCount} 个媒体文件`);
+      return;
+    }
+
+    const localMedia: MediaResource = {
+      type: 'audio',
+      uri,
+      duration,
+      mimeType: 'audio/m4a', // expo-av default on iOS is m4a
+      uploadStatus: 'loading',
+    };
+
+    let latestMediaState = [...media, localMedia];
+    onMediaChange(latestMediaState);
+    isUploading.current = true;
+
+    try {
+      const uploadedItem = await uploadMediaItem(localMedia);
+      const newMedia = [...latestMediaState];
+      const targetIndex = newMedia.findIndex((m) => m.uri === uri);
+      if (targetIndex >= 0) {
+        newMedia[targetIndex] = {
+          ...uploadedItem,
+          uploadStatus: uploadedItem.uploadError ? 'fail' : 'success',
+        };
+      }
+      onMediaChange(newMedia);
+    } catch (err: any) {
+      console.error('[MediaUpload] Audio upload failed:', err);
+      const newMedia = [...latestMediaState];
+      const targetIndex = newMedia.findIndex((m) => m.uri === uri);
+      if (targetIndex >= 0) {
+        newMedia[targetIndex] = {
+          ...localMedia,
+          uploadStatus: 'fail',
+          subUploadStatus: 'unknown',
+          uploadError: err?.message || '上传异常',
+        };
+      }
+      onMediaChange(newMedia);
+    } finally {
+      isUploading.current = false;
+    }
   };
 
   const pickImages = async () => {
@@ -515,7 +570,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         {item.type === 'image' || item.type === 'livePhoto' ? (
           <View style={{ flex: 1 }}>
             <Image
-              source={{ uri: item.uri }}
+              source={{ uri: getThumbnailUrl(item.uri, 200, 200) }}
               style={[
                 styles.mediaThumbnail,
                 isFailed && styles.mediaThumbnailFailed,
@@ -532,7 +587,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         ) : item.type === 'video' ? (
           <View style={styles.videoThumbnail}>
             <Image
-              source={{ uri: item.thumbnail || item.uri }}
+              source={{ uri: getThumbnailUrl(item.thumbnail || item.uri, 200, 200) }}
               style={[
                 styles.mediaThumbnail,
                 isFailed && styles.mediaThumbnailFailed,
@@ -545,6 +600,14 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
             </View>
             <View style={styles.videoIconOverlay}>
               <Ionicons name="play-circle" size={40} color="rgba(255,255,255,0.8)" />
+            </View>
+          </View>
+        ) : item.type === 'audio' ? (
+          <View style={[styles.videoThumbnail, { backgroundColor: isDark ? '#333' : '#F0F0F0', justifyContent: 'center', alignItems: 'center' }]}>
+            <Ionicons name="mic" size={40} color={isDark ? '#888' : '#CCC'} />
+            <View style={styles.videoDurationBadge}>
+              <Ionicons name="time" size={12} color="#FFF" />
+              <Text style={styles.videoDurationText}>{formatDuration(item.duration || 0)}</Text>
             </View>
           </View>
         ) : null}
@@ -576,7 +639,7 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         {/* 类型标识 */}
         <View style={styles.mediaTypeBadge}>
           <Text style={styles.mediaTypeText}>
-            {item.type === 'image' ? '📷' : item.type === 'video' ? '🎬' : '📹'}
+            {item.type === 'image' ? '📷' : item.type === 'video' ? '🎬' : item.type === 'audio' ? '🎤' : '📹'}
           </Text>
         </View>
 
@@ -718,6 +781,12 @@ export const MediaSelector: React.FC<MediaSelectorProps> = ({
         onClose={() => {
           setPreviewVisible(false);
         }}
+      />
+
+      <VoiceRecordModal
+        visible={voiceModalVisible}
+        onClose={() => setVoiceModalVisible(false)}
+        onRecordComplete={handleRecordComplete}
       />
     </View>
   );

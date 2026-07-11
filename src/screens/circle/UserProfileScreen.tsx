@@ -33,6 +33,7 @@ import userService from '@/services/userService';
 import { useAuthStore } from '@/store/authStore';
 import { Diary } from '@/types';
 import { FormatUtil } from '@/utils/format';
+import { getThumbnailUrl } from '@/utils/image';
 
 const formatCount = (count: number | undefined): string => {
   if (!count) return '0';
@@ -102,9 +103,9 @@ const UserProfileScreen: React.FC = () => {
   // Tab 状态：'public' | 'commented' | 'liked'
   const [activeTab, setActiveTab] = useState<'public' | 'commented' | 'liked'>('public');
 
-  const { data: diaryData, isLoading: diaryLoading, refetch } = useDiaryList({
+  const { data: diaryData, isLoading: diaryLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useDiaryList({
     page: 1,
-    pageSize: 100,
+    pageSize: 20,
     userId: activeTab === 'public' ? targetUserId : undefined,
     likedByUserId: activeTab === 'liked' ? targetUserId : undefined,
     commentedByUserId: activeTab === 'commented' ? targetUserId : undefined,
@@ -112,7 +113,7 @@ const UserProfileScreen: React.FC = () => {
     viewerId: currentUser?._id,
   });
 
-  const diaries = diaryData?.list || [];
+  const diaries = diaryData?.pages?.flatMap((page) => page.list) || [];
   const likeMutation = useLikeDiary();
 
   const fetchProfile = useCallback(async () => {
@@ -453,7 +454,7 @@ const UserProfileScreen: React.FC = () => {
         <View style={styles.profileTop}>
           <View style={[styles.avatarContainer, { backgroundColor: isDark ? '#333' : '#F3F4F6' }]}>
             {profile.avatar ? (
-              <Image source={{ uri: profile.avatar }} style={styles.avatar} />
+              <Image source={{ uri: getThumbnailUrl(profile.avatar, 200, 200) }} style={styles.avatar} />
             ) : (
               <Image source={require('../../../assets/logo_bg.png')} style={styles.avatar} />
             )}
@@ -711,7 +712,7 @@ const UserProfileScreen: React.FC = () => {
       {hasBackground && (
         <View style={[styles.headerBackgroundContainer, { height: 220 + insets.top }]}>
           <Image
-            source={{ uri: profile.profileBackground }}
+            source={{ uri: getThumbnailUrl(profile.profileBackground, 800, 600) }}
             style={styles.headerBackgroundImage}
           />
           {/* 半透明黑色遮罩，确保前景信息更清晰 */}
@@ -755,12 +756,31 @@ const UserProfileScreen: React.FC = () => {
               (diaryLoading || displayedDiaries.length === 0) && styles.listContentWhenEmpty,
             ]}
             showsVerticalScrollIndicator={false}
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.5}
             refreshControl={
               <RefreshControl
                 refreshing={isManualRefreshing}
                 onRefresh={onRefresh}
                 tintColor={HEALING_COLORS.pink[400]}
               />
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={HEALING_COLORS.pink[400]} />
+                </View>
+              ) : !hasNextPage && displayedDiaries.length > 0 ? (
+                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                  <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
+                    {t('homeScreen.noMoreData', { total: displayedDiaries.length })}
+                  </Text>
+                </View>
+              ) : null
             }
             ListEmptyComponent={
               diaryLoading ? (

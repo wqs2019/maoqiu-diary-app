@@ -14,10 +14,10 @@ import {
   Animated,
   TextInput,
   Dimensions,
-  KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -133,6 +133,9 @@ const HomeScreen: React.FC = () => {
     isLoading,
     error,
     refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useDiaryList({
     page: 1,
     pageSize: 20,
@@ -146,6 +149,16 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     if (!user) {
       fetchUserInfo();
+    } else if (user._id) {
+      // 记录用户活跃时间
+      const now = Date.now();
+      // 如果距离上次记录超过 5 分钟，则更新，避免频繁请求
+      if (!user.lastActiveAt || now - user.lastActiveAt > 5 * 60 * 1000) {
+        console.log('Updating lastActiveAt for user:', user._id, now);
+        useAuthStore.getState().updateProfile(user._id, { lastActiveAt: now }).catch(e => {
+          console.log('Failed to update lastActiveAt', e);
+        });
+      }
     }
     // 首页挂载时检查更新
     const checkUpdate = async () => {
@@ -290,7 +303,7 @@ const HomeScreen: React.FC = () => {
   };
 
   // 从云端获取的时间轴数据
-  const timelineItems: TimelineItem[] = diaryList?.list?.map(convertDiaryToTimelineItem) || [];
+  const timelineItems: TimelineItem[] = diaryList?.pages?.flatMap((page) => page.list)?.map(convertDiaryToTimelineItem) || [];
   const selectedScenarioTemplate = selectedScenario ? SCENARIO_TEMPLATES[selectedScenario] : undefined;
 
   // 获取所有唯一且降序排列的年份
@@ -639,6 +652,13 @@ const HomeScreen: React.FC = () => {
           const layoutHeight = e.nativeEvent.layoutMeasurement.height;
           const contentHeight = e.nativeEvent.contentSize.height;
 
+          // 触底加载更多
+          if (offsetY + layoutHeight >= contentHeight - 50) {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }
+
           let currentYear = availableYears[0];
 
           // 如果滚动到了底部，直接选中最后一个年份
@@ -695,6 +715,18 @@ const HomeScreen: React.FC = () => {
               onItemPress={handleTimelineItemPress}
               onYearLayouts={handleYearLayout}
             />
+            {isFetchingNextPage && (
+              <View style={{ paddingTop: 0, paddingBottom: 20, marginTop: -10, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={currentHealingColors.pink[400]} />
+              </View>
+            )}
+            {!hasNextPage && timelineItems.length > 0 && (
+              <View style={{ paddingTop: 0, paddingBottom: 30, marginTop: -10, alignItems: 'center' }}>
+                <Text style={{ color: isDark ? '#666' : '#999', fontSize: 12 }}>
+                  {t('homeScreen.noMoreData', { total: timelineItems.length })}
+                </Text>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -782,7 +814,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingBottom: 100,
     paddingTop: 10,
   },
   header: {

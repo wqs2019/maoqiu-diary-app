@@ -15,10 +15,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Modal } from '../../components/common/Modal';
 import { HAND_DRAWN_STYLES, HEALING_COLORS, DARK_HEALING_COLORS } from '../../config/handDrawnTheme';
-import { getMoodConfig } from '../../config/statusConfig';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { useDiaryList, useDiaryStats } from '../../hooks/useDiaryQuery';
+import { Diary } from '../../types';
 import { useAuthStore } from '../../store/authStore';
+import { getThumbnailUrl } from '../../utils/image';
 
 const CalendarScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -67,8 +68,9 @@ const CalendarScreen: React.FC = () => {
   // 处理当前月份的日记数据，按日期（YYYY-MM-DD）分组
   const diariesByDate = useMemo(() => {
     const map: Record<string, any> = {};
-    if (diaryData?.list) {
-      diaryData.list.forEach((diary: any) => {
+    if (diaryData?.pages) {
+      const allDiaries = diaryData.pages.flatMap((page) => page.list);
+      allDiaries.forEach((diary: Diary) => {
         // 严格使用用户在写日记时选择的日期 date
         const d = new Date(diary.date);
         const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
@@ -123,9 +125,12 @@ const CalendarScreen: React.FC = () => {
     let totalCheckIns = 0;
 
     // 计算本月打卡次数（使用当月的数据）
-    if (diaryData?.list && diaryData.list.length > 0) {
-      const sortedDates = Object.keys(diariesByDate).sort((a, b) => b.localeCompare(a));
-      totalCheckIns = sortedDates.length;
+    if (diaryData?.pages) {
+      const allDiaries = diaryData.pages.flatMap((page) => page.list);
+      if (allDiaries.length > 0) {
+        const sortedDates = Object.keys(diariesByDate).sort((a, b) => b.localeCompare(a));
+        totalCheckIns = sortedDates.length;
+      }
     }
 
     return { totalCheckIns, currentStreak, maxStreak };
@@ -300,11 +305,15 @@ const CalendarScreen: React.FC = () => {
                   new Date().getMonth() === currentDate.getMonth() &&
                   new Date().getFullYear() === currentDate.getFullYear();
 
-                // 如果有日记，展示第一篇的心情emoji
-                const moodEmoji =
-                  hasDiary && item.diaries[0].mood
-                    ? getMoodConfig(item.diaries[0].mood).emoji
-                    : '🐾';
+                // 如果有日记，展示第一篇的第一张图片/视频缩略图，没有则展示默认图
+                let coverImageUrl = null;
+                if (hasDiary) {
+                  const firstDiary = item.diaries[0];
+                  if (firstDiary.media && firstDiary.media.length > 0) {
+                    const firstMedia = firstDiary.media[0];
+                    coverImageUrl = firstMedia.thumbnail || firstMedia.uri;
+                  }
+                }
 
                 return (
                   <TouchableOpacity
@@ -324,23 +333,31 @@ const CalendarScreen: React.FC = () => {
                   >
                     <View
                       style={[
-                        styles.dayCircle,
+                        styles.dayBox,
                         isToday &&
                           !hasDiary && [
-                            styles.todayCircle,
+                            styles.todayBox,
                             {
                               backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50],
                               borderColor: isDark ? '#4A2533' : currentHealingColors.pink[300],
                             },
                           ],
                         hasDiary && [
-                          styles.checkedCircle,
+                          styles.checkedBox,
                           { backgroundColor: isDark ? '#2C1B24' : currentHealingColors.pink[50] },
                         ],
                       ]}
                     >
                       {hasDiary ? (
-                        <Text style={styles.dayEmoji}>{moodEmoji}</Text>
+                        <Image
+                            source={
+                              coverImageUrl
+                                ? { uri: getThumbnailUrl(coverImageUrl, 100, 100) }
+                                : require('../../../assets/logo_bg.png')
+                            }
+                            style={{ width: 44, height: 44, borderRadius: 10 }}
+                            resizeMode="cover"
+                          />
                       ) : (
                         <Text
                           style={[
@@ -593,17 +610,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  dayCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  dayBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  todayCircle: {
+  todayBox: {
     borderWidth: 2,
   },
-  checkedCircle: {},
+  checkedBox: {},
   dayText: {
     fontSize: 15,
     fontWeight: '500',

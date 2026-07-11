@@ -31,6 +31,7 @@ export interface UserInfo {
   isVip?: VipInfo;
   aiChatUsage?: { date: string; count: number };
   createdAt?: string | number;
+  lastActiveAt?: number;
   biometricEnabled?: boolean;
   hideCircleTab?: boolean;
   profileBackground?: string;
@@ -180,7 +181,7 @@ export class AuthService {
       const result = response;
       if (result?.code === 0 && result.data?.user) {
         const user = result.data.user;
-        console.log('Fetched user from server:', user);
+        // console.log('Fetched user from server:', user);
         await this.saveUserInfo(user);
         return user;
       }

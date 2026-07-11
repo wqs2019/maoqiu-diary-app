@@ -8,6 +8,7 @@ import { SCENARIO_TEMPLATES } from '../../config/scenarioTemplates';
 import { getMoodConfig, getWeatherConfig } from '../../config/statusConfig';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { TimelineItem } from '../../types';
+import { getThumbnailUrl } from '../../utils/image';
 
 interface DiaryCardProps {
   item: TimelineItem;
@@ -57,7 +58,7 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
       <View style={styles.topBar}>
         <View style={styles.dateContainer}>
           {item.authorInfo?.avatar ? (
-            <Image source={{ uri: item.authorInfo.avatar }} style={styles.authorAvatar} />
+            <Image source={{ uri: getThumbnailUrl(item.authorInfo.avatar, 100, 100) }} style={styles.authorAvatar} />
           ) : item.authorInfo?.nickname ? (
             <Ionicons
               name="person-circle-outline"
@@ -116,16 +117,25 @@ export const DiaryCard: React.FC<DiaryCardProps> = ({ item, onPress }) => {
         {/* 封面图片：放置在右侧 */}
         {coverImage && (
           <View style={[styles.imageWrapper, { backgroundColor: isDark ? '#333' : '#F5F5F5' }]}>
-            <Image
-              source={{
-                uri:
-                  coverImage.type === 'video' && coverImage.thumbnail
-                    ? coverImage.thumbnail
-                    : coverImage.uri,
-              }}
-              style={styles.coverImage}
-              resizeMode="cover"
-            />
+            {coverImage.type === 'audio' ? (
+              <View style={[styles.coverImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#444' : HEALING_COLORS.pink[50] }]}>
+                <Ionicons name="mic" size={32} color={isDark ? '#AAA' : HEALING_COLORS.pink[400]} />
+              </View>
+            ) : (
+              <Image
+                source={{
+                  uri: getThumbnailUrl(
+                    coverImage.type === 'video' && coverImage.thumbnail
+                      ? coverImage.thumbnail
+                      : coverImage.uri,
+                    300,
+                    300
+                  ),
+                }}
+                style={styles.coverImage}
+                resizeMode="cover"
+              />
+            )}
             {coverImage.type === 'video' && (
               <View style={styles.playIconOverlay}>
                 <Ionicons name="play-circle" size={24} color="rgba(255,255,255,0.9)" />

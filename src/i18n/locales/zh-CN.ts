@@ -182,11 +182,12 @@ export default {
     guestName: '毛球',
     greetingFormat: '{{name}}，{{timeGreeting}}',
     timeGreetings: {
-      lateNight: '凌晨好',
-      morning: '上午好',
-      afternoon: '下午好',
-      evening: '晚上好',
+      lateNight: '凌晨好呀～',
+      morning: '上午好呀～',
+      afternoon: '下午好呀～',
+      evening: '晚上好呀～',
     },
+    noMoreData: '已经到底啦，共 {{total}} 条日记～',
   },
   onboarding: {
     slides: {
