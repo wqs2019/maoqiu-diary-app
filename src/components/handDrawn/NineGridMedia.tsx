@@ -6,7 +6,6 @@ import { LoadableImage } from './PhotoWall';
 import { MediaPreviewer } from './MediaPreviewer';
 import { InlineAudioPlayer } from './InlineAudioPlayer';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { HEALING_COLORS } from '../../config/handDrawnTheme';
 
 import { MediaResource } from '@/types';
 import { getThumbnailUrl } from '@/utils/image';
@@ -20,14 +19,6 @@ interface NineGridMediaProps {
 }
 
 const IMAGE_MARGIN = 4;
-
-const formatDuration = (ms: number) => {
-  if (!ms || isNaN(ms)) return '00:00';
-  const totalSeconds = Math.floor(ms / 1000);
-  const m = Math.floor(totalSeconds / 60);
-  const s = Math.floor(totalSeconds % 60);
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-};
 
 /**
  * 9宫格图片组件
