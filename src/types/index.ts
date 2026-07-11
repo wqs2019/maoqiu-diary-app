@@ -185,8 +185,6 @@ export interface ScenarioTemplate {
   icon: string;
   color: string;
   placeholder: string;
-  prompts: string[];
-  fields: TemplateField[];
 }
 
 // 模板字段
