@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   View,
@@ -52,8 +52,14 @@ const HomeScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [yearLayouts, setYearLayouts] = useState<Record<string, number>>({});
+  const yearLayoutsRef = useRef<Record<string, number>>({});
   const scrollViewRef = useRef<ScrollView>(null);
   const [activeYear, setActiveYear] = useState<string | null>(null);
+  const [pendingYearScroll, setPendingYearScroll] = useState<string | null>(null);
+  const pendingYearScrollRef = useRef<string | null>(null);
+  const hasNextPageRef = useRef(false);
+  const isFetchingNextPageRef = useRef(false);
+  const isJumpLoadingRef = useRef(false);
   
   // 更新弹窗状态
   const [updateInfo, setUpdateInfo] = useState<{ visible: boolean; currentVersion: string; latestVersion: string }>({
@@ -303,37 +309,144 @@ const HomeScreen: React.FC = () => {
   };
 
   // 从云端获取的时间轴数据
-  const timelineItems: TimelineItem[] = diaryList?.pages?.flatMap((page) => page.list)?.map(convertDiaryToTimelineItem) || [];
+  const timelineItems: TimelineItem[] = useMemo(
+    () => diaryList?.pages?.flatMap((page) => page.list)?.map(convertDiaryToTimelineItem) || [],
+    [diaryList]
+  );
   const selectedScenarioTemplate = selectedScenario ? SCENARIO_TEMPLATES[selectedScenario] : undefined;
 
-  // 获取所有唯一且降序排列的年份
-  const availableYears = Array.from(
-    new Set(timelineItems.map((item) => new Date(item.date).getFullYear().toString()))
-  ).sort((a, b) => b.localeCompare(a));
+  const timelineYears = useMemo(
+    () =>
+      Array.from(new Set(timelineItems.map((item) => new Date(item.date).getFullYear().toString()))).sort((a, b) =>
+        b.localeCompare(a)
+      ),
+    [timelineItems]
+  );
 
-  // 如果没有 activeYear 且有数据，默认选中最新的年份
-  if (availableYears.length > 0 && activeYear === null) {
-    setActiveYear(availableYears[0]);
-  }
+  // 优先使用服务端返回的完整年份元数据；缺省时回退到当前已渲染时间轴里的年份。
+  const availableYears = diaryList?.pages?.[0]?.availableYears?.length
+    ? diaryList.pages[0].availableYears
+    : timelineYears;
+
+  useEffect(() => {
+    setYearLayouts({});
+    setPendingYearScroll(null);
+    yearLayoutsRef.current = {};
+    pendingYearScrollRef.current = null;
+  }, [currentNotebook._id, selectedScenario, debouncedSearchQuery, userId]);
+
+  useEffect(() => {
+    yearLayoutsRef.current = yearLayouts;
+  }, [yearLayouts]);
+
+  useEffect(() => {
+    pendingYearScrollRef.current = pendingYearScroll;
+  }, [pendingYearScroll]);
+
+  useEffect(() => {
+    hasNextPageRef.current = !!hasNextPage;
+  }, [hasNextPage]);
+
+  useEffect(() => {
+    isFetchingNextPageRef.current = isFetchingNextPage;
+  }, [isFetchingNextPage]);
+
+  useEffect(() => {
+    if (availableYears.length === 0) {
+      if (activeYear !== null) {
+        setActiveYear(null);
+      }
+      return;
+    }
+
+    if (!activeYear || !availableYears.includes(activeYear)) {
+      setActiveYear(availableYears[0]);
+    }
+  }, [availableYears, activeYear]);
 
   const handleYearLayout = (year: string, y: number) => {
     setYearLayouts((prev) => ({ ...prev, [year]: y }));
   };
 
-  const handleYearPress = (year: string) => {
-    setActiveYear(year);
-    const targetY = yearLayouts[year];
-    if (targetY !== undefined && scrollViewRef.current) {
+  const scrollToYear = useCallback(
+    (year: string) => {
+      const targetY = yearLayoutsRef.current[year];
+      if (targetY === undefined || !scrollViewRef.current) {
+        return false;
+      }
+
       isProgrammaticScroll.current = true;
       scrollViewRef.current.scrollTo({ y: targetY, animated: true });
 
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-      // 动画大约需要 300-500ms，之后释放锁定
       scrollTimeout.current = setTimeout(() => {
         isProgrammaticScroll.current = false;
       }, 500);
+
+      return true;
+    },
+    []
+  );
+
+  const handleYearPress = useCallback(
+    async (year: string) => {
+      setActiveYear(year);
+      setPendingYearScroll(year);
+      pendingYearScrollRef.current = year;
+
+      if (scrollToYear(year)) {
+        setPendingYearScroll(null);
+        pendingYearScrollRef.current = null;
+        return;
+      }
+
+      if (isJumpLoadingRef.current) {
+        return;
+      }
+
+      isJumpLoadingRef.current = true;
+
+      try {
+        while (pendingYearScrollRef.current) {
+          const targetYear = pendingYearScrollRef.current;
+
+          if (scrollToYear(targetYear)) {
+            setPendingYearScroll(null);
+            pendingYearScrollRef.current = null;
+            return;
+          }
+
+          if (!hasNextPageRef.current) {
+            setPendingYearScroll(null);
+            pendingYearScrollRef.current = null;
+            return;
+          }
+
+          if (isFetchingNextPageRef.current) {
+            await new Promise((resolve) => setTimeout(resolve, 80));
+            continue;
+          }
+
+          await fetchNextPage();
+          await new Promise((resolve) => setTimeout(resolve, 80));
+        }
+      } finally {
+        isJumpLoadingRef.current = false;
+      }
+    },
+    [fetchNextPage, scrollToYear]
+  );
+
+  useEffect(() => {
+    if (!pendingYearScroll) {
+      return;
     }
-  };
+
+    if (scrollToYear(pendingYearScroll)) {
+      setPendingYearScroll(null);
+      pendingYearScrollRef.current = null;
+    }
+  }, [pendingYearScroll, scrollToYear]);
 
   return (
     <View
@@ -657,6 +770,10 @@ const HomeScreen: React.FC = () => {
             if (hasNextPage && !isFetchingNextPage) {
               fetchNextPage();
             }
+          }
+
+          if (availableYears.length === 0) {
+            return;
           }
 
           let currentYear = availableYears[0];

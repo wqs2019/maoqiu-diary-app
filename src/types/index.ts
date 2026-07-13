@@ -175,6 +175,7 @@ export interface DiaryListResponse {
   total: number;
   page: number;
   pageSize: number;
+  availableYears: string[];
 }
 
 // 场景模板

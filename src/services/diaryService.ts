@@ -62,7 +62,8 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
     }
   );
 
-  // CloudService.callFunction 会把 result.data 也就是 { success: true, data: { list, total, page, pageSize } }
+  // CloudService.callFunction 会把 result.data 也就是
+  // { success: true, data: { list, total, page, pageSize, availableYears } }
   // 或者 { code: 0, message: '', data: { success: true, data: ... } } 返回给我们
   const cloudFunctionResult = result.data;
 
@@ -86,6 +87,7 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
     total: 0,
     page: params.page || 1,
     pageSize: params.pageSize || 10,
+    availableYears: [],
   };
 };
 

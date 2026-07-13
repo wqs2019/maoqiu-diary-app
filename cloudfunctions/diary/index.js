@@ -8,6 +8,7 @@ const app = cloud.init({
 });
 const db = app.database();
 const _ = db.command;
+const $ = db.command.aggregate;
 const REVIEWABLE_FEEDBACK_TYPE = 'report_user';
 const HIDDEN_MODERATION_STATUSES = ['violation', 'pending_recheck'];
 const CURRENT_ENV_ID = process.env.TCB_ENV || 'maoqiu-diary-app-2fpzvwp2e01dbaf';
@@ -290,6 +291,28 @@ const backfillPublicPublishedAtForLegacyDiaries = async () => {
 const deleteDiaryMediaFiles = async (diary) => {
   const fileList = collectDiaryMediaFileList(diary);
   await deleteDiaryMediaFileList(fileList);
+};
+
+const getAvailableYearsForQuery = async (query) => {
+  const aggregationResult = await diariesCollection
+    .aggregate()
+    .match(query || {})
+    .project({
+      year: $.substrBytes([$.ifNull(['$date', '$createdAt']), 0, 4]),
+    })
+    .group({
+      _id: '$year',
+    })
+    .sort({
+      _id: -1,
+    })
+    .end();
+
+  const groupedYears = aggregationResult.list || aggregationResult.data || [];
+
+  return groupedYears
+    .map((item) => item && item._id)
+    .filter((year) => typeof year === 'string' && /^\d{4}$/.test(year));
 };
 
 const createDiaryInteractionNotification = async ({
@@ -1110,8 +1133,7 @@ const getDiaryList = async (data) => {
     }
 
     // 获取数据
-    const result = await db
-      .collection('diaries')
+    const result = await diariesCollection
       .where(finalQuery)
       .orderBy(sortField, 'desc')
       .skip(skip)
@@ -1125,8 +1147,11 @@ const getDiaryList = async (data) => {
     }));
     const populatedList = await populateUserInfo(filteredList, db);
 
-    // 获取总数
-    const countResult = await diariesCollection.where(finalQuery).count();
+    // 获取总数和年份元数据
+    const [countResult, availableYears] = await Promise.all([
+      diariesCollection.where(finalQuery).count(),
+      getAvailableYearsForQuery(finalQuery),
+    ]);
 
     return {
       success: true,
@@ -1135,6 +1160,7 @@ const getDiaryList = async (data) => {
         total: countResult.total,
         page,
         pageSize,
+        availableYears,
       },
     };
   } catch (error) {
