@@ -349,15 +349,28 @@ const CalendarScreen: React.FC = () => {
                       ]}
                     >
                       {hasDiary ? (
-                        <Image
+                        <>
+                          <Image
                             source={
                               coverImageUrl
                                 ? { uri: getThumbnailUrl(coverImageUrl, 100, 100) }
                                 : require('../../../assets/logo_bg.png')
                             }
-                            style={{ width: 44, height: 44, borderRadius: 10 }}
+                            style={styles.diaryCover}
                             resizeMode="cover"
                           />
+                          <Text
+                            style={[
+                              styles.diaryDayLabel,
+                              { color: '#FFFFFF' },
+                              isToday && {
+                                color: '#FFFFFF',
+                              },
+                            ]}
+                          >
+                            {item.day}
+                          </Text>
+                        </>
                       ) : (
                         <Text
                           style={[
@@ -616,6 +629,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   todayBox: {
     borderWidth: 2,
@@ -627,6 +641,22 @@ const styles = StyleSheet.create({
   },
   todayText: {
     fontWeight: '700',
+  },
+  diaryDayLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 18,
+    zIndex: 1,
+  },
+  diaryCover: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.75,
   },
   dayEmoji: {
     fontSize: 18,
