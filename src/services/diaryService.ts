@@ -8,6 +8,7 @@ export interface DiaryListParams {
   page?: number;
   pageSize?: number;
   notebookId?: string;
+  includeSharedAccessible?: boolean;
   mood?: MoodType;
   scenario?: ScenarioType;
   startDate?: string;
@@ -46,6 +47,7 @@ export const getDiaryList = async (params: DiaryListParams): Promise<DiaryListRe
         page: params.page || 1,
         pageSize: params.pageSize || 10,
         notebookId: params.notebookId,
+        includeSharedAccessible: params.includeSharedAccessible,
         mood: params.mood,
         scenario: params.scenario,
         startDate: params.startDate,

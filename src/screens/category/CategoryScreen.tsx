@@ -31,11 +31,31 @@ const GRID_SPACING = 12;
 const GRID_ITEM_WIDTH = Math.floor((width - GRID_SPACING * 5) / 4);
 const PHOTO_GRID_SPACING = 8;
 const PHOTO_SIZE = Math.floor((width - GRID_SPACING * 2 - 24 - PHOTO_GRID_SPACING * 2) / 3);
+const HEATMAP_WEEKS = 24;
+const HEATMAP_DAYS = 7;
+const HEATMAP_CELL_SIZE = 14;
+const HEATMAP_CELL_GAP = 1;
+
+const formatDateKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(
+    2,
+    '0'
+  )}`;
+
+const getHeatLevel = (count: number, maxCount: number) => {
+  if (count <= 0 || maxCount <= 0) return 0;
+
+  const ratio = count / maxCount;
+  if (ratio >= 0.85) return 4;
+  if (ratio >= 0.6) return 3;
+  if (ratio >= 0.3) return 2;
+  return 1;
+};
 
 const CategoryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | 'all'>('all');
   const { isDark } = useAppTheme();
 
@@ -44,7 +64,7 @@ const CategoryScreen: React.FC = () => {
 
   const { data, isLoading, refetch, isRefetching } = useDiaryList({
     page: 1,
-    pageSize: 100, // 获取较多数据以支持统计
+    pageSize: 300, // 获取更多数据以支持统计和热力图
     scenario: selectedScenario === 'all' ? undefined : selectedScenario,
     userId,
   });
@@ -56,10 +76,27 @@ const CategoryScreen: React.FC = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
 
+  const monthFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(i18n.language, {
+        month: 'short',
+      }),
+    [i18n.language]
+  );
+
+  const weekdayFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(i18n.language, {
+        weekday: 'narrow',
+      }),
+    [i18n.language]
+  );
+
   // 处理统计和媒体数据
-  const { allMedia, moodStats } = useMemo(() => {
+  const { allMedia, moodStats, heatmapWeeks, heatmapSummary } = useMemo(() => {
     const mediaList: MediaResource[] = [];
     const moodCounts: Record<string, number> = {};
+    const diaryCountsByDate: Record<string, number> = {};
 
     diaries.forEach((d: Diary) => {
       if (d.media) {
@@ -68,14 +105,96 @@ const CategoryScreen: React.FC = () => {
       if (d.mood) {
         moodCounts[d.mood] = (moodCounts[d.mood] || 0) + 1;
       }
+
+      const rawDate = d.date || d.createdAt;
+      if (!rawDate) {
+        return;
+      }
+
+      const parsedDate = new Date(rawDate);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return;
+      }
+
+      const dateKey = formatDateKey(parsedDate);
+      diaryCountsByDate[dateKey] = (diaryCountsByDate[dateKey] || 0) + 1;
     });
 
     const sortedMoods = Object.entries(moodCounts)
       .map(([mood, count]) => ({ mood, count }))
       .sort((a, b) => b.count - a.count);
 
-    return { allMedia: mediaList, moodStats: sortedMoods };
-  }, [diaries]);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const heatmapStartDate = new Date(today);
+    heatmapStartDate.setDate(today.getDate() - today.getDay() - (HEATMAP_WEEKS - 1) * HEATMAP_DAYS);
+    heatmapStartDate.setHours(0, 0, 0, 0);
+
+    const heatmapDays = Array.from({ length: HEATMAP_WEEKS * HEATMAP_DAYS }, (_, index) => {
+      const date = new Date(heatmapStartDate);
+      date.setDate(heatmapStartDate.getDate() + index);
+      const dateKey = formatDateKey(date);
+
+      return {
+        date,
+        dateKey,
+        count: diaryCountsByDate[dateKey] || 0,
+      };
+    });
+
+    const maxHeatCount = heatmapDays.reduce((max, item) => Math.max(max, item.count), 0);
+
+    const weeks = Array.from({ length: HEATMAP_WEEKS }, (_, weekIndex) => {
+      const days = heatmapDays
+        .slice(weekIndex * HEATMAP_DAYS, (weekIndex + 1) * HEATMAP_DAYS)
+        .map((item) => ({
+          ...item,
+          level: getHeatLevel(item.count, maxHeatCount),
+        }));
+
+      return {
+        monthLabel: monthFormatter.format(days[0].date),
+        days,
+      };
+    });
+
+    const monthLabels = weeks.map((week, weekIndex) => {
+      const prevMonth = weekIndex > 0 ? weeks[weekIndex - 1].days[0].date.getMonth() : null;
+      const currentMonth = week.days[0].date.getMonth();
+
+      return prevMonth === currentMonth && weekIndex !== 0 ? '' : week.monthLabel;
+    });
+
+    const sparseMonthLabels = monthLabels.map((label, index) => {
+      if (!label) return '';
+
+      const previousVisibleIndex = monthLabels
+        .slice(0, index)
+        .reduce((lastIndex, currentLabel, currentIndex) => (currentLabel ? currentIndex : lastIndex), -99);
+
+      return index - previousVisibleIndex < 3 ? '' : label;
+    });
+
+    const activeDays = heatmapDays.filter((item) => item.count > 0).length;
+    const totalHeatmapCount = heatmapDays.reduce((sum, item) => sum + item.count, 0);
+    const weekdayLabels = Array.from({ length: HEATMAP_DAYS }, (_, index) => {
+      const sampleDate = new Date(2024, 0, 7 + index);
+      return weekdayFormatter.format(sampleDate);
+    });
+
+    return {
+      allMedia: mediaList,
+      moodStats: sortedMoods,
+      heatmapWeeks: weeks,
+      heatmapSummary: {
+        monthLabels: sparseMonthLabels,
+        weekdayLabels,
+        activeDays,
+        totalHeatmapCount,
+      },
+    };
+  }, [diaries, monthFormatter, weekdayFormatter]);
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
@@ -334,6 +453,130 @@ const CategoryScreen: React.FC = () => {
     );
   };
 
+  const renderHeatmap = () => {
+    if (heatmapWeeks.length === 0) return null;
+
+    const heatmapColors = isDark
+      ? ['#2A2A2A', '#4A2533', '#7A2E4B', '#B13E70', '#F472B6']
+      : ['#F3F4F6', '#FBCFE8', '#F9A8D4', '#F472B6', '#DB2777'];
+    const heatmapContentWidth =
+      HEATMAP_WEEKS * HEATMAP_CELL_SIZE + (HEATMAP_WEEKS - 1) * HEATMAP_CELL_GAP;
+
+    return (
+      <View style={styles.sectionContainer}>
+        <View style={styles.sectionHeaderRow}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#FFF' : '#111827' }]}>
+              {t('categoryScreen.heatmapTitle')}
+            </Text>
+            <Text style={[styles.heatmapSubtitle, { color: isDark ? '#AAA' : '#6B7280' }]}>
+              {t('categoryScreen.heatmapSummary', {
+                days: heatmapSummary.activeDays,
+                count: heatmapSummary.totalHeatmapCount,
+              })}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.heatmapCard,
+            {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFF',
+              borderColor: isDark ? '#333' : '#F3F4F6',
+            },
+          ]}
+        >
+          <View style={styles.heatmapBodyRow}>
+            <View style={styles.heatmapAxisColumn}>
+              <View style={styles.heatmapWeekLabelSpacer} />
+              <View style={styles.heatmapWeekLabels}>
+                {heatmapSummary.weekdayLabels.map((label, index) => (
+                  <Text
+                    key={`weekday-${index}`}
+                    style={[
+                      styles.heatmapWeekdayText,
+                      { color: isDark ? '#777' : '#9CA3AF' },
+                      index % 2 === 0 && styles.heatmapWeekdayHidden,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                ))}
+              </View>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.heatmapScrollContent}>
+              <View>
+                <View style={[styles.heatmapMonthLabels, { width: heatmapContentWidth }]}>
+                  {heatmapSummary.monthLabels.map((label, index) =>
+                    label ? (
+                      <Text
+                        key={`month-${index}`}
+                        style={[
+                          styles.heatmapMonthText,
+                          {
+                            color: isDark ? '#777' : '#9CA3AF',
+                            left: index * (HEATMAP_CELL_SIZE + HEATMAP_CELL_GAP),
+                          },
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    ) : null
+                  )}
+                </View>
+
+                <View style={styles.heatmapColumns}>
+                  {heatmapWeeks.map((week, weekIndex) => (
+                    <View key={`week-${weekIndex}`} style={styles.heatmapColumn}>
+                      {week.days.map((day) => (
+                        <View
+                          key={day.dateKey}
+                          style={[
+                            styles.heatmapCell,
+                            {
+                              backgroundColor: heatmapColors[day.level],
+                              borderColor: isDark ? '#2A2A2A' : '#FFFFFF',
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+
+          <View style={styles.heatmapLegendRow}>
+            <Text style={[styles.heatmapLegendText, { color: isDark ? '#777' : '#9CA3AF' }]}>
+              {t('categoryScreen.heatmapLess')}
+            </Text>
+            <View style={styles.heatmapLegendScale}>
+              {heatmapColors.map((color, index) => (
+                <View
+                  key={`legend-${index}`}
+                  style={[
+                    styles.heatmapCell,
+                    styles.heatmapLegendCell,
+                    {
+                      backgroundColor: color,
+                      borderColor: isDark ? '#2A2A2A' : '#FFFFFF',
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+            <Text style={[styles.heatmapLegendText, { color: isDark ? '#777' : '#9CA3AF' }]}>
+              {t('categoryScreen.heatmapMore')}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View
       style={[
@@ -362,6 +605,7 @@ const CategoryScreen: React.FC = () => {
           <>
             {renderStats()}
             {renderMoods()}
+            {renderHeatmap()}
             {renderPhotoWall()}
           </>
         ) : (
@@ -471,6 +715,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
+  heatmapSubtitle: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#6B7280',
+  },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -560,6 +809,84 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: '100%',
     borderRadius: 3,
+  },
+  heatmapCard: {
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  heatmapBodyRow: {
+    flexDirection: 'row',
+  },
+  heatmapAxisColumn: {
+    width: 20,
+    marginRight: 6,
+  },
+  heatmapWeekLabelSpacer: {
+    height: 20,
+  },
+  heatmapMonthLabels: {
+    position: 'relative',
+    height: 20,
+    marginBottom: 8,
+  },
+  heatmapMonthText: {
+    position: 'absolute',
+    fontSize: 11,
+    letterSpacing: -0.2,
+    color: '#9CA3AF',
+  },
+  heatmapScrollContent: {
+    paddingRight: 4,
+  },
+  heatmapWeekLabels: {
+    marginTop: 0,
+  },
+  heatmapWeekdayText: {
+    height: HEATMAP_CELL_SIZE,
+    marginBottom: HEATMAP_CELL_GAP,
+    fontSize: 9,
+    color: '#9CA3AF',
+  },
+  heatmapWeekdayHidden: {
+    opacity: 0,
+  },
+  heatmapColumns: {
+    flexDirection: 'row',
+    columnGap: HEATMAP_CELL_GAP,
+  },
+  heatmapColumn: {
+    rowGap: HEATMAP_CELL_GAP,
+  },
+  heatmapCell: {
+    width: HEATMAP_CELL_SIZE,
+    height: HEATMAP_CELL_SIZE,
+    borderRadius: 3,
+    borderWidth: 1,
+  },
+  heatmapLegendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+  },
+  heatmapLegendText: {
+    fontSize: 10,
+    color: '#9CA3AF',
+  },
+  heatmapLegendScale: {
+    flexDirection: 'row',
+    marginHorizontal: 6,
+    columnGap: 4,
+  },
+  heatmapLegendCell: {
+    width: 10,
+    height: 10,
   },
   photoGrid: {
     flexDirection: 'row',

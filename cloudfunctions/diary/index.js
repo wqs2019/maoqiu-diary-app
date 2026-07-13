@@ -315,6 +315,28 @@ const getAvailableYearsForQuery = async (query) => {
     .filter((year) => typeof year === 'string' && /^\d{4}$/.test(year));
 };
 
+const getActiveSharedNotebookIdsForUser = async (userId) => {
+  if (!userId) {
+    return [];
+  }
+
+  const result = await db
+    .collection('notebooks')
+    .where(
+      _.and([
+        { type: 'shared' },
+        { status: 'active' },
+        _.or([{ userId }, { partnerId: userId }]),
+      ])
+    )
+    .field({
+      _id: true,
+    })
+    .get();
+
+  return (result.data || []).map((item) => item && item._id).filter(Boolean);
+};
+
 const createDiaryInteractionNotification = async ({
   diary,
   senderId,
@@ -991,7 +1013,23 @@ const getDiaryDetail = async (data) => {
 // 获取日记列表
 const getDiaryList = async (data) => {
   try {
-    const { page = 1, pageSize = 10, scenario, mood, startDate, endDate, keyword, userId, notebookId, isFavorite, isPublic, likedByUserId, commentedByUserId, viewerId } = data;
+    const {
+      page = 1,
+      pageSize = 10,
+      scenario,
+      mood,
+      startDate,
+      endDate,
+      keyword,
+      userId,
+      notebookId,
+      includeSharedAccessible,
+      isFavorite,
+      isPublic,
+      likedByUserId,
+      commentedByUserId,
+      viewerId,
+    } = data;
 
     if (!userId && !isPublic && !likedByUserId && !commentedByUserId) {
       return {
@@ -1040,7 +1078,26 @@ const getDiaryList = async (data) => {
     } else {
       // 没有任何特殊过滤条件（评论、点赞）且要求不是完全的公共世界频道
       if (userId && !isPublic && !likedByUserId && !commentedByUserId) {
-        queryConditions.push({ userId: userId });
+        if (includeSharedAccessible) {
+          const sharedNotebookIds = await getActiveSharedNotebookIdsForUser(userId);
+
+          if (sharedNotebookIds.length > 0) {
+            queryConditions.push(
+              _.or([
+                { userId: userId },
+                {
+                  notebookId: _.in(sharedNotebookIds),
+                  userId: _.neq(userId),
+                  isPrivate: _.neq(true),
+                },
+              ])
+            );
+          } else {
+            queryConditions.push({ userId: userId });
+          }
+        } else {
+          queryConditions.push({ userId: userId });
+        }
       } else if (isPublic === true && userId) {
         // 特定用户的公开日记
         queryConditions.push({ userId: userId });
